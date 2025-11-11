@@ -1,14 +1,28 @@
 #include "Main.h"
 #include "ui_Main.h"
 
-Main::Main(QWidget *parent)
+#include <QApplication>
+
+/*
+    textEdit->setStyleSheet(
+        "QTextEdit {"
+        "   background-color: #f0f8ff;"   // Light blue background
+        "   color: #003366;"              // Dark blue text
+        "   font-family: 'Courier New';"
+        "   font-size: 14px;"
+        "   border: 2px solid #003366;"
+        "   border-radius: 5px;"
+        "   padding: 5px;"
+        "}"
+    );
+ */
+Main::Main(QApplication* app, QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::Main)
-{
-    ui->setupUi(this);
+    , mApp(app)
+    , mUi(new Ui::Main) {
+    mUi->setupUi(this);
 }
 
-Main::~Main()
-{
-    delete ui;
+Main::~Main() {
+    delete mUi;
 }
