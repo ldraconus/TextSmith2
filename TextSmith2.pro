@@ -33,6 +33,7 @@ DISTFILES += \
     TextSmithIcon.png \
     appicon.rc \
     bold.png \
+    decreaseIndent.png \
     deleteItem.png \
     fullJustify.png \
     increseIndent.png \
