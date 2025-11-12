@@ -28,21 +28,36 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    Center.ico \
     Center.png \
     TextSmith2.ico \
     TextSmithIcon.png \
     appicon.rc \
+    bold.ico \
     bold.png \
+    decreaseIndent.ico \
     decreaseIndent.png \
+    deleteItem.ico \
     deleteItem.png \
+    fullJustify.ico \
     fullJustify.png \
+    increseIndent.ico \
     increseIndent.png \
+    italic.ico \
     italic.png \
+    leftjustify.ico \
     leftjustify.png \
+    moveItemDown.ico \
     moveItemDown.png \
+    moveItemOut.ico \
     moveItemOut.png \
+    moveItemUp.ico \
     moveItemUp.png \
+    newItem.ico \
+    newItem.png \
+    rightJustify.ico \
     rightJustify.png \
+    underline.ico \
     underline.png
 
 RESOURCES += \
