@@ -2,6 +2,7 @@
 #include "ui_Main.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 
 /*
     textEdit->setStyleSheet(
@@ -16,10 +17,16 @@
         "}"
     );
  */
-Main::Main(QApplication* app, QWidget *parent)
+
+void Main::closeEvent(QCloseEvent *event) {
+
+}
+
+Main::Main(QApplication *app, QWidget *parent)
     : QMainWindow(parent)
     , mApp(app)
-    , mUi(new Ui::Main) {
+    , mUi(new Ui::Main)
+{
     mUi->setupUi(this);
 }
 

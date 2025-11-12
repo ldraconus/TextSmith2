@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>newItem.ico</file>
+        <file>deleteItem.ico</file>
+        <file>moveItemUp.ico</file>
+        <file>moveItemDown.ico</file>
+        <file>moveItemOut.ico</file>
+        <file>bold.ico</file>
+        <file>italic.ico</file>
+        <file>leftjustify.ico</file>
+        <file>underline.ico</file>
+        <file>Center.ico</file>
+        <file>rightJustify.ico</file>
+        <file>fullJustify.ico</file>
+        <file>increseIndent.ico</file>
+        <file>decreaseIndent.ico</file>
+    </qresource>
+</RCC>

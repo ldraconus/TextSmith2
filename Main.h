@@ -2,7 +2,10 @@
 
 #include <QMainWindow>
 
+
+
 class QApplication;
+class QCloseEvent;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -16,6 +19,8 @@ class Main : public QMainWindow {
 private:
     QApplication* mApp;
     Ui::Main*     mUi;
+
+    void closeEvent(QCloseEvent* event) override;
 
 public:
     Main(QApplication* app, QWidget* parent = nullptr);
