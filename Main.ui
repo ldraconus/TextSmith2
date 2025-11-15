@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>793</width>
-    <height>596</height>
+    <width>1024</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -424,7 +424,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>793</width>
+     <width>1024</width>
      <height>21</height>
     </rect>
    </property>
@@ -432,28 +432,292 @@
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="actionas_PDF"/>
+     <addaction name="actionas_RTF"/>
+     <addaction name="actionas_Plain_text"/>
+     <addaction name="actionas_EBook"/>
+    </widget>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="menuExport"/>
+    <addaction name="actionPrint"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
     </property>
+    <widget class="QMenu" name="menuFont">
+     <property name="title">
+      <string>Font</string>
+     </property>
+     <addaction name="actionBold"/>
+     <addaction name="actionItalic"/>
+     <addaction name="actionUnderline"/>
+    </widget>
+    <widget class="QMenu" name="menuParagraph">
+     <property name="title">
+      <string>Paragraph</string>
+     </property>
+     <addaction name="actionLeft_Justify"/>
+     <addaction name="actionCenter"/>
+     <addaction name="actionRight_Justify"/>
+     <addaction name="actionFull_Justification"/>
+     <addaction name="actionIndent"/>
+     <addaction name="actionUndent"/>
+    </widget>
+    <addaction name="actionCut"/>
+    <addaction name="actionCopy"/>
+    <addaction name="actionPaste"/>
+    <addaction name="actionFind_Replace"/>
+    <addaction name="menuFont"/>
+    <addaction name="menuParagraph"/>
+    <addaction name="actionUppercase"/>
+    <addaction name="actionLowercase"/>
+    <addaction name="actionPrefereces"/>
    </widget>
    <widget class="QMenu" name="menuNovel">
     <property name="title">
      <string>Novel</string>
     </property>
+    <addaction name="actionAdd_Item"/>
+    <addaction name="actionRemove_Item"/>
+    <addaction name="actionMove_an_Item_Up"/>
+    <addaction name="actionMove_Current_Item_Down"/>
+    <addaction name="actionMove_Current_Item_Out"/>
+    <addaction name="actionOpen_Current_Item"/>
+    <addaction name="actionClose_All"/>
+    <addaction name="actionOopen_All"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionAbout_TextSmith"/>
+    <addaction name="actionHelp"/>
+    <addaction name="actionWeb_Site"/>
+    <addaction name="actionScripting"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionDistraction_Free"/>
+    <addaction name="actionRead_To_Me"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuNovel"/>
+   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionas_PDF">
+   <property name="text">
+    <string>as PDF</string>
+   </property>
+  </action>
+  <action name="actionas_RTF">
+   <property name="text">
+    <string>as RTF</string>
+   </property>
+  </action>
+  <action name="actionas_Plain_text">
+   <property name="text">
+    <string>as Plain text</string>
+   </property>
+  </action>
+  <action name="actionas_EBook">
+   <property name="text">
+    <string>as EBook</string>
+   </property>
+  </action>
+  <action name="actionPrint">
+   <property name="text">
+    <string>Print</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionCut">
+   <property name="text">
+    <string>Cut</string>
+   </property>
+  </action>
+  <action name="actionCopy">
+   <property name="text">
+    <string>Copy</string>
+   </property>
+  </action>
+  <action name="actionPaste">
+   <property name="text">
+    <string>Paste</string>
+   </property>
+  </action>
+  <action name="actionFind_Replace">
+   <property name="text">
+    <string>Find &amp;&amp; Replace</string>
+   </property>
+  </action>
+  <action name="actionUppercase">
+   <property name="text">
+    <string>Uppercase</string>
+   </property>
+  </action>
+  <action name="actionLowercase">
+   <property name="text">
+    <string>Lowercase</string>
+   </property>
+  </action>
+  <action name="actionPrefereces">
+   <property name="text">
+    <string>Prefereces</string>
+   </property>
+  </action>
+  <action name="actionBold">
+   <property name="text">
+    <string>Bold</string>
+   </property>
+  </action>
+  <action name="actionItalic">
+   <property name="text">
+    <string>Italic</string>
+   </property>
+  </action>
+  <action name="actionUnderline">
+   <property name="text">
+    <string>Underline</string>
+   </property>
+  </action>
+  <action name="actionLeft_Justify">
+   <property name="text">
+    <string>Left Justify</string>
+   </property>
+  </action>
+  <action name="actionCenter">
+   <property name="text">
+    <string>Center</string>
+   </property>
+  </action>
+  <action name="actionRight_Justify">
+   <property name="text">
+    <string>Right Justify</string>
+   </property>
+  </action>
+  <action name="actionFull_Justification">
+   <property name="text">
+    <string>Full Justification</string>
+   </property>
+  </action>
+  <action name="actionIndent">
+   <property name="text">
+    <string>Indent</string>
+   </property>
+  </action>
+  <action name="actionUndent">
+   <property name="text">
+    <string>Undent</string>
+   </property>
+  </action>
+  <action name="actionAdd_Item">
+   <property name="text">
+    <string>Add Item</string>
+   </property>
+  </action>
+  <action name="actionRemove_Item">
+   <property name="text">
+    <string>Remove Item</string>
+   </property>
+  </action>
+  <action name="actionMove_an_Item_Up">
+   <property name="text">
+    <string>Move Current  Item Up</string>
+   </property>
+  </action>
+  <action name="actionMove_Current_Item_Down">
+   <property name="text">
+    <string>Move Current Item Down</string>
+   </property>
+  </action>
+  <action name="actionMove_Current_Item_Out">
+   <property name="text">
+    <string>Move Current Item Out</string>
+   </property>
+  </action>
+  <action name="actionClose_All">
+   <property name="text">
+    <string>Close All</string>
+   </property>
+  </action>
+  <action name="actionOopen_All">
+   <property name="text">
+    <string>Oopen All</string>
+   </property>
+  </action>
+  <action name="actionOpen_Current_Item">
+   <property name="text">
+    <string>Open/Close Current Item</string>
+   </property>
+  </action>
+  <action name="actionDistraction_Free">
+   <property name="text">
+    <string>Distraction Free</string>
+   </property>
+  </action>
+  <action name="actionRead_To_Me">
+   <property name="text">
+    <string>Read To Me</string>
+   </property>
+  </action>
+  <action name="actionAbout_TextSmith">
+   <property name="text">
+    <string>About TextSmith</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="text">
+    <string>Help</string>
+   </property>
+  </action>
+  <action name="actionWeb_Site">
+   <property name="text">
+    <string>Web Site</string>
+   </property>
+  </action>
+  <action name="actionScripting">
+   <property name="text">
+    <string>Scripting</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="gfx.qrc"/>

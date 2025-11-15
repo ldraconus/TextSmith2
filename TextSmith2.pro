@@ -14,10 +14,14 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 
 SOURCES += \
     Main.cpp \
+    Novel.cpp \
+    Preferences.cpp \
     Start.cpp
 
 HEADERS += \
-    Main.h
+    Main.h \
+    Novel.h \
+    Preferences.h
 
 FORMS += \
     Main.ui
