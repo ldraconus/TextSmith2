@@ -14,5 +14,6 @@
         <file>fullJustify.ico</file>
         <file>increseIndent.ico</file>
         <file>decreaseIndent.ico</file>
+        <file>TextSmith2.ico</file>
     </qresource>
 </RCC>

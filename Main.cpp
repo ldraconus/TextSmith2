@@ -6,7 +6,9 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QScreen>
 #include <QStandardPaths>
+#include <QWindow>
 
 /*
     textEdit->setStyleSheet(
@@ -31,6 +33,7 @@ void Main::closeEvent(QCloseEvent* ce) {
                          "Warning!");
         if (mNovel.isChanged()) {
             ce->ignore();
+            mPrefs.save();
             return;
         }
     }
@@ -52,10 +55,21 @@ Main::Main(QApplication* app, QWidget* parent)
     QDir().mkpath(mDocDir + "/TextSmith");
     QDir().mkpath(mLocalDir);
 
-    // read preferences from Local
-    // parse command line for novel to open
-    // or start with a blank novel
+    mPrefs.load();
+    auto screens = QGuiApplication::screens();
 
+    // read preferences from Local
+    //  - last window place ment is also a preference item
+    //  - last font used
+    //  - reading voice
+    //  - typing sounds
+    //  - auto-save interval
+    //  - theme (dark/light/follow system)
+    // parse command line for novel to open
+    //  - any thing on the command line is aassumed to be a novel
+    //    or start with a blank novel
+
+    // [TBD] fit window rectangle to current display setup
     setupConnections();
 }
 
@@ -69,6 +83,8 @@ void Main::setupConnections() {
     connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
     connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
     connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
+
+    connect(mUi->actionPrefereces, &QAction::triggered, this, &Main::preferencesAction);
 }
 
 void Main::doExit() {
@@ -116,20 +132,15 @@ void Main::doOpen() {
     mNovel.setFilename(filename);
     mNovel.noChanges();
     Json5Object obj = mNovel.extra();
+    Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
+    mPrefs.read(prefs);
     mCurrentNode = Item::hasNum(obj, "Current", -1);
-    Json5Array arr = Item::hasArr(obj, "At", {});
-    if (arr.size() == 4) {
-        auto old = geometry();
-        auto x = Item::hasNum(arr, 0, old.x());
-        auto y = Item::hasNum(arr, 1, old.y());
-        auto width = Item::hasNum(arr, 2, old.width());
-        auto height = Item::hasNum(arr, 3, old.height());
-        // [TBD] make the window fit on current windows
-        QRect geom(x, y, width, height);
-        setGeometry(geom);
-    }
-    // [TBD] set open/close states
+    // [TBD] get open/close states
     update();
+}
+
+void Main::doPreferences() {
+    //
 }
 
 void Main::doSave() {
@@ -138,18 +149,12 @@ void Main::doSave() {
     mDocDir = info.absolutePath();
     Json5Object extra;
     extra["Current"] = mCurrentNode;
-    Json5Array arr;
-    auto geom = geometry();
-    arr.append(qlonglong(geom.x()));
-    arr.append(qlonglong(geom.y()));
-    arr.append(qlonglong(geom.width()));
-    arr.append(qlonglong(geom.height()));
-    extra["At"] = arr;
+    mPrefs.setWindowLocation(geometry());
+    extra["Prefs"] = mPrefs.write();
     // [TBD] build map of item open/close states
     mNovel.setExtra(extra);
     if (mNovel.filename().isEmpty() && !doSaveAs()) return;
     else {
-        // set the d
         if (!mNovel.save()) mMsg.OK("Unabkle to save the file.\n\nTry and save it under a different name",
                                     [this]() { doNothing(); },
                                     "Something unexpected has happened");
@@ -164,7 +169,34 @@ bool Main::doSaveAs() {
     return true;
 }
 
+void Main::fitWindow() {
+    QRect geom = mPrefs.windowLocation();
+    if (geom.isValid()) {
+        QScreen* windowScreen = nullptr;
+        for (auto* s: QGuiApplication::screens()) {
+            if (s->geometry().intersects(geom)) {
+                windowScreen = s;
+                break;
+            }
+        }
+        if (windowScreen == nullptr) windowScreen = QGuiApplication::primaryScreen();
+        if (!windowScreen->geometry().contains(geom.topLeft())) geom.moveTo(windowScreen->geometry().topLeft());
+        if (!windowScreen->geometry().contains(geom.bottomRight())) geom.setSize(windowScreen->geometry().size());
+        QRect screenGeom = windowScreen->geometry();
+        QPoint centerPos = screenGeom.center() - QPoint(geom.width() / 2, geom.height() / 2);
+        geom.setTopLeft(centerPos);
+        mPrefs.setWindowLocation(geom);
+        windowHandle()->setGeometry(geom);
+    }
+}
+
 void Main::update() {
+    // update should only be called on major updates (like opening a file or starting up starting a new one)
+
+
+
+
+    fitWindow();
     // save/open/close state by ID
     // clear the tree
     // go through the novel an add to the tree w/open/close states. Set unknown IDs as open

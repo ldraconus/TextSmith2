@@ -16,15 +16,20 @@ SOURCES += \
     Main.cpp \
     Novel.cpp \
     Preferences.cpp \
-    Start.cpp
+    PreferencesDialog.cpp \
+    Start.cpp \
+    TextEdit.cpp
 
 HEADERS += \
     Main.h \
     Novel.h \
-    Preferences.h
+    Preferences.h \
+    PreferencesDialog.h \
+    TextEdit.h
 
 FORMS += \
-    Main.ui
+    Main.ui \
+    PreferencesDialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

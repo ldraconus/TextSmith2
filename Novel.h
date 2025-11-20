@@ -29,6 +29,8 @@ public:
     static void resetLastID() { sNextID = 0; }
 
     static Json5Array  hasArr(Json5Object& obj, const QString& str, const Json5Array& def = {});
+    static bool        hasBool(Json5Object& obj, const QString& str, bool def = false);
+    static bool        hasBool(Json5Array& obj, const qsizetype idx, bool def = false);
     static qsizetype   hasNum(Json5Object& obj, const QString& str, const qsizetype def = 0);
     static qsizetype   hasNum(Json5Array& arr, const qsizetype idx, const qsizetype def = 0);
     static Json5Object hasObj(Json5Object& obj, const QString& str, const Json5Object& def = {});

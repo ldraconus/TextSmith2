@@ -6,6 +6,7 @@
 #include <Message.h>
 
 #include "Novel.h"
+#include "Preferences.h"
 
 class QApplication;
 class QCloseEvent;
@@ -27,6 +28,7 @@ private:
     QString       mLocalDir;
     Message       mMsg;
     Novel         mNovel;
+    Preferences   mPrefs;
     Ui::Main*     mUi;
 
     void clearChanged() { mNovel.noChanges(); }
@@ -36,9 +38,11 @@ private:
     void doExit();
     void doNew();
     void doOpen();
+    void doPreferences();
     void doSave();
     bool doSaveAs();
 
+    void fitWindow();
     void update();
 
 public:
@@ -53,4 +57,6 @@ public slots:
     void openAction()   { doOpen(); }
     void saveAction()   { doSave(); }
     void saveAsAction() { doSaveAs(); }
+
+    void preferencesAction() { doPreferences(); }
 };

@@ -47,6 +47,16 @@ Json5Array Item::hasArr(Json5Object& obj, const QString& str, const Json5Array& 
     return def;
 }
 
+bool Item::hasBool(Json5Object& obj, const QString& str, bool def) {
+    if (valid(obj, str, Json5::Boolean)) return obj[str].toBoolean();
+    return def;
+}
+
+bool Item::hasBool(Json5Array& arr, const qsizetype idx, bool def) {
+    if (idx >= 0 && idx < arr.count() && arr[idx].isBoolean()) return arr[idx].toBoolean();
+    return def;
+}
+
 qsizetype Item::hasNum(Json5Object& obj, const QString& str, const qsizetype def) {
     if (valid(obj, str, Json5::String)) return obj[str].toInt(def);
     return def;
