@@ -15,6 +15,7 @@ public:
     virtual void init();
 
     auto& children()   { return mChildren; }
+    auto  html()       { return mHtml; }
     auto  id() const   { return mID; }
     auto  name() const { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
     auto& order()      { return mOrder; }
@@ -25,15 +26,13 @@ public:
     bool isEmpty() const { return mChildren.empty(); }
     bool isNull() const  { return isEmpty() && mName.isEmpty() && mHtml.isEmpty(); }
 
-    void changeFont(qlonglong skip, const QFont& font);
-
-    void clearTag(const QString& tag);
-
-    Item* findItem(qlonglong id);
-
     void setName(const QString& n) { mName = n; }
     void addChild(const Item& i)   { mChildren[i.id()] = i; mOrder.append(i.id()); }
     void setHtml(const QString& h) { mHtml = h; }
+
+    void  changeFont(qlonglong skip, const QFont& font);
+    void  clearTag(const QString& tag);
+    Item* findItem(qlonglong id);
 
     virtual Json5Object toObject();
 

@@ -34,6 +34,7 @@ private:
     QString               mLocalDir;
     Message               mMsg;
     Novel                 mNovel;
+    qlonglong             mPosition;
     Map<qlonglong, bool>  mState;
     Preferences           mPrefs;
     Ui::Main*             mUi;

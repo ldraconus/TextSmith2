@@ -92,6 +92,7 @@ void Main::doOpen() {
     Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
     mPrefs.read(prefs);
     mCurrentNode = Item::hasNum(obj, "Current", -1);
+    mPosition = Item::hasNum(obj, "Position", 0);
     Json5Array array = Item::hasArr(obj, "State");
     mState.clear();
     for (auto& state: array) {
@@ -120,6 +121,7 @@ void Main::doSave() {
     Json5Object extra;
     // also store the position in the node
     extra["Current"] = mCurrentNode;
+    extra["Position"] = qlonglong(mUi->textEdit->textCursor().position());
     mPrefs.setWindowLocation(geometry());
     extra["Prefs"] = mPrefs.write();
     Map<qlonglong, bool> byId;
@@ -228,7 +230,12 @@ void Main::update() { // new & open
     buildTree(&mNovel, nullptr, mState);
 
     QTreeWidgetItem* item = findItem(tree->topLevelItem(0), mCurrentNode);
-    if (item != nullptr) tree->setCurrentItem(item);
+    if (item != nullptr) {
+        tree->setCurrentItem(item);
+        Item* item = mNovel.findItem(mCurrentNode);
+        mUi->textEdit->setHtml(item->html());
+        mUi->textEdit->textCursor().position();
+    }
 }
 
 void Main::updateFromPrefs() {
@@ -318,6 +325,8 @@ void Main::setupConnections() {
     connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
 
     connect(mUi->actionPrefereces, &QAction::triggered, this, &Main::preferencesAction);
+
+    mUi->actionRead_To_Me->setShortcut(QKeySequence("Alt+R"));
 }
 
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {

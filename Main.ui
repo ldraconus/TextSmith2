@@ -92,6 +92,9 @@ QSplitter::handle:hover {
            </property>
            <item>
             <widget class="QToolButton" name="newItemToolButton">
+             <property name="toolTip">
+              <string>Add Item (Alt+N)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -109,6 +112,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="deleteItemToolButton">
+             <property name="toolTip">
+              <string>Delete Item (Alt-Del)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -126,6 +132,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="upToolButton">
+             <property name="toolTip">
+              <string>Move Item Up (Alt-Up)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -143,6 +152,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="downToolButton">
+             <property name="toolTip">
+              <string>Move Item Down (Alt-Down)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -160,6 +172,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="outToolButton">
+             <property name="toolTip">
+              <string>Move Item Out (Alt-Left)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -260,6 +275,9 @@ QSplitter::handle:hover {
            </property>
            <item>
             <widget class="QToolButton" name="boldToolButton">
+             <property name="toolTip">
+              <string>Bold  (Ctrl+B)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -277,6 +295,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="italicToolButton">
+             <property name="toolTip">
+              <string>Italic (Ctrl+I)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -294,6 +315,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="underlineToolButton">
+             <property name="toolTip">
+              <string>Underline (Ctrl+U)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -311,6 +335,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="leftJustifyToolButton">
+             <property name="toolTip">
+              <string>Left Justify (Ctrl+J, Ctrl+L)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -328,6 +355,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="centerToolButton">
+             <property name="toolTip">
+              <string>Center (Ctrl+J, Ctrl+C)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -345,6 +375,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="rightJustifyToolButton">
+             <property name="toolTip">
+              <string>Right Justify (Ctrl+J, Ctrl+R)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -362,6 +395,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="fullJustifyToolButton">
+             <property name="toolTip">
+              <string>Full Justify (Ctrl+J, Ctrl+F)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -379,6 +415,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="increaseIndentToolButton">
+             <property name="toolTip">
+              <string>Indent (Ctrl+J, Ctrl+I)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -396,6 +435,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="decreaseIndntToolButton">
+             <property name="toolTip">
+              <string>Outdent (Ctrl+J, Ctrl+O)</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -761,60 +803,90 @@ QSplitter::handle:hover {
   </action>
   <action name="actionUndent">
    <property name="text">
-    <string>Undent</string>
+    <string>Outdent</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+J, Ctrl+U</string>
+    <string>Ctrl+J, Ctrl+O</string>
    </property>
   </action>
   <action name="actionAdd_Item">
    <property name="text">
     <string>Add Item</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+N</string>
+   </property>
   </action>
   <action name="actionRemove_Item">
    <property name="text">
     <string>Remove Item</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Del</string>
    </property>
   </action>
   <action name="actionMove_an_Item_Up">
    <property name="text">
     <string>Move Current  Item Up</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Up</string>
+   </property>
   </action>
   <action name="actionMove_Current_Item_Down">
    <property name="text">
     <string>Move Current Item Down</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Down</string>
    </property>
   </action>
   <action name="actionMove_Current_Item_Out">
    <property name="text">
     <string>Move Current Item Out</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Left</string>
+   </property>
   </action>
   <action name="actionClose_All">
    <property name="text">
     <string>Close All</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+C</string>
    </property>
   </action>
   <action name="actionOopen_All">
    <property name="text">
     <string>Open All</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+A</string>
+   </property>
   </action>
   <action name="actionOpen_Current_Item">
    <property name="text">
     <string>Open/Close Current Item</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+O</string>
    </property>
   </action>
   <action name="actionDistraction_Free">
    <property name="text">
     <string>Distraction Free</string>
    </property>
+   <property name="shortcut">
+    <string>F11</string>
+   </property>
   </action>
   <action name="actionRead_To_Me">
    <property name="text">
     <string>Read To Me</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
   <action name="actionAbout_TextSmith">
@@ -838,7 +910,7 @@ QSplitter::handle:hover {
     <string>Web Site</string>
    </property>
    <property name="shortcut">
-    <string>Alt+W</string>
+    <string>Ctrl+W</string>
    </property>
   </action>
   <action name="actionScripting">
