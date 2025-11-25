@@ -310,6 +310,7 @@ void Main::changeNovelFont(qlonglong skip, const QFont& font) {
 }
 
 void Main::setupConnections() {
+    mUi->actionExit->setShortcut(QKeySequence("Alt+F4"));
     connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
     connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
     connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
