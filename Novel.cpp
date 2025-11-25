@@ -1,6 +1,11 @@
 #include "Novel.h"
+#include "Main.h"
 
-qsizetype Item::sNextID;
+#include <QFontMetrics>
+#include <QTextCursor>
+#include <QTextEdit>
+
+qsizetype Item::sNextID = 0;
 
 Item::Item()
     : mID(sNextID++) {
@@ -14,15 +19,37 @@ void Item::clear() {
     for (auto& child: mChildren) child.second.clear();
     mChildren.clear();
     mHtml.clear();
-    mID = -1;
+    mID = 0;
     mName.clear();
     mOrder.clear();
     mTags.clear();
 }
 
+void Item::init() {
+    newHtml();
+}
+
+void Item::changeFont(qlonglong skip, const QFont& font) {
+    if (mID != skip) {
+        QTextEdit text;
+        text.setHtml(mHtml);
+        Main::changeDocumentFont(text.document(), font);
+        mHtml = text.toHtml();
+    }
+    for (auto& child: mChildren) child.second.changeFont(skip, font);
+}
+
 void Item::clearTag(const QString &tag) {
     auto idx = mTags.indexOf(tag);
     if (idx >= 0) mTags.takeAt(idx);
+}
+
+Item* Item::findItem(qlonglong id) {
+    if (id == mID) return this;
+    for (auto& child: mChildren) {
+        if (auto* found = child.second.findItem(id); found != nullptr) return found;
+    }
+    return nullptr;
 }
 
 Json5Object Item::toObject() {
@@ -89,7 +116,7 @@ bool Item::fromObject(Json5Object& obj) {
     mName = hasStr(obj, "Name");
 
     if (mID >= sNextID) sNextID = mID + 1;
-    if (mName.isEmpty()) mName = "<unnamed_#" + QString::number(mID) + ">";
+    if (mName.isEmpty()) mName = name();
 
     Json5Object children = hasObj(obj, "Children", {});
     for (auto& child: children) {
@@ -126,6 +153,26 @@ bool Item::fromObject(Json5Object& obj) {
     return true;
 }
 
+void Item::newHtml() {
+    QTextEdit text;
+    text.setText("");
+    Preferences& prefs = Main::ref().prefs();
+    QFont font(prefs.fontFamily(), prefs.fontSize());
+    QFontMetrics metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 4 * lineHeight;
+    QTextBlockFormat format;
+    format.setTextIndent(indent);
+    format.setBottomMargin(lineHeight);
+
+    QTextCursor cursor(text.document());
+    cursor.select(QTextCursor::Document);
+    cursor.mergeBlockFormat(format);
+    text.setTextCursor(cursor);
+    text.document()->setDefaultFont(font);
+    mHtml = text.toHtml();
+}
+
 Novel::Novel()
     : Item()
     , mFilename("") {
@@ -155,6 +202,10 @@ void Novel::clear() {
     mFilename.clear();
 }
 
+void Novel::init() {
+    Item::init();
+}
+
 bool Novel::open() {
     Json5Document doc;
     noChanges();
@@ -170,6 +221,11 @@ bool Novel::save() {
     if (bool success = doc.write(mFilename); success) noChanges();
     else return false;
     return true;
+}
+
+void Novel::setHtml(qlonglong node, const QString& html) {
+    Item* item = findItem(node);
+    item->setHtml(html);
 }
 
 bool Novel::fromObject(Json5Object& obj) {

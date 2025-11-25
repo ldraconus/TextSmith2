@@ -1,14 +1,92 @@
 #include "PreferencesDialog.h"
 #include "ui_PreferencesDialog.h"
+#include "Main.h"
 
-PreferencesDialog::PreferencesDialog(QWidget *parent)
+#include <QFontDialog>
+#include <QTextToSpeech>
+
+PreferencesDialog* PreferencesDialog::sPreferencesDialog = nullptr;
+
+PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     : QDialog(parent)
-    , ui(new Ui::PreferencesDialog)
-{
-    ui->setupUi(this);
+    , mPrefs(&prefs)
+    , mSpeech(new QTextToSpeech())
+    , mUi(new Ui::PreferencesDialog) {
+    sPreferencesDialog = this;
+
+    mUi->setupUi(this);
+
+    loadAvailableVoices();
+    QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
+    setTextEditFont(font);
+    mUi->novelFontPushButton->setFont(font);
+    mUi->novelFontPushButton->setText(QString("%1:%2").arg(mPrefs->fontFamily()).arg(mPrefs->fontSize()));
+    mUi->displayThemeComboBox->setCurrentIndex(mPrefs->theme());
+    theme(mPrefs->theme());
+    setupConnections();
+
+    // read from prefs and set the values in the dialog
+    if (mSpeech) mUi->readAloudVoiceComboBox->setCurrentIndex(mPrefs->voice());
 }
 
-PreferencesDialog::~PreferencesDialog()
-{
-    delete ui;
+PreferencesDialog::~PreferencesDialog() {
+    mPrefs->setAutoSave(mUi->autoSaveCheckBox->isChecked());
+    delete mUi;
+    delete mSpeech;
+}
+
+void PreferencesDialog::saveChanges() {
+    mPrefs->setAutoSave(mUi->autoSaveCheckBox->isChecked());
+    mPrefs->setAutoSaveInterval(mUi->autoSaveIntervalSpinBox->value());
+    auto font = mUi->novelFontPushButton->font();
+    mPrefs->setFontFamily(font.family());
+    mPrefs->setFontSize(font.pointSize());
+    mPrefs->setTheme(mUi->displayThemeComboBox->currentIndex());
+    mPrefs->setTypingSounds(mUi->typewriteSoundsCheckBox->isChecked());
+    mPrefs->setVoice(mUi->readAloudVoiceComboBox->currentIndex());
+}
+
+void PreferencesDialog::theme(int idx) {
+    switch (idx) {
+    case 0: mPrefs->setLightTheme();  break;
+    case 1: mPrefs->setDarkTheme();   break;
+    case 2: mPrefs->setSystemTheme(); break;
+    }
+}
+
+void PreferencesDialog::font() {
+    bool ok = false;
+    QFont font = QFontDialog::getFont(&ok, mUi->novelFontPushButton->font(), this, "Pick a font to use for your novel");
+    if (!ok) return;
+
+    mUi->novelFontPushButton->setFont(font);
+    mUi->novelFontPushButton->setText(QString("%1:%2").arg(font.family()).arg(font.pointSize()));
+
+    setTextEditFont(font);
+}
+
+void PreferencesDialog::loadAvailableVoices() {
+    if (mSpeech == nullptr) {
+        mUi->readAloudVoiceComboBox->clear();
+        mUi->readAloudVoiceComboBox->setDisabled(true);
+        return;
+    }
+
+    auto voices = mSpeech->availableVoices();
+    StringList availableVoices;
+    for (auto& voice: voices) availableVoices << voice.name();
+    availableVoices.sort();
+    mUi->readAloudVoiceComboBox->addItems(availableVoices.toQStringList());
+}
+
+void PreferencesDialog::setTextEditFont(QFont& font) {
+    mUi->textEdit->setCurrentFont(font);
+    QTextDocument* doc = mUi->textEdit->document();
+    Main::changeDocumentFont(doc, font);
+}
+
+void PreferencesDialog::setupConnections() {
+    connect(this,                      &PreferencesDialog::accepted,    this, &PreferencesDialog::saveChanges);
+    connect(mUi->novelFontPushButton,  &QPushButton::clicked,           this, &PreferencesDialog::font);
+    connect(mUi->displayThemeComboBox, &QComboBox::currentIndexChanged, this, &PreferencesDialog::theme);
 }

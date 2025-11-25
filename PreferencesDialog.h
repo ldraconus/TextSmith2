@@ -2,18 +2,41 @@
 
 #include <QDialog>
 
+#include <StringList.h>
+
+#include "Preferences.h"
+
 namespace Ui {
 class PreferencesDialog;
 }
 
-class PreferencesDialog : public QDialog
-{
+class QTextToSpeech;
+
+class PreferencesDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit PreferencesDialog(QWidget *parent = nullptr);
+    PreferencesDialog(Preferences& prefs, QWidget* parent = nullptr);
     ~PreferencesDialog();
 
+    Ui::PreferencesDialog* ui() { return mUi; }
+
+    static PreferencesDialog* ptr() { return sPreferencesDialog; }
+    static PreferencesDialog& ref() { return *ptr(); }
+
+public slots:
+    void font();
+    void saveChanges();
+    void theme(int idx);
+
 private:
-    Ui::PreferencesDialog *ui;
+    Preferences*           mPrefs;
+    QTextToSpeech*         mSpeech;
+    Ui::PreferencesDialog* mUi;
+
+    void loadAvailableVoices();
+    void setTextEditFont(QFont& font);
+    void setupConnections();
+
+    static PreferencesDialog* sPreferencesDialog;
 };

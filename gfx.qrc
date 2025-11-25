@@ -15,5 +15,25 @@
         <file>increseIndent.ico</file>
         <file>decreaseIndent.ico</file>
         <file>TextSmith2.ico</file>
+        <file>Ltbold.ico</file>
+        <file>LtCenter.ico</file>
+        <file>LtdecreaseIndent.ico</file>
+        <file>LtdeleteItem.ico</file>
+        <file>LtfullJustify.ico</file>
+        <file>LtincreseIndent.ico</file>
+        <file>Ltitalic.ico</file>
+        <file>Ltleftjustify.ico</file>
+        <file>LtmoveItemDown.ico</file>
+        <file>LtmoveItemOut.ico</file>
+        <file>LtmoveItemUp.ico</file>
+        <file>LtnewItem.ico</file>
+        <file>LtrightJustify.ico</file>
+        <file>Ltunderline.ico</file>
+    </qresource>
+    <qresource prefix="/imgs">
+        <file>Closed.png</file>
+        <file>Open.png</file>
+        <file>DarkClosed.png</file>
+        <file>DarkOpen.png</file>
     </qresource>
 </RCC>

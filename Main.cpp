@@ -7,22 +7,20 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QScreen>
+#include <QShowEvent>
 #include <QStandardPaths>
+#include <QStyleFactory>
+#include <QTextBlock>
+#include <QTextBlockFormat>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QTreeWidget>
 #include <QWindow>
 
-/*
-    textEdit->setStyleSheet(
-        "QTextEdit {"
-        "   background-color: #f0f8ff;"   // Light blue background
-        "   color: #003366;"              // Dark blue text
-        "   font-family: 'Courier New';"
-        "   font-size: 14px;"
-        "   border: 2px solid #003366;"
-        "   border-radius: 5px;"
-        "   padding: 5px;"
-        "}"
-    );
- */
+#include "PreferencesDialog.h"
+
+Main* Main::sMain = nullptr;
 
 void Main::closeEvent(QCloseEvent* ce) {
     if (mNovel.isChanged()) {
@@ -33,58 +31,16 @@ void Main::closeEvent(QCloseEvent* ce) {
                          "Warning!");
         if (mNovel.isChanged()) {
             ce->ignore();
-            mPrefs.save();
             return;
         }
     }
+    mPrefs.setWindowLocation(geometry());
     ce->accept();
 }
 
-Main::Main(QApplication* app, QWidget* parent)
-    : QMainWindow(parent)
-    , mApp(app)
-    , mAppDir(QApplication::applicationDirPath())
-    , mDocDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
-    , mLocalDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
-    , mUi(new Ui::Main) {
-    mUi->setupUi(this);
-
-    // set up three directories: App/Doc/Local
-    QDir().mkpath(mAppDir);
-    QDir().mkpath(mDocDir);
-    QDir().mkpath(mDocDir + "/TextSmith");
-    QDir().mkpath(mLocalDir);
-
-    mPrefs.load();
-    auto screens = QGuiApplication::screens();
-
-    // read preferences from Local
-    //  - last window place ment is also a preference item
-    //  - last font used
-    //  - reading voice
-    //  - typing sounds
-    //  - auto-save interval
-    //  - theme (dark/light/follow system)
-    // parse command line for novel to open
-    //  - any thing on the command line is aassumed to be a novel
-    //    or start with a blank novel
-
-    // [TBD] fit window rectangle to current display setup
-    setupConnections();
-}
-
-Main::~Main() {
-    delete mUi;
-}
-
-void Main::setupConnections() {
-    connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
-    connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
-    connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
-    connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
-    connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
-
-    connect(mUi->actionPrefereces, &QAction::triggered, this, &Main::preferencesAction);
+void Main::showEvent(QShowEvent* event) {
+    QMainWindow::showEvent(event);
+    fitWindow();
 }
 
 void Main::doExit() {
@@ -103,7 +59,8 @@ void Main::doNew() {
         }
     }
     mNovel.clear();
-    mNovel.noChanges();
+    mState.clear();
+    clearChanged();
     update();
 }
 
@@ -130,32 +87,56 @@ void Main::doOpen() {
     mNovel.clear();
     mNovel.open();
     mNovel.setFilename(filename);
-    mNovel.noChanges();
+    clearChanged();
     Json5Object obj = mNovel.extra();
     Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
     mPrefs.read(prefs);
     mCurrentNode = Item::hasNum(obj, "Current", -1);
-    // [TBD] get open/close states
+    Json5Array array = Item::hasArr(obj, "State");
+    mState.clear();
+    for (auto& state: array) {
+        if (!state.isArray()) continue;
+        auto& item = state.toArray();
+        int id = Item::hasNum(item, 0);
+        bool expanded = Item::hasBool(item, 1);
+        mState[id] = expanded;
+    }
     update();
 }
 
 void Main::doPreferences() {
-    //
+    PreferencesDialog dlg(mPrefs, this);
+    if (dlg.exec() == QDialog::Rejected) return;
+    updateFromPrefs();
 }
 
 void Main::doSave() {
-    QFileInfo info(mNovel.filename());
-    QString name = info.fileName();
-    mDocDir = info.absolutePath();
+    if (!mNovel.filename().isEmpty()) {
+        QFileInfo info(mNovel.filename());
+        QString name = info.fileName();
+        mDocDir = info.absolutePath();
+    }
+    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
     Json5Object extra;
+    // also store the position in the node
     extra["Current"] = mCurrentNode;
     mPrefs.setWindowLocation(geometry());
     extra["Prefs"] = mPrefs.write();
-    // [TBD] build map of item open/close states
+    Map<qlonglong, bool> byId;
+    mapTree(byId, mUi->treeWidget->topLevelItem(0));
+    mState = byId;
+    Json5Array state;
+    for (const auto& idState: byId) {
+        Json5Array item;
+        item.append(idState.first);
+        item.append(idState.second);
+        state.append(item);
+    }
+    extra["State"] = state;
     mNovel.setExtra(extra);
     if (mNovel.filename().isEmpty() && !doSaveAs()) return;
     else {
-        if (!mNovel.save()) mMsg.OK("Unabkle to save the file.\n\nTry and save it under a different name",
+        if (!mNovel.save()) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
                                     [this]() { doNothing(); },
                                     "Something unexpected has happened");
     }
@@ -169,36 +150,211 @@ bool Main::doSaveAs() {
     return true;
 }
 
+void Main::buildTree(Item* item, QTreeWidgetItem* branch, Map<qlonglong, bool>& byId) {
+    auto twItem = new QTreeWidgetItem(mUi->treeWidget);
+    twItem->setText(0, item->name());
+    twItem->setData(0, Qt::UserRole, item->id());
+
+    if (branch == nullptr) mUi->treeWidget->addTopLevelItem(twItem);
+    else branch->addChild(twItem);
+
+    auto& children = item->children();
+    for (auto& id: item->order()) buildTree(&children[id], twItem, byId);
+
+    if (byId.contains(item->id())) twItem->setExpanded(byId[item->id()]);
+    else twItem->setExpanded(true);
+}
+
+QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
+    if (tree == nullptr) return nullptr;
+    if (auto id = tree->data(0, Qt::UserRole).toLongLong(); id == node) return tree;
+    else if (tree->childCount()) {
+        for (auto i = 0; i < tree->childCount(); ++i) {
+            if (auto* found = findItem(tree->child(i), node); found != nullptr) return found;
+        }
+    }
+    return nullptr;
+}
+
 void Main::fitWindow() {
+    if (windowHandle() == nullptr) return;
+
     QRect geom = mPrefs.windowLocation();
+    QScreen* windowScreen = nullptr;
     if (geom.isValid()) {
-        QScreen* windowScreen = nullptr;
         for (auto* s: QGuiApplication::screens()) {
             if (s->geometry().intersects(geom)) {
                 windowScreen = s;
                 break;
             }
         }
-        if (windowScreen == nullptr) windowScreen = QGuiApplication::primaryScreen();
-        if (!windowScreen->geometry().contains(geom.topLeft())) geom.moveTo(windowScreen->geometry().topLeft());
-        if (!windowScreen->geometry().contains(geom.bottomRight())) geom.setSize(windowScreen->geometry().size());
-        QRect screenGeom = windowScreen->geometry();
+    }
+    bool needsCenter = false;
+    if ((needsCenter = windowScreen == nullptr)) windowScreen = QGuiApplication::primaryScreen();
+
+    if (!geom.isValid()) geom.setSize({ 1024, 800 });
+
+    QRect screenGeom = windowScreen->availableGeometry();
+    if (!windowScreen->geometry().contains(geom.topLeft())) geom.moveTo(screenGeom.topLeft());
+    if (!windowScreen->geometry().contains(geom.bottomRight())) geom.setSize(screenGeom.size());
+    if (needsCenter) {
         QPoint centerPos = screenGeom.center() - QPoint(geom.width() / 2, geom.height() / 2);
-        geom.setTopLeft(centerPos);
-        mPrefs.setWindowLocation(geom);
-        windowHandle()->setGeometry(geom);
+        geom.moveTopLeft(centerPos);
+    }
+    geom = geom.intersected(screenGeom);
+
+    move(geom.topLeft());
+    resize(geom.size());
+
+    QRect frame = frameGeometry();
+    if (!frame.contains(geom)) geom = geom.intersected(frame);
+
+    move(geom.topLeft());
+    resize(geom.size());
+
+    mPrefs.setWindowLocation(geom);
+}
+
+void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
+    auto id = item->data(0, Qt::UserRole).toLongLong();
+    bool open = item->isExpanded();
+    byId[id] = open;
+    for (int i = 0; i < item->childCount(); ++i) mapTree(byId, item->child(i));
+}
+
+void Main::update() { // new & open
+    QTreeWidget* tree = mUi->treeWidget;
+    tree->clear();
+    buildTree(&mNovel, nullptr, mState);
+
+    QTreeWidgetItem* item = findItem(tree->topLevelItem(0), mCurrentNode);
+    if (item != nullptr) tree->setCurrentItem(item);
+}
+
+void Main::updateFromPrefs() {
+    // if autoSave not stopped:
+    //   if autoSave off: set stop for the autoSave timer
+    // else:
+    //   if autoSave on: start the autoSaveTimer
+
+    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
+    mUi->textEdit->setCurrentFont(font);
+    mUi->textEdit->document()->setDefaultFont(font);
+    changeDocumentFont(mUi->textEdit->document(), QFont(font));
+    changeNovelFont(mCurrentNode, QFont(font));
+    switch (mPrefs.theme()) {
+    case 0: mPrefs.setLightTheme();  break;
+    case 1: mPrefs.setDarkTheme();   break;
+    case 2: mPrefs.setSystemTheme(); break;
     }
 }
 
-void Main::update() {
-    // update should only be called on major updates (like opening a file or starting up starting a new one)
+Main::Main(QApplication* app, QWidget* parent)
+    : QMainWindow(parent)
+    , mApp(app)
+    , mAppDir(QApplication::applicationDirPath())
+    , mDocDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+    , mLocalDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+    , mUi(new Ui::Main) {
+    sMain = this;
+    mUi->setupUi(this);
 
+    mNovel.init();
+    mCurrentNode = mNovel.id();
 
+    mIcons["newItemToolButton"] =        ":/icon/newItem.ico";
+    mIcons["deleteItemToolButton"] =     ":/icon/deleteItem.ico";
+    mIcons["upToolButton"] =             ":/icon/moveItemUp.ico";
+    mIcons["downToolButton"] =           ":/icon/moveItemDown.ico";
+    mIcons["outToolButton"] =            ":/icon/moveItemOut.ico";
+    mIcons["boldToolButton"] =           ":/icon/bold.ico";
+    mIcons["italicToolButton"] =         ":/icon/italic.ico";
+    mIcons["underlineToolButton"] =      ":/icon/underline.ico";
+    mIcons["leftJustifyToolButton"] =    ":/icon/leftjustify.ico";
+    mIcons["centerToolButton"] =         ":/icon/Center.ico";
+    mIcons["rightJustifyToolButton"] =   ":/icon/rightJustify.ico";
+    mIcons["fullJustifyToolButton"] =    ":/icon/fullJustify.ico";
+    mIcons["increaseIndentToolButton"] = ":/icon/increseIndent.ico";
+    mIcons["decreaseIndntToolButton"] =  ":/icon/decreaseIndent.ico";
 
+    // set up three directories: App/Doc/Local
+    QDir().mkpath(mAppDir);
+    QDir().mkpath(mDocDir);
+    QDir().mkpath(mDocDir + "/TextSmith");
+    QDir().mkpath(mLocalDir);
 
-    fitWindow();
-    // save/open/close state by ID
-    // clear the tree
-    // go through the novel an add to the tree w/open/close states. Set unknown IDs as open
-    // display the html of the current item
+    setupConnections();
+
+    mPrefs.load();
+    updateFromPrefs();
+
+    mUi->treeWidget->setColumnCount(1);
+
+    // parse command line for novel to open
+    //  - any thing on the command line is aassumed to be a novel
+    //    or start with a blank novel
+    StringList arguments { app->arguments() };
+    if (arguments.size() > 1) {
+        mNovel.setFilename(arguments[1]);
+        clearChanged();
+        doOpen();
+    } else doNew();
 }
+
+Main::~Main() {
+    delete mUi;
+}
+
+void Main::changeNovelFont(qlonglong skip, const QFont& font) {
+    mNovel.changeFont(skip, font);
+}
+
+void Main::setupConnections() {
+    connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
+    connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
+    connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
+    connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
+    connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
+
+    connect(mUi->actionPrefereces, &QAction::triggered, this, &Main::preferencesAction);
+}
+
+void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
+    QTextCursor cursor(doc);
+
+    struct Range {
+        int pos;
+        int len;
+    };
+    QVector<Range> ranges;
+
+    QFontMetrics metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 2 * lineHeight;
+    QTextBlockFormat toIndent;
+    toIndent.setTextIndent(indent);
+    toIndent.setBottomMargin(lineHeight);
+
+    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
+        for (QTextBlock::Iterator it = block.begin(); it != block.end(); ++it) {
+            if (!it.fragment().isValid()) continue;
+            const QTextFragment frag = it.fragment();
+            ranges.append({ frag.position(), frag.length() });
+        }
+
+        cursor.setPosition(block.position());
+        cursor.select(QTextCursor::BlockUnderCursor);
+        cursor.mergeBlockFormat(toIndent);
+    }
+
+    for (const auto& range: ranges) {
+        cursor.setPosition(range.pos);
+        cursor.setPosition(range.pos + range.len, QTextCursor::KeepAnchor);
+
+        QTextCharFormat fmt;
+        fmt.setFontFamilies({ font.family() });
+        fmt.setFontPointSize(font.pointSize());
+        cursor.mergeCharFormat(fmt);
+    }
+}
+

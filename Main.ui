@@ -29,6 +29,20 @@
         <family>Lucida Sans Unicode</family>
        </font>
       </property>
+      <property name="styleSheet">
+       <string notr="true">QSplitter::handle {
+    background: #666;
+}
+QSplitter::handle:horizontal {
+    width: 4px;
+}
+QSplitter::handle:vertical {
+    height: 4px;
+}
+QSplitter::handle:hover {
+        background-color: #888; 
+    }</string>
+      </property>
       <property name="orientation">
        <enum>Qt::Orientation::Horizontal</enum>
       </property>
@@ -94,7 +108,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="oolButton">
+            <widget class="QToolButton" name="deleteItemToolButton">
              <property name="text">
               <string/>
              </property>
@@ -417,6 +431,12 @@
          <widget class="TextEdit" name="textEdit">
           <property name="contextMenuPolicy">
            <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QTextEdit QTextBlock {
+   text-indent: 4em;
+   margin-bottom: 1em;
+}</string>
           </property>
           <property name="frameShape">
            <enum>QFrame::Shape::NoFrame</enum>

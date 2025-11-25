@@ -1,67 +1,216 @@
 #include "Preferences.h"
+#include "Main.h"
 #include "Novel.h"
+#include "PreferencesDialog.h"
+#include "ui_Main.h"
+#include "ui_PreferencesDialog.h"
 
+#include <QApplication>
 #include <QSettings>
+#include <QStyle>
+#include <QStyleFactory>
 
 #include <Json5.h>
 #include <StringList.h>
 
+constexpr auto Company          { "SoftwareOnHand" };
+constexpr auto Program          { "TextSmith" };
+constexpr auto AutoSave         { "AutoSave" };
+constexpr auto AutoSaveInterval { "AutoSave Interval" };
+constexpr auto FontFamily       { "FontFasmily" };
+constexpr auto FontSize         { "FontSize" };
+constexpr auto Theme            { "Theme" };
+constexpr auto TypingSounds     { "TypingSounds" };
+constexpr auto Voice            { "Voice" };
+constexpr auto WindowLoc        { "WindowLoc" };
+
+constexpr auto DefaultFont      { "Segoe UI" };
+constexpr auto DefaultFontSize  { 9 };
+constexpr auto DefaultInterval  { 5 * 60 };
+constexpr auto DefaultSave      { false };
+constexpr auto DefaultSounds    { false };
+constexpr auto DefaultTheme     { 2 };
+constexpr auto DefaultVoice     { 0 };
+
 bool Preferences::load() {
-    QSettings settings("SoftwareOnHand", "TextSmith");
-    mAutoSave = settings.value("AutoSave", "false").toBool();
-    mAutoSaveInterval = settings.value("AutoSave Interval", "300").toLongLong();
-    mFontFamily = settings.value("FontFamily", "Sehoe UI").toString();
-    mFontSize = settings.value("FontSize", "9").toInt();
-    mTheme = settings.value("Theme", 3).toInt();
-    mTypingSounds = settings.value("TypingSounds", "false").toBool();
-    mVoice = settings.value("Voice", "0").toInt();
-    mWindow = settings.value("Window").toRect();
+    QSettings settings(Company, Program );
+    mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
+    mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
+    mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
+    mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
+    mTheme =            settings.value(Theme,            DefaultTheme).toInt();
+    mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
+    mVoice =            settings.value(Voice,            DefaultVoice).toInt();
+    mWindow =           settings.value(WindowLoc,        { }).toRect();
+    if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
     return true;
 }
 
+QString Preferences::newPath(const QString& path) {
+    StringList parts(path.split("/"));
+    int last = parts.count() - 1;
+    parts[last] = "Lt" + parts[last];
+    return parts.join("/");
+}
+
 bool Preferences::read(Json5Object& obj) {
-    mAutoSave = Item::hasBool(obj, "AutoSave", false);
-    mAutoSaveInterval = Item::hasNum(obj, "AutoSaveInterval", 300);
-    mFontFamily = Item::hasStr(obj, "FontFamily", "Segoe UI");
-    mFontSize = Item::hasNum(obj, "FontSize", 9);
-    mTypingSounds = Item::hasBool(obj, "TypingSounds", false);
-    mVoice = Item::hasBool(obj, "Voice", false);
-    Json5Array arr = Item::hasArr(obj, "Window", {});
+    mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
+    mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, DefaultInterval);
+    mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
+    mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
+    mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
+    mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
+    mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
+    Json5Array arr =    Item::hasArr(obj,  WindowLoc,        { });
     QRect geom;
     geom.setX(Item::hasNum(arr, 0, 0));
     geom.setY(Item::hasNum(arr, 1, 0));
     geom.setWidth(Item::hasNum(arr, 2, -1));
     geom.setHeight(Item::hasNum(arr, 3, -1));
     mWindow = geom;
+    if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
    return true;
 }
 
 bool Preferences::save() {
-    QSettings settings("SoftwareOnHand", "TextSmith");
-    settings.setValue("AutoSave", mAutoSave);
-    settings.setValue("AutoSaveInterval", mAutoSaveInterval);
-    settings.setValue("FontFamily", mFontFamily);
-    settings.setValue("FontSize", mFontSize);
-    settings.setValue("TypingSounds", mTypingSounds);
-    settings.setValue("Voice", mVoice);
-    settings.setValue("Window", mWindow);
+    QSettings settings(Company, Program);
+    settings.setValue(AutoSave,         mAutoSave);
+    settings.setValue(AutoSaveInterval, mAutoSaveInterval);
+    settings.setValue(FontFamily,       mFontFamily);
+    settings.setValue(FontSize,         mFontSize);
+    settings.setValue(Theme,            mTheme);
+    settings.setValue(TypingSounds,     mTypingSounds);
+    settings.setValue(Voice,            mVoice);
+    settings.setValue(WindowLoc,        mWindow);
     return true;
+}
+void Preferences::setDarkTheme() {
+    QPalette darkPalette;
+    darkPalette.setColor(QPalette::Window, QColor(53,53,53));
+    darkPalette.setColor(QPalette::WindowText, Qt::white);
+    darkPalette.setColor(QPalette::Base, QColor(42,42,42));
+    darkPalette.setColor(QPalette::AlternateBase, QColor(66,66,66));
+    darkPalette.setColor(QPalette::ToolTipBase, Qt::black);
+    darkPalette.setColor(QPalette::ToolTipText, Qt::white);
+    darkPalette.setColor(QPalette::Mid, QColor(80, 80, 80));
+    darkPalette.setColor(QPalette::Dark, QColor(35, 35, 35));
+    darkPalette.setColor(QPalette::Button, QColor(53,53,53));
+    darkPalette.setColor(QPalette::ButtonText, Qt::white);
+    darkPalette.setColor(QPalette::BrightText, Qt::red);
+    darkPalette.setColor(QPalette::Highlight, QColor(142,45,197).lighter());
+    darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+    mApp->setPalette(darkPalette);
+    if (Main::ptr() != nullptr) {
+        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::branch:has-children:!has-siblings:closed,\n"
+                                                    "QTreeView::branch:closed:has-children:has-siblings  {\n"
+                                                    "    border-image: none;\n"
+                                                    "    image: url(:/imgs/DarkClosed.png);\n"
+                                                    "}\n"
+                                                    "\n"
+                                                    "QTreeView::branch:open:has-children:!has-siblings,\n"
+                                                    "QTreeView::branch:open:has-children:has-siblings  {\n"
+                                                    "    border-image: none;\n"
+                                                    "    image: url(:/imgs/DarkOpen.png);\n"
+                                                    "}");
+    }
+    Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
+                                              "    color: white;\n"
+                                              "    background-color: black;\n"
+                                              "}");
+    if (PreferencesDialog::ptr() != nullptr) {
+        PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
+                                                               "    color: white;\n"
+                                                               "    background-color: black;\n"
+                                                               "}");
+    }
+    resetIcons(true);
+}
+
+void Preferences::setLightTheme() {
+    QPalette lightPalette;
+    lightPalette.setColor(QPalette::Window, QColor(180,180,180));
+    lightPalette.setColor(QPalette::WindowText, Qt::black);
+    lightPalette.setColor(QPalette::Base, QColor(190,190,190));
+    lightPalette.setColor(QPalette::AlternateBase, QColor(128,128,128));
+    lightPalette.setColor(QPalette::ToolTipBase, Qt::white);
+    lightPalette.setColor(QPalette::ToolTipText, Qt::black);
+    lightPalette.setColor(QPalette::Mid, QColor(135, 135, 135));
+    lightPalette.setColor(QPalette::Dark, QColor(100, 100, 100));
+    lightPalette.setColor(QPalette::Button, QColor(180,180,180));
+    lightPalette.setColor(QPalette::ButtonText, Qt::black);
+    lightPalette.setColor(QPalette::BrightText, Qt::red);
+    lightPalette.setColor(QPalette::Highlight, QColor(120,120,120).lighter());
+    lightPalette.setColor(QPalette::HighlightedText, Qt::white);
+    mApp->setPalette(lightPalette);
+    if (Main::ptr() != nullptr) {
+        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::branch:has-children:!has-siblings:closed,\n"
+                                                    "QTreeView::branch:closed:has-children:has-siblings  {\n"
+                                                    "    border-image: none;\n"
+                                                    "    image: url(:/imgs/Closed.png);\n"
+                                                    "}\n"
+                                                    "\n"
+                                                    "QTreeView::branch:open:has-children:!has-siblings,\n"
+                                                    "QTreeView::branch:open:has-children:has-siblings  {\n"
+                                                    "    border-image: none;\n"
+                                                    "    image: url(:/imgs/Open.png);\n"
+                                                    "}");
+        Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
+                                                  "    color: black;\n"
+                                                  "    background-color: white;\n"
+                                                  "}");
+    }
+    if (PreferencesDialog::ptr() != nullptr) {
+        PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
+                                                               "    color: black;\n"
+                                                               "    background-color: white;\n"
+                                                               "}");
+    }
+    resetIcons(false);
+}
+
+bool Preferences::isDark() {
+    QSettings s("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                QSettings::NativeFormat);
+    return s.value("AppsUseLightTheme", 1).toInt() == 0;
+}
+
+void Preferences::resetIcons(bool isDark) {
+    for (auto* button: Main::ref().findChildren<QToolButton*>()) {
+        QString path = Main::ref().getIconPath(button->objectName());
+        if (mWasDark != isDark) path = newPath(path);
+        QPixmap pm(path);
+        QIcon icon;
+        icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
+        button->setIcon(icon);
+        button->setIconSize(QSize(32, 32));
+        button->setStyleSheet("QToolButton {\n"
+                              "    background-color: palette(Button);\n"
+                              "}");
+    }
+}
+
+void Preferences::setSystemTheme() {
+    if (isDark()) setDarkTheme();
+    else setLightTheme();
+
+    resetIcons(isDark());
 }
 
 Json5Object Preferences::write() {
     Json5Object obj;
-    obj["AutoSave"] = mAutoSave;
-    obj["AutoSaveInterval"] = mAutoSaveInterval;
-    obj["FontFamily"] = mFontFamily;
-    obj["FontSize"] = mFontSize;
-    obj["TypingSounds"] = mTypingSounds;
-    obj["Voice"] = mVoice;
+    obj[AutoSave] =         mAutoSave;
+    obj[AutoSaveInterval] = mAutoSaveInterval;
+    obj[FontFamily] =       mFontFamily;
+    obj[FontSize] =         mFontSize;
+    obj[Theme] =            mTheme;
+    obj[TypingSounds] =     mTypingSounds;
+    obj[Voice] =            mVoice;
     Json5Array arr;
-    arr[0] = qlonglong(mWindow.x());
-    arr[1] = qlonglong(mWindow.y());
-    arr[2] = qlonglong(mWindow.width());
-    arr[3] = qlonglong(mWindow.height());
-    obj["Window"] = arr;
+    arr.append(qlonglong(mWindow.x()));
+    arr.append(qlonglong(mWindow.y()));
+    arr.append(qlonglong(mWindow.width()));
+    arr.append(qlonglong(mWindow.height()));
+    obj[WindowLoc] =        arr;
 
     return obj;
 }

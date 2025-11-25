@@ -12,17 +12,28 @@ public:
     explicit Item(Json5Object& obj);
 
     virtual void clear();
-    auto children() { return mChildren; }
-    auto id()       { return mID; }
-    auto name()     { return mName; }
+    virtual void init();
 
-    void addTag(const QString& tag) { if (!hasTag(tag)) mTags.append(tag); }
-    bool hasTag(const QString& tag) { return mTags.contains(tag, Qt::CaseInsensitive); }
+    auto& children()   { return mChildren; }
+    auto  id() const   { return mID; }
+    auto  name() const { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
+    auto& order()      { return mOrder; }
+
+    void addTag(const QString& tag)       { if (!hasTag(tag)) mTags.append(tag); }
+    bool hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
 
     bool isEmpty() const { return mChildren.empty(); }
     bool isNull() const  { return isEmpty() && mName.isEmpty() && mHtml.isEmpty(); }
 
+    void changeFont(qlonglong skip, const QFont& font);
+
     void clearTag(const QString& tag);
+
+    Item* findItem(qlonglong id);
+
+    void setName(const QString& n) { mName = n; }
+    void addChild(const Item& i)   { mChildren[i.id()] = i; mOrder.append(i.id()); }
+    void setHtml(const QString& h) { mHtml = h; }
 
     virtual Json5Object toObject();
 
@@ -39,7 +50,7 @@ public:
 
 protected:
     bool fromObject(Json5Object& obj);
-
+    void newHtml();
     static qsizetype nextID() { return sNextID++; }
 
 private:
@@ -72,8 +83,11 @@ public:
     void        setFilename(const QString& f) { mFilename = f; change(); }
 
     void clear() override;
+    void init() override;
+
     bool open();
     bool save();
+    void setHtml(qlonglong node, const QString& html);
 
 private:
     Json5Object mExtra;
