@@ -19,6 +19,7 @@ constexpr auto AutoSave         { "AutoSave" };
 constexpr auto AutoSaveInterval { "AutoSave Interval" };
 constexpr auto FontFamily       { "FontFasmily" };
 constexpr auto FontSize         { "FontSize" };
+constexpr auto MainSplitter     { "MainSplitter" };
 constexpr auto Theme            { "Theme" };
 constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto Voice            { "Voice" };
@@ -27,17 +28,21 @@ constexpr auto WindowLoc        { "WindowLoc" };
 constexpr auto DefaultFont      { "Segoe UI" };
 constexpr auto DefaultFontSize  { 9 };
 constexpr auto DefaultInterval  { 5 * 60 };
+const     auto DefaultSplitter  { QJsonArray() };
 constexpr auto DefaultSave      { false };
 constexpr auto DefaultSounds    { false };
 constexpr auto DefaultTheme     { 2 };
 constexpr auto DefaultVoice     { 0 };
 
 bool Preferences::load() {
-    QSettings settings(Company, Program );
+    QSettings settings(Company, Program);
     mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
     mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
     mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
+    QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
+    mMainSplitter.clear();
+    for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
     mVoice =            settings.value(Voice,            DefaultVoice).toInt();
@@ -59,6 +64,7 @@ bool Preferences::read(Json5Object& obj) {
     mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
     mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
     mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
+    mMainSplitter =     Item::hasArr(obj,  MainSplitter,     { });
     mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
     mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
     Json5Array arr =    Item::hasArr(obj,  WindowLoc,        { });
@@ -69,7 +75,13 @@ bool Preferences::read(Json5Object& obj) {
     geom.setHeight(Item::hasNum(arr, 3, -1));
     mWindow = geom;
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
-   return true;
+    arr = Item::hasArr(obj, MainSplitter, { });
+    mMainSplitter.clear();
+    for (auto& i: arr) {
+        if (!i.isNumber()) continue;
+        mMainSplitter.append(i.toInt());
+    }
+    return true;
 }
 
 bool Preferences::save() {
@@ -78,6 +90,9 @@ bool Preferences::save() {
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
     settings.setValue(FontFamily,       mFontFamily);
     settings.setValue(FontSize,         mFontSize);
+    QJsonArray arr;
+    for (auto& a: mMainSplitter) arr.append(a.toInt());
+    settings.setValue(MainSplitter,     arr);
     settings.setValue(Theme,            mTheme);
     settings.setValue(TypingSounds,     mTypingSounds);
     settings.setValue(Voice,            mVoice);
@@ -202,6 +217,7 @@ Json5Object Preferences::write() {
     obj[AutoSaveInterval] = mAutoSaveInterval;
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
+    obj[MainSplitter] =     mMainSplitter;
     obj[Theme] =            mTheme;
     obj[TypingSounds] =     mTypingSounds;
     obj[Voice] =            mVoice;

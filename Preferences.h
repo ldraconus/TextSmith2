@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QApplication>
+#include <QJsonArray>
 #include <QObject>
 #include <QPalette>
 #include <QPushButton>
@@ -27,20 +28,22 @@ public:
     void        setSystemTheme();
     Json5Object write();
 
-    bool      autoSave()          { return mAutoSave; }
-    qlonglong autoSaveIntyerval() { return mAutoSaveInterval; }
-    QString   fontFamily()        { return mFontFamily; }
-    qlonglong fontSize()          { return mFontSize; }
-    qlonglong theme()             { return mTheme; }
-    bool      typingSounds()      { return mTypingSounds; }
-    qlonglong voice()             { return mVoice; }
-    QRect     windowLocation()    { return mWindow; }
+    bool       autoSave()          { return mAutoSave; }
+    qlonglong  autoSaveIntyerval() { return mAutoSaveInterval; }
+    QString    fontFamily()        { return mFontFamily; }
+    qlonglong  fontSize()          { return mFontSize; }
+    Json5Array mainSplitter()      { return mMainSplitter; }
+    qlonglong  theme()             { return mTheme; }
+    bool       typingSounds()      { return mTypingSounds; }
+    qlonglong  voice()             { return mVoice; }
+    QRect      windowLocation()    { return mWindow; }
 
     void setApplicaiton(QApplication* a)  { mApp = a; }
     void setAutoSave(bool a)              { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i) { mAutoSaveInterval = i; }
     void setFontFamily(const QString& f)  { mFontFamily = f; }
     void setFontSize(qlonglong s)         { mFontSize = s; }
+    void setMainSplitter(Json5Array& s)   { mMainSplitter = s; }
     void setTheme(qlonglong t)            { mTheme = t; }
     void setTypingSounds(bool t)          { mTypingSounds = t; }
     void setVoice(qlonglong v)            { mVoice = v; }
@@ -52,6 +55,7 @@ private:
     qlonglong     mAutoSaveInterval { 5 * 60 };
     QString       mFontFamily       { "Segoe UI" };
     qlonglong     mFontSize         { 9 };
+    Json5Array    mMainSplitter     { };
     qlonglong     mTheme            { 2 };
     bool          mTypingSounds     { false };
     qlonglong     mVoice            { 0 };

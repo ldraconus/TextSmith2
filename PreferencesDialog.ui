@@ -64,6 +64,9 @@
         <property name="suffix">
          <string> Minutes</string>
         </property>
+        <property name="minimum">
+         <number>5</number>
+        </property>
         <property name="value">
          <number>5</number>
         </property>

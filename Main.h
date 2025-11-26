@@ -2,6 +2,9 @@
 
 #include <QFont>
 #include <QMainWindow>
+#include <QTimer>
+
+#include <atomic>
 
 #include <StringList.h>
 #include <Message.h>
@@ -28,15 +31,20 @@ class Main: public QMainWindow {
 private:
     QApplication*         mApp;
     QString               mAppDir;
+    Map<qlonglong, bool>  mById;
+    Novel                 mCopy;
     qlonglong             mCurrentNode { -1 };
     QString               mDocDir;
+    QRect                 mGeom;
     Map<QString, QString> mIcons;
     QString               mLocalDir;
     Message               mMsg;
     Novel                 mNovel;
     qlonglong             mPosition;
+    std::atomic<bool>     mSaving { false };
     Map<qlonglong, bool>  mState;
     Preferences           mPrefs;
+    QTimer                mTimer;
     Ui::Main*             mUi;
 
     static Main* sMain;
@@ -48,18 +56,23 @@ private:
     void showEvent(QShowEvent* event) override;
 
     void doExit();
+    void doFullScreen();
     void doNew();
     void doOpen();
     void doPreferences();
     void doSave();
     bool doSaveAs();
 
+    static constexpr bool NoUi = true;
+
     void             buildTree(Item* item, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
+    void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     void             update();
     void             updateFromPrefs();
+    void             updateHtml();
 
 public:
     Main(QApplication* app, QWidget* parent = nullptr);
@@ -85,4 +98,6 @@ public slots:
     void saveAsAction() { doSaveAs(); }
 
     void preferencesAction() { doPreferences(); }
+
+    void fullScreenAction() { doFullScreen(); }
 };

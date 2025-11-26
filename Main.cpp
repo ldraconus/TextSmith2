@@ -15,10 +15,13 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QThread>
 #include <QTreeWidget>
 #include <QWindow>
 
 #include "PreferencesDialog.h"
+
+constexpr qlonglong second = 1000;
 
 Main* Main::sMain = nullptr;
 
@@ -47,6 +50,13 @@ void Main::doExit() {
     close();
 }
 
+void Main::doFullScreen() {
+    // copy the html of the textEdit to the textEdit of the fullScreen
+    // set the position of the textEdit to fullScreen textEdit
+    // start the fullScreen with the Preference
+    // copy the html of the fullScreen textEdit to the textEdit
+}
+
 void Main::doNew() {
     if (mNovel.isChanged()) {
         if (mNovel.isChanged()) {
@@ -59,6 +69,7 @@ void Main::doNew() {
         }
     }
     mNovel.clear();
+    mPosition = 0;
     mState.clear();
     clearChanged();
     update();
@@ -112,36 +123,12 @@ void Main::doPreferences() {
 }
 
 void Main::doSave() {
-    if (!mNovel.filename().isEmpty()) {
-        QFileInfo info(mNovel.filename());
-        QString name = info.fileName();
-        mDocDir = info.absolutePath();
-    }
+    if (mSaving.exchange(true)) return;
     mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
-    Json5Object extra;
-    // also store the position in the node
-    extra["Current"] = mCurrentNode;
-    extra["Position"] = qlonglong(mUi->textEdit->textCursor().position());
-    mPrefs.setWindowLocation(geometry());
-    extra["Prefs"] = mPrefs.write();
     Map<qlonglong, bool> byId;
     mapTree(byId, mUi->treeWidget->topLevelItem(0));
-    mState = byId;
-    Json5Array state;
-    for (const auto& idState: byId) {
-        Json5Array item;
-        item.append(idState.first);
-        item.append(idState.second);
-        state.append(item);
-    }
-    extra["State"] = state;
-    mNovel.setExtra(extra);
-    if (mNovel.filename().isEmpty() && !doSaveAs()) return;
-    else {
-        if (!mNovel.save()) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
-                                    [this]() { doNothing(); },
-                                    "Something unexpected has happened");
-    }
+    save(mNovel, byId, mUi->textEdit->textCursor().position(), geometry());
+    mSaving = false;
 }
 
 bool Main::doSaveAs() {
@@ -224,35 +211,75 @@ void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     for (int i = 0; i < item->childCount(); ++i) mapTree(byId, item->child(i));
 }
 
-void Main::update() { // new & open
+void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
+    if (novel.filename().isEmpty() && !noUi) return;
+    QFileInfo info(mNovel.filename());
+    QString name = info.fileName();
+    mDocDir = info.absolutePath();
+    Json5Object extra;
+    extra["Current"] = mCurrentNode;
+    extra["Position"] = qlonglong(pos);
+    mPrefs.setWindowLocation(geom);
+    extra["Prefs"] = mPrefs.write();
+    mState = byId;
+    Json5Array state;
+    for (const auto& idState: byId) {
+        Json5Array item;
+        item.append(idState.first);
+        item.append(idState.second);
+        state.append(item);
+    }
+    extra["State"] = state;
+    mNovel.setExtra(extra);
+    if (mNovel.filename().isEmpty() && !doSaveAs()) return;
+    else {
+        if (!mNovel.save() && !noUi) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
+                                             [this]() { doNothing(); },
+                                             "Something unexpected has happened");
+    }
+
+}
+
+void Main::update() { // new, open
     QTreeWidget* tree = mUi->treeWidget;
     tree->clear();
     buildTree(&mNovel, nullptr, mState);
+    updateHtml();
+}
 
+void Main::updateFromPrefs() {
+    if (mPrefs.autoSave()) mTimer.start(mPrefs.autoSaveIntyerval() * second);
+    else mTimer.stop();
+
+    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
+    mUi->textEdit->setCurrentFont(font);
+    mUi->textEdit->document()->setDefaultFont(font);
+    changeDocumentFont(mUi->textEdit->document(), QFont(font));
+    mUi->textEdit->ensureCursorVisible();
+    changeNovelFont(mCurrentNode, QFont(font));
+
+    switch (mPrefs.theme()) {
+    case 0: mPrefs.setLightTheme();  break;
+    case 1: mPrefs.setDarkTheme();   break;
+    case 2: mPrefs.setSystemTheme(); break;
+    }
+
+    if (mPrefs.mainSplitter().size() != 0) {
+        QList<int> arr;
+        for (auto& m: mPrefs.mainSplitter()) arr.append(m.toInt());
+        mUi->splitter->setSizes(arr);
+    }
+}
+
+void Main::updateHtml() { // update, and post-fullscreen
+    QTreeWidget* tree = mUi->treeWidget;
     QTreeWidgetItem* item = findItem(tree->topLevelItem(0), mCurrentNode);
     if (item != nullptr) {
         tree->setCurrentItem(item);
         Item* item = mNovel.findItem(mCurrentNode);
         mUi->textEdit->setHtml(item->html());
         mUi->textEdit->textCursor().position();
-    }
-}
-
-void Main::updateFromPrefs() {
-    // if autoSave not stopped:
-    //   if autoSave off: set stop for the autoSave timer
-    // else:
-    //   if autoSave on: start the autoSaveTimer
-
-    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
-    mUi->textEdit->setCurrentFont(font);
-    mUi->textEdit->document()->setDefaultFont(font);
-    changeDocumentFont(mUi->textEdit->document(), QFont(font));
-    changeNovelFont(mCurrentNode, QFont(font));
-    switch (mPrefs.theme()) {
-    case 0: mPrefs.setLightTheme();  break;
-    case 1: mPrefs.setDarkTheme();   break;
-    case 2: mPrefs.setSystemTheme(); break;
+        mUi->textEdit->ensureCursorVisible();
     }
 }
 
@@ -262,6 +289,7 @@ Main::Main(QApplication* app, QWidget* parent)
     , mAppDir(QApplication::applicationDirPath())
     , mDocDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
     , mLocalDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+    , mTimer(this)
     , mUi(new Ui::Main) {
     sMain = this;
     mUi->setupUi(this);
@@ -327,6 +355,20 @@ void Main::setupConnections() {
     connect(mUi->actionPrefereces, &QAction::triggered, this, &Main::preferencesAction);
 
     mUi->actionRead_To_Me->setShortcut(QKeySequence("Alt+R"));
+
+    connect(&mTimer, &QTimer::timeout, this, [this]() {
+                if (mSaving.exchange(true)) return;
+                mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
+                mCopy = mNovel;
+                mapTree(mById, mUi->treeWidget->topLevelItem(0));
+                mGeom = geometry();
+                QThread* thread = QThread::create([this]() {
+                                                               save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
+                                                               mSaving = false;
+                                                           });
+                connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+                thread->start();
+            });
 }
 
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {

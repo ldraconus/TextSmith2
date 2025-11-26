@@ -19,20 +19,27 @@ PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     loadAvailableVoices();
     QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
     setTextEditFont(font);
+    mUi->autoSaveCheckBox->setCheckState(mPrefs->autoSave() ? Qt::Checked : Qt::Unchecked);
+    autoSaveChanged(mUi->autoSaveCheckBox->checkState());
     mUi->novelFontPushButton->setFont(font);
     mUi->novelFontPushButton->setText(QString("%1:%2").arg(mPrefs->fontFamily()).arg(mPrefs->fontSize()));
     mUi->displayThemeComboBox->setCurrentIndex(mPrefs->theme());
     theme(mPrefs->theme());
+
     setupConnections();
 
     // read from prefs and set the values in the dialog
-    if (mSpeech) mUi->readAloudVoiceComboBox->setCurrentIndex(mPrefs->voice());
 }
 
 PreferencesDialog::~PreferencesDialog() {
     mPrefs->setAutoSave(mUi->autoSaveCheckBox->isChecked());
     delete mUi;
     delete mSpeech;
+}
+
+void PreferencesDialog::autoSaveChanged(Qt::CheckState) {
+    bool state = mUi->autoSaveCheckBox->isChecked();
+    mUi->autoSaveIntervalSpinBox->setEnabled(state);
 }
 
 void PreferencesDialog::saveChanges() {
@@ -77,6 +84,7 @@ void PreferencesDialog::loadAvailableVoices() {
     for (auto& voice: voices) availableVoices << voice.name();
     availableVoices.sort();
     mUi->readAloudVoiceComboBox->addItems(availableVoices.toQStringList());
+    mUi->readAloudVoiceComboBox->setCurrentIndex(mPrefs->voice());
 }
 
 void PreferencesDialog::setTextEditFont(QFont& font) {
@@ -87,6 +95,7 @@ void PreferencesDialog::setTextEditFont(QFont& font) {
 
 void PreferencesDialog::setupConnections() {
     connect(this,                      &PreferencesDialog::accepted,    this, &PreferencesDialog::saveChanges);
+    connect(mUi->autoSaveCheckBox,     &QCheckBox::checkStateChanged,   this, &PreferencesDialog::autoSaveChanged);
     connect(mUi->novelFontPushButton,  &QPushButton::clicked,           this, &PreferencesDialog::font);
     connect(mUi->displayThemeComboBox, &QComboBox::currentIndexChanged, this, &PreferencesDialog::theme);
 }

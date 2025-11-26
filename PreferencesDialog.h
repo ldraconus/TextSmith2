@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QCheckBox>
 #include <QDialog>
 
 #include <StringList.h>
@@ -25,6 +26,7 @@ public:
     static PreferencesDialog& ref() { return *ptr(); }
 
 public slots:
+    void autoSaveChanged(Qt::CheckState);
     void font();
     void saveChanges();
     void theme(int idx);

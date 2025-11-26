@@ -13,6 +13,7 @@ RC_FILE = appicon.rc
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    FullScreenDialog.cpp \
     Main.cpp \
     Novel.cpp \
     Preferences.cpp \
@@ -21,6 +22,7 @@ SOURCES += \
     TextEdit.cpp
 
 HEADERS += \
+    FullScreenDialog.h \
     Main.h \
     Novel.h \
     Preferences.h \
@@ -28,6 +30,7 @@ HEADERS += \
     TextEdit.h
 
 FORMS += \
+    FullScreenDialog.ui \
     Main.ui \
     PreferencesDialog.ui
 
