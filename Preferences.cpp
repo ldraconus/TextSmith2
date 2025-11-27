@@ -20,6 +20,7 @@ constexpr auto AutoSaveInterval { "AutoSave Interval" };
 constexpr auto FontFamily       { "FontFasmily" };
 constexpr auto FontSize         { "FontSize" };
 constexpr auto MainSplitter     { "MainSplitter" };
+constexpr auto Position         { "Position" };
 constexpr auto Theme            { "Theme" };
 constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto Voice            { "Voice" };
@@ -28,6 +29,7 @@ constexpr auto WindowLoc        { "WindowLoc" };
 constexpr auto DefaultFont      { "Segoe UI" };
 constexpr auto DefaultFontSize  { 9 };
 constexpr auto DefaultInterval  { 5 * 60 };
+constexpr auto DefaultPosition  { 0 };
 const     auto DefaultSplitter  { QJsonArray() };
 constexpr auto DefaultSave      { false };
 constexpr auto DefaultSounds    { false };
@@ -43,6 +45,7 @@ bool Preferences::load() {
     QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
     mMainSplitter.clear();
     for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
+    mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
     mVoice =            settings.value(Voice,            DefaultVoice).toInt();
@@ -65,6 +68,7 @@ bool Preferences::read(Json5Object& obj) {
     mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
     mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
     mMainSplitter =     Item::hasArr(obj,  MainSplitter,     { });
+    mPosition =         Item::hasNum(obj,  Position,         DefaultPosition);
     mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
     mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
     Json5Array arr =    Item::hasArr(obj,  WindowLoc,        { });
@@ -93,6 +97,7 @@ bool Preferences::save() {
     QJsonArray arr;
     for (auto& a: mMainSplitter) arr.append(a.toInt());
     settings.setValue(MainSplitter,     arr);
+    settings.setValue(Position,         mPosition);
     settings.setValue(Theme,            mTheme);
     settings.setValue(TypingSounds,     mTypingSounds);
     settings.setValue(Voice,            mVoice);
@@ -112,11 +117,14 @@ void Preferences::setDarkTheme() {
     darkPalette.setColor(QPalette::Button, QColor(53,53,53));
     darkPalette.setColor(QPalette::ButtonText, Qt::white);
     darkPalette.setColor(QPalette::BrightText, Qt::red);
-    darkPalette.setColor(QPalette::Highlight, QColor(142,45,197).lighter());
+    darkPalette.setColor(QPalette::Highlight, QColor(53,53,53).lighter());
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
     mApp->setPalette(darkPalette);
     if (Main::ptr() != nullptr) {
-        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::branch:has-children:!has-siblings:closed,\n"
+        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView {\n"
+                                                    "    color: white;\n"
+                                                    "    background-color: #2A2A2A;\n"
+                                                    "}""QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings  {\n"
                                                     "    border-image: none;\n"
                                                     "    image: url(:/imgs/DarkClosed.png);\n"
@@ -132,6 +140,10 @@ void Preferences::setDarkTheme() {
                                               "    color: white;\n"
                                               "    background-color: black;\n"
                                               "}");
+    Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
+                                             "    color: white;\n"
+                                             "    background-color: #2A2A2A"
+                                             "}");
     if (PreferencesDialog::ptr() != nullptr) {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                                "    color: white;\n"
@@ -154,11 +166,17 @@ void Preferences::setLightTheme() {
     lightPalette.setColor(QPalette::Button, QColor(180,180,180));
     lightPalette.setColor(QPalette::ButtonText, Qt::black);
     lightPalette.setColor(QPalette::BrightText, Qt::red);
-    lightPalette.setColor(QPalette::Highlight, QColor(120,120,120).lighter());
-    lightPalette.setColor(QPalette::HighlightedText, Qt::white);
+    lightPalette.setColor(QPalette::Highlight, QColor(120,120,120).darker());
+    lightPalette.setColor(QPalette::HighlightedText, Qt::darkGray);
     mApp->setPalette(lightPalette);
     if (Main::ptr() != nullptr) {
-        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::branch:has-children:!has-siblings:closed,\n"
+        Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::item {\n"
+                                                    "    color: black;\n"
+                                                    "    background-color: #B4B4B4;\n"
+                                                    "    selection-color: black;\n"
+                                                    "    selection-background-color: white;\n"
+                                                    "}"
+                                                    "QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings  {\n"
                                                     "    border-image: none;\n"
                                                     "    image: url(:/imgs/Closed.png);\n"
@@ -173,6 +191,10 @@ void Preferences::setLightTheme() {
                                                   "    color: black;\n"
                                                   "    background-color: white;\n"
                                                   "}");
+        Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
+                                                 "    color: black;\n"
+                                                 "    background-color: #BEBEBE;\n"
+                                                 "}");
     }
     if (PreferencesDialog::ptr() != nullptr) {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
@@ -218,6 +240,7 @@ Json5Object Preferences::write() {
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
     obj[MainSplitter] =     mMainSplitter;
+    obj[Position] =         mPosition;
     obj[Theme] =            mTheme;
     obj[TypingSounds] =     mTypingSounds;
     obj[Voice] =            mVoice;

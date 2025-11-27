@@ -55,13 +55,26 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
+    void doAddItem();
+    void doBold();
+    void doCenterJustify();
+    void doCopy();
+    void doCut();
     void doExit();
+    void doFullJustify();
     void doFullScreen();
+    void doIndent();
+    void doItalic();
+    void doLeftJustify();
     void doNew();
     void doOpen();
+    void doOutdent();
+    void doPaste();
     void doPreferences();
+    void doRightJustify();
     void doSave();
     bool doSaveAs();
+    void doUnderline();
 
     static constexpr bool NoUi = true;
 
@@ -70,6 +83,10 @@ private:
     void             fitWindow();
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
+    void             setHtml(const QString& html);
+    void             setPosition(qlonglong pos);
+    void             setupConnections();
+    void             setupIcons();
     void             update();
     void             updateFromPrefs();
     void             updateHtml();
@@ -83,7 +100,6 @@ public:
     Preferences& prefs()                          { return mPrefs; }
 
     void changeNovelFont(qlonglong skip, const QFont& font);
-    void setupConnections();
 
     static Main* ptr() { return sMain; }
     static Main& ref() { return *ptr(); }
@@ -97,7 +113,21 @@ public slots:
     void saveAction()   { doSave(); }
     void saveAsAction() { doSaveAs(); }
 
-    void preferencesAction() { doPreferences(); }
+    void addItemAction()       { doAddItem(); }
+    void boldAction()          { doBold(); }
+    void centerJustifyAction() { doCenterJustify(); }
+    void copyAction()          { doCopy(); }
+    void cutAction()           { doCut(); }
+    void fullJustifyAction()   { doFullJustify(); }
+    void indentAction()        { doIndent(); }
+    void italicAction()        { doItalic(); }
+    void leftJustifyAction()   { doLeftJustify(); }
+    void outdentAction()       { doOutdent(); }
+    void pasteAction()         { doPaste(); }
+    void preferencesAction()   { doPreferences(); }
+    void rightJustifyAction()  { doRightJustify(); }
+    void underlineAction()     { doUnderline(); }
 
     void fullScreenAction() { doFullScreen(); }
+
 };

@@ -33,6 +33,7 @@ public:
     QString    fontFamily()        { return mFontFamily; }
     qlonglong  fontSize()          { return mFontSize; }
     Json5Array mainSplitter()      { return mMainSplitter; }
+    qlonglong  position()          { return mPosition; }
     qlonglong  theme()             { return mTheme; }
     bool       typingSounds()      { return mTypingSounds; }
     qlonglong  voice()             { return mVoice; }
@@ -44,6 +45,7 @@ public:
     void setFontFamily(const QString& f)  { mFontFamily = f; }
     void setFontSize(qlonglong s)         { mFontSize = s; }
     void setMainSplitter(Json5Array& s)   { mMainSplitter = s; }
+    void setPosition(qlonglong pos)       { mPosition = pos; }
     void setTheme(qlonglong t)            { mTheme = t; }
     void setTypingSounds(bool t)          { mTypingSounds = t; }
     void setVoice(qlonglong v)            { mVoice = v; }
@@ -58,6 +60,7 @@ private:
     Json5Array    mMainSplitter     { };
     qlonglong     mTheme            { 2 };
     bool          mTypingSounds     { false };
+    qlonglong     mPosition         { 0 };
     qlonglong     mVoice            { 0 };
     bool          mWasDark          { false };
     QRect         mWindow;

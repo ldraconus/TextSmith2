@@ -14,6 +14,7 @@ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs depr
 
 SOURCES += \
     FullScreenDialog.cpp \
+    ItemDescriptionDialog.cpp \
     Main.cpp \
     Novel.cpp \
     Preferences.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     FullScreenDialog.h \
+    ItemDescriptionDialog.h \
     Main.h \
     Novel.h \
     Preferences.h \
@@ -31,6 +33,7 @@ HEADERS += \
 
 FORMS += \
     FullScreenDialog.ui \
+    ItemDescriptionDialog.ui \
     Main.ui \
     PreferencesDialog.ui
 

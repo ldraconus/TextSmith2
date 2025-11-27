@@ -131,6 +131,19 @@ QSplitter::handle:hover {
             </widget>
            </item>
            <item>
+            <widget class="QFrame" name="frame_6">
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QToolButton" name="upToolButton">
              <property name="toolTip">
               <string>Move Item Up (Alt-Up)</string>
@@ -274,6 +287,19 @@ QSplitter::handle:hover {
             <number>0</number>
            </property>
            <item>
+            <widget class="QFrame" name="frame_7">
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QToolButton" name="boldToolButton">
              <property name="toolTip">
               <string>Bold  (Ctrl+B)</string>
@@ -414,6 +440,19 @@ QSplitter::handle:hover {
             </widget>
            </item>
            <item>
+            <widget class="QFrame" name="frame_5">
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QToolButton" name="increaseIndentToolButton">
              <property name="toolTip">
               <string>Indent (Ctrl+J, Ctrl+I)</string>
@@ -434,7 +473,7 @@ QSplitter::handle:hover {
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="decreaseIndntToolButton">
+            <widget class="QToolButton" name="decreaseIndentToolButton">
              <property name="toolTip">
               <string>Outdent (Ctrl+J, Ctrl+O)</string>
              </property>
@@ -596,6 +635,7 @@ QSplitter::handle:hover {
     </property>
     <addaction name="actionDistraction_Free"/>
     <addaction name="actionRead_To_Me"/>
+    <addaction name="actionWord_Count"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -935,6 +975,14 @@ QSplitter::handle:hover {
    </property>
    <property name="shortcut">
     <string>Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="actionWord_Count">
+   <property name="text">
+    <string>Word Count</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
  </widget>
