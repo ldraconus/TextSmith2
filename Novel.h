@@ -8,11 +8,13 @@
 
 class Item {
 public:
-    Item();
+    Item(bool noId = false);
     explicit Item(Json5Object& obj);
 
     virtual void clear();
     virtual void init();
+
+    static constexpr bool NoID = true;
 
     auto& children()       { return mChildren; }
     auto  html()           { return mHtml; }
@@ -38,6 +40,7 @@ public:
     void  clearTag(const QString& tag);
     Item* findItem(qlonglong id);
 
+    virtual void        deleteItem(qlonglong id);
     virtual Json5Object toObject();
 
     static void resetLastID() { sNextID = 0; }
@@ -87,8 +90,8 @@ public:
     void        setFilename(const QString& f) { mFilename = f; change(); }
 
     void clear() override;
+    void deleteItem(qlonglong id) override;
     void init() override;
-
     bool open();
     bool save();
     void setHtml(qlonglong node, const QString& html);

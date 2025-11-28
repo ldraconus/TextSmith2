@@ -72,6 +72,7 @@ private:
     void doOutdent();
     void doPaste();
     void doPreferences();
+    void doRemoveItem();
     void doRightJustify();
     void doSave();
     bool doSaveAs();
@@ -128,8 +129,9 @@ public slots:
     void rightJustifyAction()  { doRightJustify(); }
     void underlineAction()     { doUnderline(); }
 
-    void addItemAction()  { doAddItem(); }
-    void editItemAction() { doEditItem(); }
+    void addItemAction()    { doAddItem(); }
+    void editItemAction()   { doEditItem(); }
+    void removeItemAction() { doRemoveItem(); }
 
     void fullScreenAction() { doFullScreen(); }
 

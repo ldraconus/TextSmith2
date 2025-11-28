@@ -7,8 +7,8 @@
 
 qsizetype Item::sNextID = 0;
 
-Item::Item()
-    : mID(sNextID++) {
+Item::Item(bool noId)
+    : mID(noId ? sNextID : sNextID++) {
 }
 
 Item::Item(Json5Object& obj) {
@@ -23,7 +23,8 @@ void Item::clear() {
     mName.clear();
     mOrder.clear();
     mTags.clear();
-    sNextID = 0;
+    mPosition = 0;
+    sNextID = 1;
 }
 
 void Item::init() {
@@ -45,6 +46,27 @@ void Item::clearTag(const QString &tag) {
     if (idx >= 0) mTags.takeAt(idx);
 }
 
+void Item::deleteItem(qlonglong id) {
+    for (auto& child: mChildren) {
+        if (child.first == id) {
+            mChildren.erase(id);
+            for (auto i = 0; i < mOrder.size(); ++i) {
+                if (mOrder[i] == id) {
+                    mOrder.takeAt(i);
+                    break;
+                }
+            }
+            for (auto idx = mNamesToID.begin(); idx != mNamesToID.end(); ++idx) {
+                if (idx->second == id) {
+                    mNamesToID.remove(idx);
+                    break;
+                }
+            }
+            return;
+        } else child.second.deleteItem(id);
+    }
+}
+
 Item* Item::findItem(qlonglong id) {
     if (id == mID) return this;
     for (auto& child: mChildren) {
@@ -56,6 +78,7 @@ Item* Item::findItem(qlonglong id) {
 Json5Object Item::toObject() {
     Json5Object obj;
     obj["HTML"] = mHtml;
+    obj["Position"] = mPosition;
     obj["ID"] = mID;
     obj["Name"] = mName;
     Json5Object children;
@@ -113,6 +136,7 @@ QString Item::hasStr(Json5Array& arr, const qsizetype idx, const QString& def) {
 
 bool Item::fromObject(Json5Object& obj) {
     mHtml = hasStr(obj, "HTML");
+    mPosition = hasNum(obj, "Position");
     mID = hasNum(obj, "ID");
     mName = hasStr(obj, "Name");
 
@@ -201,6 +225,11 @@ void Novel::clear() {
     Item::clear();
     mExtra.clear();
     mFilename.clear();
+}
+
+void Novel::deleteItem(qlonglong id) {
+    if (id == this->id()) clear();
+    else Item::deleteItem(id);
 }
 
 void Novel::init() {

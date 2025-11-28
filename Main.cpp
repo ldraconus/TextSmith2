@@ -49,14 +49,14 @@ void Main::showEvent(QShowEvent* event) {
 }
 
 void Main::doAddItem() {
-    Item item;
+    Item item(Item::NoID);
     item.setName("");
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
     Item* current = mNovel.findItem(mCurrentNode);
     current->addChild(item);
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
-    auto twItem = new QTreeWidgetItem(mUi->treeWidget);
+    auto twItem = new QTreeWidgetItem;
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
     branch->addChild(twItem);
@@ -228,6 +228,17 @@ void Main::doPreferences() {
     PreferencesDialog dlg(mPrefs, this);
     if (dlg.exec() == QDialog::Rejected) return;
     updateFromPrefs();
+}
+
+void Main::doRemoveItem() {
+    // get the current node
+    // delete the node in the novel
+    // get the widget item
+    // get the parent
+    // if this is the bottom of the list of the parents children:
+    //   if there are children above the one: move to that one
+    //   else more to the parent
+    // else: move to the next sibling
 }
 
 void Main::doRightJustify() {
@@ -487,13 +498,15 @@ void Main::setupConnections() {
     connect(mUi->actionRight_Justify,      &QAction::triggered, this, &Main::rightJustifyAction);
     connect(mUi->actionUnderline,          &QAction::triggered, this, &Main::underlineAction);
 
-    connect(mUi->actionAdd_Item,  &QAction::triggered, this, &Main::addItemAction);
-    connect(mUi->actionEdit_Item, &QAction::triggered, this, &Main::editItemAction);
+    connect(mUi->actionAdd_Item,    &QAction::triggered, this, &Main::addItemAction);
+    connect(mUi->actionEdit_Item,   &QAction::triggered, this, &Main::editItemAction);
+    connect(mUi->actionRemove_Item, &QAction::triggered, this, &Main::removeItemAction);
 
     mUi->actionRead_To_Me->setShortcut(QKeySequence("Alt+R"));
     connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
 
-    connect(mUi->newItemToolButton,        &QToolButton::clicked, this, &Main::addItemAction);
+    connect(mUi->newItemToolButton,    &QToolButton::clicked, this, &Main::addItemAction);
+    connect(mUi->deleteItemToolButton, &QToolButton::clicked, this, &Main::removeItemAction);
 
     connect(mUi->boldToolButton,           &QToolButton::clicked, this, &Main::boldAction);
     connect(mUi->centerToolButton,         &QToolButton::clicked, this, &Main::doCenterJustify);
