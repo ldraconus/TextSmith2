@@ -60,6 +60,7 @@ private:
     void doCenterJustify();
     void doCopy();
     void doCut();
+    void doEditItem();
     void doExit();
     void doFullJustify();
     void doFullScreen();
@@ -113,7 +114,6 @@ public slots:
     void saveAction()   { doSave(); }
     void saveAsAction() { doSaveAs(); }
 
-    void addItemAction()       { doAddItem(); }
     void boldAction()          { doBold(); }
     void centerJustifyAction() { doCenterJustify(); }
     void copyAction()          { doCopy(); }
@@ -128,6 +128,10 @@ public slots:
     void rightJustifyAction()  { doRightJustify(); }
     void underlineAction()     { doUnderline(); }
 
+    void addItemAction()  { doAddItem(); }
+    void editItemAction() { doEditItem(); }
+
     void fullScreenAction() { doFullScreen(); }
 
+    void doubleClickAction(QTreeWidgetItem*, int) { doEditItem(); }
 };

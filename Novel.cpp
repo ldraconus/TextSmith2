@@ -23,6 +23,7 @@ void Item::clear() {
     mName.clear();
     mOrder.clear();
     mTags.clear();
+    sNextID = 0;
 }
 
 void Item::init() {
@@ -123,7 +124,7 @@ bool Item::fromObject(Json5Object& obj) {
         bool ok;
         const auto& idx = child.first.toLongLong(&ok);
         if (ok && idx >= 0 && child.second.isObject()) {
-            auto item = Item(child.second.toObject());
+            Item item(child.second.toObject());
             if (item.id() != idx) continue;
             QString name = item.name();
             if (item.name().isEmpty()) continue;

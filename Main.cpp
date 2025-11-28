@@ -20,6 +20,7 @@
 #include <QWindow>
 
 #include "FullScreenDialog.h"
+#include "ItemDescriptionDialog.h"
 #include "PreferencesDialog.h"
 
 constexpr qlonglong second = 1000;
@@ -48,11 +49,17 @@ void Main::showEvent(QShowEvent* event) {
 }
 
 void Main::doAddItem() {
-    // pop up the item description dialog
-    // if canceled: return
-    // get the current action
-    // create a new Item at the end current action's children
-    // update the tree with the name and id of the new item at the end of the current item
+    Item item;
+    item.setName("");
+    ItemDescriptionDialog dlg(&item, this);
+    if (dlg.exec() == QDialog::Rejected) return;
+    Item* current = mNovel.findItem(mCurrentNode);
+    current->addChild(item);
+    QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
+    auto twItem = new QTreeWidgetItem(mUi->treeWidget);
+    twItem->setText(0, item.name());
+    twItem->setData(0, Qt::UserRole, item.id());
+    branch->addChild(twItem);
 }
 
 void Main::doBold() {
@@ -77,6 +84,17 @@ void Main::doCopy() {
 
 void Main::doCut() {
     mUi->textEdit->cut();
+}
+
+void Main::doEditItem() {
+    Item* current = mNovel.findItem(mCurrentNode);
+    Item item(*current);
+    ItemDescriptionDialog dlg(&item, this);
+    if (dlg.exec() == QDialog::Rejected) return;
+    current->setName(item.name());
+    current->setTags(item.tags());
+    QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
+    branch->setText(0, current->name());
 }
 
 void Main::doExit() {
@@ -143,6 +161,7 @@ void Main::doNew() {
     mNovel.clear();
     mPosition = 0;
     mState.clear();
+    mCurrentNode = mNovel.id();
     clearChanged();
     update();
 }
@@ -430,8 +449,6 @@ Main::Main(QApplication* app, QWidget* parent)
     mUi->treeWidget->setColumnCount(1);
 
     // parse command line for novel to open
-    //  - any thing on the command line is aassumed to be a novel
-    //    or start with a blank novel
     StringList arguments { app->arguments() };
     if (arguments.size() > 1) {
         mNovel.setFilename(arguments[1]);
@@ -470,8 +487,13 @@ void Main::setupConnections() {
     connect(mUi->actionRight_Justify,      &QAction::triggered, this, &Main::rightJustifyAction);
     connect(mUi->actionUnderline,          &QAction::triggered, this, &Main::underlineAction);
 
+    connect(mUi->actionAdd_Item,  &QAction::triggered, this, &Main::addItemAction);
+    connect(mUi->actionEdit_Item, &QAction::triggered, this, &Main::editItemAction);
+
     mUi->actionRead_To_Me->setShortcut(QKeySequence("Alt+R"));
     connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
+
+    connect(mUi->newItemToolButton,        &QToolButton::clicked, this, &Main::addItemAction);
 
     connect(mUi->boldToolButton,           &QToolButton::clicked, this, &Main::boldAction);
     connect(mUi->centerToolButton,         &QToolButton::clicked, this, &Main::doCenterJustify);
@@ -483,6 +505,8 @@ void Main::setupConnections() {
     connect(mUi->decreaseIndentToolButton, &QToolButton::clicked, this, &Main::outdentAction);
     connect(mUi->rightJustifyToolButton,   &QToolButton::clicked, this, &Main::rightJustifyAction);
     connect(mUi->underlineToolButton,      &QToolButton::clicked, this, &Main::underlineAction);
+
+    connect(mUi->treeWidget, &QTreeWidget::itemDoubleClicked, this, &Main::doubleClickAction);
 
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;

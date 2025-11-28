@@ -14,21 +14,25 @@ public:
     virtual void clear();
     virtual void init();
 
-    auto& children()   { return mChildren; }
-    auto  html()       { return mHtml; }
-    auto  id() const   { return mID; }
-    auto  name() const { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
-    auto& order()      { return mOrder; }
+    auto& children()       { return mChildren; }
+    auto  html()           { return mHtml; }
+    auto  id() const       { return mID; }
+    auto  name() const     { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
+    auto& order()          { return mOrder; }
+    auto  position() const { return mPosition; }
 
-    void addTag(const QString& tag)       { if (!hasTag(tag)) mTags.append(tag); }
-    bool hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
+    void       addTag(const QString& tag)       { if (!hasTag(tag)) mTags.append(tag); }
+    bool       hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
+    void       setTags(const StringList& tags)  { mTags = tags; }
+    StringList tags() const                     { return mTags; }
 
     bool isEmpty() const { return mChildren.empty(); }
     bool isNull() const  { return isEmpty() && mName.isEmpty() && mHtml.isEmpty(); }
 
     void setName(const QString& n) { mName = n; }
-    void addChild(const Item& i)   { mChildren[i.id()] = i; mOrder.append(i.id()); }
+    void addChild(Item i)          { mChildren[i.id()] = i; mOrder.append(i.id()); }
     void setHtml(const QString& h) { mHtml = h; }
+    void setPosition(qlonglong p)  { mPosition = p; }
 
     void  changeFont(qlonglong skip, const QFont& font);
     void  clearTag(const QString& tag);
@@ -59,6 +63,7 @@ private:
     QString                 mName;
     Map<QString, qsizetype> mNamesToID;
     QList<qsizetype>        mOrder;
+    qlonglong               mPosition;
     StringList              mTags;
 
     static qsizetype sNextID;

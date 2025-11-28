@@ -610,6 +610,7 @@ QSplitter::handle:hover {
      <string>Novel</string>
     </property>
     <addaction name="actionAdd_Item"/>
+    <addaction name="actionEdit_Item"/>
     <addaction name="actionRemove_Item"/>
     <addaction name="separator"/>
     <addaction name="actionMove_an_Item_Up"/>
@@ -983,6 +984,14 @@ QSplitter::handle:hover {
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionEdit_Item">
+   <property name="text">
+    <string>Edit Item</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+E</string>
    </property>
   </action>
  </widget>
