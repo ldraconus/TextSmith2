@@ -69,6 +69,7 @@ private:
     void doItalic();
     void doItemChanged(QTreeWidgetItem* current);
     void doLeftJustify();
+    void doLowercase();
     void doNew();
     void doOpen();
     void doOutdent();
@@ -80,6 +81,7 @@ private:
     bool doSaveAs();
     void doTextChanged();
     void doUnderline();
+    void doUppercase();
 
     static constexpr bool NoUi = true;
 
@@ -127,6 +129,7 @@ public slots:
     void indentAction()        { doIndent(); }
     void italicAction()        { doItalic(); }
     void leftJustifyAction()   { doLeftJustify(); }
+    void lowerCaseAction()     { doLowercase(); }
     void outdentAction()       { doOutdent(); }
     void pasteAction()         { doPaste(); }
     void preferencesAction()   { doPreferences(); }

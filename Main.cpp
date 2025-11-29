@@ -171,6 +171,10 @@ void Main::doLeftJustify() {
     changed();
 }
 
+void Main::doLowercase() {
+
+}
+
 void Main::doNew() {
     if (mNovel.isChanged()) {
         if (mNovel.isChanged()) {
@@ -312,6 +316,10 @@ void Main::doUnderline() {
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
     changed();
+}
+
+void Main::doUppercase() {
+
 }
 
 void Main::buildTree(Item* item, QTreeWidgetItem* branch, Map<qlonglong, bool>& byId) {
