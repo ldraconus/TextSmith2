@@ -82,7 +82,7 @@ Json5Object Item::toObject() {
     obj["ID"] = mID;
     obj["Name"] = mName;
     Json5Object children;
-    for (auto& child: children) children[child.first] = child.second.toObject();
+    for (auto& child: mChildren) children[QString::number(child.first)] = child.second.toObject();
     obj["Children"] = children;
     Json5Array order;
     for (auto i = 0; i < mOrder.count(); ++i) order.append(mOrder[i]);
@@ -109,7 +109,7 @@ bool Item::hasBool(Json5Array& arr, const qsizetype idx, bool def) {
 }
 
 qsizetype Item::hasNum(Json5Object& obj, const QString& str, const qsizetype def) {
-    if (valid(obj, str, Json5::String)) return obj[str].toInt(def);
+    if (valid(obj, str, Json5::Number)) return obj[str].toInt(def);
     return def;
 }
 
@@ -185,7 +185,7 @@ void Item::newHtml() {
     QFont font(prefs.fontFamily(), prefs.fontSize());
     QFontMetrics metrics(font);
     int lineHeight = metrics.height();
-    int indent = 4 * lineHeight;
+    int indent = 2 * lineHeight;
     QTextBlockFormat format;
     format.setTextIndent(indent);
     format.setBottomMargin(lineHeight);
@@ -245,6 +245,7 @@ bool Novel::open() {
 }
 
 bool Novel::save() {
+    if (mFilename.isEmpty()) return false;
     auto obj = toObject();
     Json5Document doc;
     doc.setTop(obj);

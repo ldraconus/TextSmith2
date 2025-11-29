@@ -21,6 +21,9 @@
     <normaloff>:/icon/TextSmith2.ico</normaloff>:/icon/TextSmith2.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="contextMenuPolicy">
+    <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
      <widget class="QSplitter" name="splitter">
@@ -28,6 +31,9 @@
        <font>
         <family>Lucida Sans Unicode</family>
        </font>
+      </property>
+      <property name="contextMenuPolicy">
+       <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
       </property>
       <property name="styleSheet">
        <string notr="true">QSplitter::handle {
@@ -71,6 +77,9 @@ QSplitter::handle:hover {
         </property>
         <item>
          <widget class="QFrame" name="frame_2">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+          </property>
           <property name="frameShape">
            <enum>QFrame::Shape::NoFrame</enum>
           </property>
@@ -92,6 +101,9 @@ QSplitter::handle:hover {
            </property>
            <item>
             <widget class="QToolButton" name="newItemToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Add Item (Alt+N)</string>
              </property>
@@ -112,6 +124,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="deleteItemToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Delete Item (Alt-Del)</string>
              </property>
@@ -145,6 +160,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="upToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Move Item Up (Alt-Up)</string>
              </property>
@@ -165,6 +183,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="downToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Move Item Down (Alt-Down)</string>
              </property>
@@ -185,6 +206,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="outToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Move Item Out (Alt-Left)</string>
              </property>
@@ -267,6 +291,9 @@ QSplitter::handle:hover {
         </property>
         <item>
          <widget class="QFrame" name="frame_4">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+          </property>
           <property name="frameShape">
            <enum>QFrame::Shape::NoFrame</enum>
           </property>
@@ -288,6 +315,9 @@ QSplitter::handle:hover {
            </property>
            <item>
             <widget class="QFrame" name="frame_7">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="frameShape">
               <enum>QFrame::Shape::NoFrame</enum>
              </property>
@@ -301,6 +331,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="boldToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Bold  (Ctrl+B)</string>
              </property>
@@ -317,10 +350,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="italicToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Italic (Ctrl+I)</string>
              </property>
@@ -337,10 +376,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="underlineToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Underline (Ctrl+U)</string>
              </property>
@@ -357,10 +402,32 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QFrame" name="frame_8">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Shape::NoFrame</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Shadow::Plain</enum>
+             </property>
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="leftJustifyToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Left Justify (Ctrl+J, Ctrl+L)</string>
              </property>
@@ -377,10 +444,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="centerToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Center (Ctrl+J, Ctrl+C)</string>
              </property>
@@ -397,10 +470,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="rightJustifyToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Right Justify (Ctrl+J, Ctrl+R)</string>
              </property>
@@ -417,10 +496,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QToolButton" name="fullJustifyToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Full Justify (Ctrl+J, Ctrl+F)</string>
              </property>
@@ -437,10 +522,16 @@ QSplitter::handle:hover {
                <height>32</height>
               </size>
              </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QFrame" name="frame_5">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="frameShape">
               <enum>QFrame::Shape::NoFrame</enum>
              </property>
@@ -454,6 +545,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="increaseIndentToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Indent (Ctrl+J, Ctrl+I)</string>
              </property>
@@ -474,6 +568,9 @@ QSplitter::handle:hover {
            </item>
            <item>
             <widget class="QToolButton" name="decreaseIndentToolButton">
+             <property name="contextMenuPolicy">
+              <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+             </property>
              <property name="toolTip">
               <string>Outdent (Ctrl+J, Ctrl+O)</string>
              </property>
@@ -511,7 +608,7 @@ QSplitter::handle:hover {
         <item>
          <widget class="TextEdit" name="textEdit">
           <property name="contextMenuPolicy">
-           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+           <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
           </property>
           <property name="styleSheet">
            <string notr="true">QTextEdit QTextBlock {

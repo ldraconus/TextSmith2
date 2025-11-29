@@ -1,0 +1,336 @@
+{
+    "document": {
+        "root": {
+            "children": [
+                {
+                    "children": [
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><img src=\"dropped_image_1656113150\" /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">Figure 1 - The basic layout</p>\n<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">The basic layout of the application is pretty simple.  At the top is the menu bar, below that is the tool bar.  In the center is tha actual workspace broken up into the novel structure and the text editor.  Finally at the bottom is the message bar, where various messages are displayed as the program takes actions that are not obvious to the user (such as auto saving, or successful EPUB creation).  </p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">As you can see in the image above, I wrote this documentaion in TextSmith.  It's called, in programmer terms, 'eating your own dogfood'.  This in reference to an old saying that if you have to eat the dog food, you are  going to try and make it some pretty nice dogfood.  I wrote in this program mostl;y because I intend to write my novels in it, and it has helped me find bugs (damn you pasted images!). </p></body></html>",
+                            "name": "Basic Layout",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><img src=\"dropped_image_1656201446\" /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">Figure 2 - Document Structure</p>\n<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">The left side of the windoiw is an area dedicated to the structure of your document.  TextSmith knows almost nothing about your document and doesn't really want to know anything, either.  The exporters, on the other hand, want to know everything.  Document structure is an attempt to bring order to these two competing demands.  It's also a kinda nice way to keep track of what's going on.  </p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">A document starts with just the top-most line and one child (anything indented under another item is called a child of that item, and any item with children is called a parent, go figure).  The little arrow off to the left indicate whether an item has children and if you can see them.  If the arrow points down, you can see the children, if it points to the right, they are hidden (closed, kind of).</p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">Menu options in the structure menu and buttons in the tool bar let you move items around in the structure of the document.</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Structure Side",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><img src=\"dropped_image_1656202958\" /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">Figure 3 - The Edit side</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">The edit side of the program is whhere the magic happens!  Where your thoughts hit the electrons!  All of your expected editting things just work over here the weay youkind of expec them to.  Cutting, copying, pasting, typing and all othose good things.  Various edit menu options and toolbar items let you bold, underline, center, and do all kinds of simple editting chores.  I spent a lot of time pondering what should be available in this menu to prevent the eternal fiddling that goes on when you are trying to write.  So somethings you would expect in a word processor just aren't present here.  They don't belong!</p></body></html>",
+                            "name": "Edit Side",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "File Menu",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Structure Menu",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Edit Menu",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Utilities Menu",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Help Menu",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "Tags",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "FInd and Replace",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "Distanction Free",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "Scripts",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "Word Count",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "Options",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                }
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Dialogs",
+                            "root": false,
+                            "tags": [
+                                "scene"
+                            ],
+                            "wc": 0
+                        }
+                    ],
+                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><img src=\"C:/Users/chris/Pictures/BookSmithTier1.png\" /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><span style=\" font-weight:700;\">Using TextSmith</span></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-weight:700;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>",
+                    "name": "Using TextSmith",
+                    "root": false,
+                    "tags": [
+                        "Chapter"
+                    ],
+                    "wc": 0
+                },
+                {
+                    "children": [
+                        {
+                            "children": [
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Lua is an extensible, lightweight programming language written in C. It started as an in-house project in 1993 by Roberto Ierusalimschy, Luiz Henrique de Figueiredo, and Waldemar Celes.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">It was designed from the beginning to be a software that can be integrated with the code written in C and other conventional languages. This integration brings many benefits. It does not try to do what C can already do but aims at offering what C is not good at: a good distance from the hardware, dynamic structures, no redundancies, ease of testing and debugging. For this, Lua has a safe environment, automatic memory management, and good facilities for handling strings and other kinds of data with dynamic size.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Features</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Lua provides a set of unique features that makes it distinct from other languages. These include −</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Extensible</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Simple</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Efficient</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Portable</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Free and open</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\"><br /></p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Example Code</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">print(&quot;Hello World!&quot;)</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\"><br /></p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">How Lua is Implemented?</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Lua consists of two parts - the Lua interpreter part and the functioning software system. The functioning software system is an actual computer application that can interpret programs written in the Lua programming language. The Lua interpreter is written in ANSI C, hence it is highly portable and can run on a vast spectrum of devices from high-end network servers to small devices.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Both Lua's language and its interpreter are mature, small, and fast. It has evolved from other programming languages and top software standards. Being small in size makes it possible for it to run on small devices with low memory.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Learning Lua</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">The most important point while learning Lua is to focus on the concepts without getting lost in its technical details.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">The purpose of learning a programming language is to become a better programmer; that is, to become more effective in designing and implementing new systems and at maintaining old ones.</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\">Some Uses of Lua</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Game Programming</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Scripting in Standalone Applications</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Scripting in Web</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Extensions and add-ons for databases like MySQL Proxy and MySQL WorkBench</p>\n<p style=\" margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:1; text-indent:0px; line-height:160%;\">Security systems like Intrusion Detection System.</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:9px; margin-bottom:10px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; line-height:160%;\"><br /></p></body></html>",
+                                    "name": "Quick overview of Lua",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">Here is a list of a lot of web sites dedicated to lua programming:</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">https://www.tutorialspoint.com/lua/index.htm</p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">https://www.lua.org/pil/1.html</p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">http://lua-users.org/wiki/LuaTutorial</p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">https://hackr.io/tutotials/learn-lua</p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\">https://tylerneylon.com/a/learn-lua/</p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px; text-decoration: underline; color:#0000ff;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>",
+                                    "name": "Lua Resources",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                }
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><span style=\" font-size:15px; font-style:italic; color:#000000;\">(This overview is cribbed almost verbatum from 'https://www.tutorialspoint.com/lua/lua_quick_guide.htm')</span></p>\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px; font-size:15px; font-style:italic; color:#000000;\"><br /></p></body></html>",
+                            "name": "What is Lua?",
+                            "root": false,
+                            "tags": [
+                                "Chapter"
+                            ],
+                            "wc": 0
+                        },
+                        {
+                            "children": [
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "TextSmith concepts",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                },
+                                {
+                                    "children": [
+                                    ],
+                                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                                    "name": "TextSmith functions",
+                                    "root": false,
+                                    "tags": [
+                                        "scene"
+                                    ],
+                                    "wc": 0
+                                }
+                            ],
+                            "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><br /></p></body></html>",
+                            "name": "Talking to TextSmith from Lua",
+                            "root": false,
+                            "tags": [
+                                "Chapter"
+                            ],
+                            "wc": 0
+                        }
+                    ],
+                    "doc": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\n</style></head><body style=\" font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><img src=\"C:/Users/chris/Pictures/Lua.png\" /></p>\n<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:20px;\"><span style=\" font-weight:700;\">Scripting TextSmith</span></p></body></html>",
+                    "name": "Scripting TextSmith",
+                    "root": false,
+                    "tags": [
+                        "Chapter"
+                    ],
+                    "wc": 0
+                }
+            ],
+            "doc": "",
+            "name": "Documentation",
+            "root": true,
+            "tags": [
+                "html"
+            ],
+            "wc": 0
+        }
+    },
+    "options": {
+        "autoSave": true,
+        "autoSaveInterval": 1,
+        "openCheckbox": true,
+        "textFont": "Segoe UI:9",
+        "typewriterSounds": true,
+        "voice": 2
+    },
+    "windows": {
+        "aboutdialog": {
+            "left": -1,
+            "top": -1
+        },
+        "finddialog": {
+            "left": 750,
+            "top": 429
+        },
+        "mainwindow": {
+            "bottom": 932,
+            "left": 334,
+            "right": 1487,
+            "splitter": [
+                329,
+                823
+            ],
+            "top": 61
+        },
+        "ok": {
+            "left": 859,
+            "top": 475
+        },
+        "okcancel": {
+            "left": -1,
+            "top": -1
+        },
+        "optionsdialog": {
+            "left": 750,
+            "top": 357
+        },
+        "question": {
+            "left": -1,
+            "top": -1
+        },
+        "replacedialog": {
+            "left": 750,
+            "top": 392
+        },
+        "scritsdialog": {
+            "left": -1,
+            "top": -1
+        },
+        "statement": {
+            "left": -1,
+            "top": -1
+        },
+        "tagsdialog": {
+            "left": 744,
+            "top": 392
+        },
+        "yesno": {
+            "left": -1,
+            "top": -1
+        },
+        "yesnocancel": {
+            "left": -1,
+            "top": -1
+        }
+    }
+}

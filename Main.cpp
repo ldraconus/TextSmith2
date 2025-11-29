@@ -50,6 +50,7 @@ void Main::showEvent(QShowEvent* event) {
 
 void Main::doAddItem() {
     Item item(Item::NoID);
+    item.newHtml();
     item.setName("");
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
@@ -60,6 +61,8 @@ void Main::doAddItem() {
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
     branch->addChild(twItem);
+    branch->setExpanded(true);
+    changed();
 }
 
 void Main::doBold() {
@@ -68,6 +71,7 @@ void Main::doBold() {
     format.setFontWeight(cursor.charFormat().fontWeight() == QFont::Bold ? QFont::Normal : QFont::Bold);
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doCenterJustify() {
@@ -76,6 +80,7 @@ void Main::doCenterJustify() {
     block.setAlignment(Qt::AlignCenter);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doCopy() {
@@ -84,6 +89,7 @@ void Main::doCopy() {
 
 void Main::doCut() {
     mUi->textEdit->cut();
+    changed();
 }
 
 void Main::doEditItem() {
@@ -95,6 +101,7 @@ void Main::doEditItem() {
     current->setTags(item.tags());
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     branch->setText(0, current->name());
+    changed();
 }
 
 void Main::doExit() {
@@ -107,6 +114,7 @@ void Main::doFullJustify() {
     block.setAlignment(Qt::AlignJustify);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    mNovel.change();
 }
 
 void Main::doFullScreen() {
@@ -129,6 +137,7 @@ void Main::doIndent() {
     block.setIndent(block.indent() + 1);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doItalic() {
@@ -137,6 +146,20 @@ void Main::doItalic() {
     format.setFontItalic(!cursor.charFormat().fontItalic());
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
+}
+
+void Main::doItemChanged(QTreeWidgetItem* current) {
+    if (current == nullptr) return;
+    auto* oldItem = mNovel.findItem(mCurrentNode);
+    if (oldItem == nullptr) return;
+    oldItem->setHtml(mUi->textEdit->toHtml());
+    oldItem->setPosition((mUi->textEdit->textCursor().position()));
+    mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
+    auto* item = mNovel.findItem(mCurrentNode);
+    mUi->textEdit->setHtml(item->html());
+    setPosition(item->position());
+    changed();
 }
 
 void Main::doLeftJustify() {
@@ -145,6 +168,7 @@ void Main::doLeftJustify() {
     block.setAlignment(Qt::AlignLeft);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doNew() {
@@ -187,8 +211,8 @@ void Main::doOpen() {
     mDocDir = info.absolutePath();
 
     mNovel.clear();
-    mNovel.open();
     mNovel.setFilename(filename);
+    mNovel.open();
     clearChanged();
     Json5Object obj = mNovel.extra();
     Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -213,6 +237,7 @@ void Main::doOutdent() {
     block.setIndent(block.indent() - 1);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doPaste() {
@@ -222,6 +247,7 @@ void Main::doPaste() {
     changeDocumentFont(doc, doc->defaultFont());
     setPosition(pos);
     mUi->textEdit->ensureCursorVisible();
+    changed();
 }
 
 void Main::doPreferences() {
@@ -231,14 +257,20 @@ void Main::doPreferences() {
 }
 
 void Main::doRemoveItem() {
-    // get the current node
-    // delete the node in the novel
-    // get the widget item
-    // get the parent
-    // if this is the bottom of the list of the parents children:
-    //   if there are children above the one: move to that one
-    //   else more to the parent
-    // else: move to the next sibling
+    if (mCurrentNode == mNovel.id()) return;
+
+    mNovel.deleteItem(mCurrentNode);
+
+    auto* item = mUi->treeWidget->currentItem();
+    auto* parent = item->parent();
+    auto idx = parent->indexOfChild(item);
+    auto* next = parent->childCount() > idx + 1 ? parent->child(idx + 1) : nullptr;
+    auto* prev = idx != 0 ? parent->child(idx - 1) : nullptr;
+    if (!next) {
+        if (prev) mUi->treeWidget->setCurrentItem(prev);
+        else mUi->treeWidget->setCurrentItem(parent);
+    } else mUi->treeWidget->setCurrentItem(next);
+    changed();
 }
 
 void Main::doRightJustify() {
@@ -247,10 +279,12 @@ void Main::doRightJustify() {
     block.setAlignment(Qt::AlignRight);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::doSave() {
     if (mSaving.exchange(true)) return;
+
     mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
     Map<qlonglong, bool> byId;
     mapTree(byId, mUi->treeWidget->topLevelItem(0));
@@ -262,9 +296,13 @@ bool Main::doSaveAs() {
     QString filename = QFileDialog::getSaveFileName(this, "Save the Novel as?", mDocDir, "Novels (*.novel);;All Files (*.*)");
     if (filename.isEmpty()) return false;
     mNovel.setFilename(filename);
-    mNovel.change();
+    changed();
     doSave();
     return true;
+}
+
+void Main::doTextChanged() {
+    changed();
 }
 
 void Main::doUnderline() {
@@ -273,10 +311,11 @@ void Main::doUnderline() {
     format.setFontUnderline(!cursor.charFormat().fontUnderline());
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
+    changed();
 }
 
 void Main::buildTree(Item* item, QTreeWidgetItem* branch, Map<qlonglong, bool>& byId) {
-    auto twItem = new QTreeWidgetItem(mUi->treeWidget);
+    auto twItem = new QTreeWidgetItem();
     twItem->setText(0, item->name());
     twItem->setData(0, Qt::UserRole, item->id());
 
@@ -348,7 +387,8 @@ void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
 }
 
 void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
-    if ((novel.filename().isEmpty() && !noUi) || !novel.isChanged()) return;
+    if ((novel.filename().isEmpty() && noUi) || !novel.isChanged()) return;
+    if (mNovel.filename().isEmpty() && !doSaveAs()) return;
     QFileInfo info(mNovel.filename());
     QString name = info.fileName();
     mDocDir = info.absolutePath();
@@ -367,13 +407,9 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     }
     extra["State"] = state;
     mNovel.setExtra(extra);
-    if (mNovel.filename().isEmpty() && !doSaveAs()) return;
-    else {
-        if (!mNovel.save() && !noUi) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
-                                             [this]() { doNothing(); },
-                                             "Something unexpected has happened");
-    }
-
+    if (!mNovel.save() && !noUi) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
+                                         [this]() { doNothing(); },
+                                         "Something unexpected has happened");
 }
 
 void Main::setHtml(const QString& html) {
@@ -392,6 +428,7 @@ void Main::update() { // new, open
     buildTree(&mNovel, nullptr, mState);
     updateHtml();
     updateFromPrefs();
+    mUi->textEdit->setFocus();
 }
 
 void Main::updateFromPrefs() {
@@ -419,15 +456,15 @@ void Main::updateFromPrefs() {
     }
 }
 
-void Main::updateHtml() { // update, and post-fullscreen
+void Main:: updateHtml() { // update, and post-fullscreen
     QTreeWidget* tree = mUi->treeWidget;
-    QTreeWidgetItem* item = findItem(tree->topLevelItem(0), mCurrentNode);
-    if (item != nullptr) {
-        tree->setCurrentItem(item);
+    QTreeWidgetItem* branch = findItem(tree->topLevelItem(0), mCurrentNode);
+    if (branch != nullptr) {
         Item* item = mNovel.findItem(mCurrentNode);
         mUi->textEdit->setHtml(item->html());
         mUi->textEdit->textCursor().position();
         mUi->textEdit->ensureCursorVisible();
+        tree->setCurrentItem(branch);
     }
 }
 
@@ -454,6 +491,7 @@ Main::Main(QApplication* app, QWidget* parent)
     QDir().mkpath(mLocalDir);
 
     setupConnections();
+    setupTabOrder();
 
     mPrefs.load();
 
@@ -465,7 +503,10 @@ Main::Main(QApplication* app, QWidget* parent)
         mNovel.setFilename(arguments[1]);
         clearChanged();
         doOpen();
-    } else doNew();
+    } else {
+        doNew();
+        clearChanged();
+    }
 }
 
 Main::~Main() {
@@ -519,7 +560,10 @@ void Main::setupConnections() {
     connect(mUi->rightJustifyToolButton,   &QToolButton::clicked, this, &Main::rightJustifyAction);
     connect(mUi->underlineToolButton,      &QToolButton::clicked, this, &Main::underlineAction);
 
-    connect(mUi->treeWidget, &QTreeWidget::itemDoubleClicked, this, &Main::doubleClickAction);
+    connect(mUi->treeWidget, &QTreeWidget::itemDoubleClicked,  this, &Main::doubleClickAction);
+    connect(mUi->treeWidget, &QTreeWidget::currentItemChanged, this, &Main::currentItemChangedAction);
+
+    connect(mUi->textEdit, &TextEdit::textChanged, this, &Main::textChangedAction);
 
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;
@@ -551,6 +595,25 @@ void Main::setupIcons() {
     mIcons["fullJustifyToolButton"] =    ":/icon/fullJustify.ico";
     mIcons["increaseIndentToolButton"] = ":/icon/increseIndent.ico";
     mIcons["decreaseIndentToolButton"] = ":/icon/decreaseIndent.ico";
+}
+
+void Main::setupTabOrder() {
+    QWidget::setTabOrder(mUi->newItemToolButton,        mUi->deleteItemToolButton);
+    QWidget::setTabOrder(mUi->deleteItemToolButton,     mUi->upToolButton);
+    QWidget::setTabOrder(mUi->upToolButton,             mUi->downToolButton);
+    QWidget::setTabOrder(mUi->downToolButton,           mUi->outToolButton);
+    QWidget::setTabOrder(mUi->outToolButton,            mUi->boldToolButton);
+    QWidget::setTabOrder(mUi->boldToolButton,           mUi->italicToolButton);
+    QWidget::setTabOrder(mUi->italicToolButton,         mUi->underlineToolButton);
+    QWidget::setTabOrder(mUi->underlineToolButton,      mUi->leftJustifyToolButton);
+    QWidget::setTabOrder(mUi->leftJustifyToolButton,    mUi->centerToolButton);
+    QWidget::setTabOrder(mUi->centerToolButton,         mUi->rightJustifyToolButton);
+    QWidget::setTabOrder(mUi->rightJustifyToolButton,   mUi->fullJustifyToolButton);
+    QWidget::setTabOrder(mUi->fullJustifyToolButton,    mUi->increaseIndentToolButton);
+    QWidget::setTabOrder(mUi->increaseIndentToolButton, mUi->decreaseIndentToolButton);
+    QWidget::setTabOrder(mUi->decreaseIndentToolButton, mUi->treeWidget);
+    QWidget::setTabOrder(mUi->treeWidget,               mUi->textEdit);
+    QWidget::setTabOrder(mUi->textEdit,                 mUi->newItemToolButton);
 }
 
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
@@ -591,4 +654,3 @@ void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
         cursor.mergeCharFormat(fmt);
     }
 }
-

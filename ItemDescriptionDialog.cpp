@@ -96,6 +96,7 @@ void ItemDescriptionDialog::removeButton(const QPushButton* button) {
 
 void ItemDescriptionDialog::setupConnections() {
     connect(mUi->nameLineEdit, &QLineEdit::textEdited,    this, &ItemDescriptionDialog::editedAction);
+    connect(mUi->nameLineEdit, &QLineEdit::returnPressed, this, &QDialog::accept);
     connect(mUi->tagLineEdit,  &QLineEdit::returnPressed, this, &ItemDescriptionDialog::returnPressedAction);
 
     connect(mUi->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);

@@ -31,14 +31,15 @@ public:
     bool isEmpty() const { return mChildren.empty(); }
     bool isNull() const  { return isEmpty() && mName.isEmpty() && mHtml.isEmpty(); }
 
-    void setName(const QString& n) { mName = n; }
     void addChild(Item i)          { mChildren[i.id()] = i; mOrder.append(i.id()); }
     void setHtml(const QString& h) { mHtml = h; }
+    void setName(const QString& n) { mName = n; }
     void setPosition(qlonglong p)  { mPosition = p; }
 
     void  changeFont(qlonglong skip, const QFont& font);
     void  clearTag(const QString& tag);
     Item* findItem(qlonglong id);
+    void  newHtml();
 
     virtual void        deleteItem(qlonglong id);
     virtual Json5Object toObject();
@@ -56,7 +57,6 @@ public:
 
 protected:
     bool fromObject(Json5Object& obj);
-    void newHtml();
     static qsizetype nextID() { return sNextID++; }
 
 private:

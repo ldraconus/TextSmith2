@@ -10,6 +10,8 @@ INCLUDEPATH += \
 
 RC_FILE = appicon.rc
 
+appicon.rc.depends = TextSmith2.ico
+
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
@@ -42,9 +44,19 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
+Installer.target = Installer
+Installer.depends = \
+    release
+Installer.commands = \
+    ../../installer.sh
+
+QMAKE_EXTRA_TARGETS += Installer
+
 DISTFILES += \
+    Background.png \
     Center.ico \
     Center.png \
+    Installer.ico \
     TextSmith2.ico \
     TextSmithIcon.png \
     appicon.rc \
@@ -58,6 +70,7 @@ DISTFILES += \
     fullJustify.png \
     increseIndent.ico \
     increseIndent.png \
+    installer.sh \
     italic.ico \
     italic.png \
     leftjustify.ico \

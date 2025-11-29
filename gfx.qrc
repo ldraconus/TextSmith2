@@ -29,6 +29,20 @@
         <file>LtnewItem.ico</file>
         <file>LtrightJustify.ico</file>
         <file>Ltunderline.ico</file>
+        <file>boldCk.ico</file>
+        <file>CenterCk.ico</file>
+        <file>fullJustifyCk.ico</file>
+        <file>italicCk.ico</file>
+        <file>leftjustifyCk.ico</file>
+        <file>LtboldCk.ico</file>
+        <file>LtCenterCk.ico</file>
+        <file>LtfullJustifyCk.ico</file>
+        <file>LtitalicCk.ico</file>
+        <file>LtleftjustifyCk.ico</file>
+        <file>LtrightJustifyCk.ico</file>
+        <file>LtunderlineCk.ico</file>
+        <file>rightJustifyCk.ico</file>
+        <file>underlineCk.ico</file>
     </qresource>
     <qresource prefix="/imgs">
         <file>Closed.png</file>

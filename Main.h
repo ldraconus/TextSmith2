@@ -49,6 +49,7 @@ private:
 
     static Main* sMain;
 
+    void    changed()      { mNovel.change(); }
     void    clearChanged() { mNovel.noChanges(); }
     void    doNothing()    { }
 
@@ -66,6 +67,7 @@ private:
     void doFullScreen();
     void doIndent();
     void doItalic();
+    void doItemChanged(QTreeWidgetItem* current);
     void doLeftJustify();
     void doNew();
     void doOpen();
@@ -76,6 +78,7 @@ private:
     void doRightJustify();
     void doSave();
     bool doSaveAs();
+    void doTextChanged();
     void doUnderline();
 
     static constexpr bool NoUi = true;
@@ -89,6 +92,7 @@ private:
     void             setPosition(qlonglong pos);
     void             setupConnections();
     void             setupIcons();
+    void             setupTabOrder();
     void             update();
     void             updateFromPrefs();
     void             updateHtml();
@@ -135,5 +139,8 @@ public slots:
 
     void fullScreenAction() { doFullScreen(); }
 
+    void currentItemChangedAction(QTreeWidgetItem* current, QTreeWidgetItem*) { doItemChanged(current); }
     void doubleClickAction(QTreeWidgetItem*, int) { doEditItem(); }
+
+    void textChangedAction() { doTextChanged(); }
 };

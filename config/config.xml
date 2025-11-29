@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Installer>
+    <Name>TextSmith</Name>
+    <Version>1.0.0</Version>
+    <Title>TextSmith Installer</Title>
+    <Publisher>SoftwareOnHand</Publisher>
+    <InstallerWindowIcon>Installer</InstallerWindowIcon>
+    <InstallerApplicationIcon>Installer</InstallerApplicationIcon>
+    <StartMenuDir>TextSmith</StartMenuDir>
+    <MaintenanceToolName>Uninstall</MaintenanceToolName>
+    <TargetDir>@ApplicationsDirX64@/TextSmith</TargetDir>
+    <RunProgram>@TargetDir@/TextSmith</RunProgram>
+    <RunProgramDescription>Run TextSmith</RunProgramDescription>
+    <WizardStyle>Mac</WizardStyle>
+    <Background>Background.png<Background>
+</Installer>

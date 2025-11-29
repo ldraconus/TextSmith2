@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="gfx.qrc">
+    <normaloff>:/icon/TextSmith2.ico</normaloff>:/icon/TextSmith2.ico</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QFrame" name="frame">
@@ -170,7 +174,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="gfx.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
