@@ -150,6 +150,7 @@ void Preferences::setDarkTheme() {
                                                                "    background-color: black;\n"
                                                                "}");
     }
+    mIsDark = true;
     resetIcons(true);
 }
 
@@ -202,7 +203,18 @@ void Preferences::setLightTheme() {
                                                                "    background-color: white;\n"
                                                                "}");
     }
+    mIsDark = false;
     resetIcons(false);
+}
+
+QString Preferences::checkPath(const QString& path, bool checked) {
+    QString work = path;
+    if (checked) {
+        StringList parts(work.split("."));
+        parts[0] += "Ck";
+        work = parts.join(".");
+    }
+    return work;
 }
 
 bool Preferences::isDark() {
@@ -215,6 +227,7 @@ void Preferences::resetIcons(bool isDark) {
     for (auto* button: Main::ref().findChildren<QToolButton*>()) {
         QString path = Main::ref().getIconPath(button->objectName());
         if (mWasDark != isDark) path = newPath(path);
+        if (button->isCheckable()) path = checkPath(path, button->isChecked());
         QPixmap pm(path);
         QIcon icon;
         icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
@@ -230,6 +243,7 @@ void Preferences::setSystemTheme() {
     if (isDark()) setDarkTheme();
     else setLightTheme();
 
+    mIsDark = isDark();
     resetIcons(isDark());
 }
 

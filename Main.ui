@@ -876,6 +876,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionBold">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Bold</string>
    </property>
@@ -884,6 +887,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionItalic">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Italic</string>
    </property>
@@ -892,6 +898,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionUnderline">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Underline</string>
    </property>
@@ -900,6 +909,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionLeft_Justify">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Left Justify</string>
    </property>
@@ -908,6 +920,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionCenter">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Center</string>
    </property>
@@ -916,6 +931,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionRight_Justify">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Right Justify</string>
    </property>
@@ -924,6 +942,9 @@ QSplitter::handle:hover {
    </property>
   </action>
   <action name="actionFull_Justification">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Full Justification</string>
    </property>

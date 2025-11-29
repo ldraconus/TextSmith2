@@ -13,10 +13,11 @@
 class Preferences {    
 public:
     Preferences()
-        : mWasDark(isDark())               { load(); }
+        : mWasDark(mIsDark = isDark())               { load(); }
     explicit Preferences(Json5Object& obj) { read(obj); }
     ~Preferences()                         { save(); }
 
+    QString     checkPath(const QString& path, bool checked);
     bool        isDark();
     bool        load();
     QString     newPath(const QString& path);
@@ -32,11 +33,13 @@ public:
     qlonglong  autoSaveIntyerval() { return mAutoSaveInterval; }
     QString    fontFamily()        { return mFontFamily; }
     qlonglong  fontSize()          { return mFontSize; }
+    bool       isDarkTheme()       { return mIsDark; }
     Json5Array mainSplitter()      { return mMainSplitter; }
     qlonglong  position()          { return mPosition; }
     qlonglong  theme()             { return mTheme; }
     bool       typingSounds()      { return mTypingSounds; }
     qlonglong  voice()             { return mVoice; }
+    bool       wasDark()           { return mWasDark; }
     QRect      windowLocation()    { return mWindow; }
 
     void setApplicaiton(QApplication* a)  { mApp = a; }
@@ -57,6 +60,7 @@ private:
     qlonglong     mAutoSaveInterval { 5 * 60 };
     QString       mFontFamily       { "Segoe UI" };
     qlonglong     mFontSize         { 9 };
+    bool          mIsDark;
     Json5Array    mMainSplitter     { };
     qlonglong     mTheme            { 2 };
     bool          mTypingSounds     { false };

@@ -11,6 +11,7 @@
 
 #include "Novel.h"
 #include "Preferences.h"
+#include "qtoolbutton.h"
 
 class QApplication;
 class QCloseEvent;
@@ -60,6 +61,7 @@ private:
     void doBold();
     void doCenterJustify();
     void doCopy();
+    void doCursorPositionChanged();
     void doCut();
     void doEditItem();
     void doExit();
@@ -86,11 +88,15 @@ private:
     static constexpr bool NoUi = true;
 
     void             buildTree(Item* item, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
+    QString          checked(const QString& path);
     QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
+    void             justifyButtons();
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     void             setHtml(const QString& html);
+    void             setIcon(QToolButton* button, bool isChecked);
+    void             setMenu(QAction* button, bool isChecked);
     void             setPosition(qlonglong pos);
     void             setupConnections();
     void             setupIcons();
@@ -135,6 +141,7 @@ public slots:
     void preferencesAction()   { doPreferences(); }
     void rightJustifyAction()  { doRightJustify(); }
     void underlineAction()     { doUnderline(); }
+    void uppercaseAction()     { doUppercase(); }
 
     void addItemAction()    { doAddItem(); }
     void editItemAction()   { doEditItem(); }
@@ -143,7 +150,8 @@ public slots:
     void fullScreenAction() { doFullScreen(); }
 
     void currentItemChangedAction(QTreeWidgetItem* current, QTreeWidgetItem*) { doItemChanged(current); }
-    void doubleClickAction(QTreeWidgetItem*, int) { doEditItem(); }
+    void doubleClickAction(QTreeWidgetItem*, int)                             { doEditItem(); }
 
-    void textChangedAction() { doTextChanged(); }
+    void cursorPositionChanged() { doCursorPositionChanged(); }
+    void textChangedAction()     { doTextChanged(); }
 };

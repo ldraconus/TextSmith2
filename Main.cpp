@@ -68,7 +68,16 @@ void Main::doAddItem() {
 void Main::doBold() {
     auto cursor = mUi->textEdit->textCursor();
     QTextCharFormat format;
-    format.setFontWeight(cursor.charFormat().fontWeight() == QFont::Bold ? QFont::Normal : QFont::Bold);
+    if (cursor.charFormat().fontWeight() == QFont::Bold) {
+        format.setFontWeight(QFont::Normal);
+        setIcon(mUi->boldToolButton, false);
+        setMenu(mUi->actionBold, false);
+
+    } else {
+        format.setFontWeight(QFont::Bold);
+        setIcon(mUi->boldToolButton, true);
+        setMenu(mUi->actionBold, true);
+    }
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
     changed();
@@ -80,11 +89,23 @@ void Main::doCenterJustify() {
     block.setAlignment(Qt::AlignCenter);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    justifyButtons();
     changed();
 }
 
 void Main::doCopy() {
     mUi->textEdit->copy();
+}
+
+void Main::doCursorPositionChanged() {
+    auto cursor = mUi->textEdit->textCursor();
+    setIcon(mUi->boldToolButton,         cursor.charFormat().fontWeight() == QFont::Bold);
+    setMenu(mUi->actionBold,             cursor.charFormat().fontWeight() == QFont::Bold);
+    setIcon(mUi->underlineToolButton,    cursor.charFormat().fontUnderline());
+    setMenu(mUi->actionUnderline,        cursor.charFormat().fontUnderline());
+    setIcon(mUi->italicToolButton,       cursor.charFormat().fontItalic());
+    setMenu(mUi->actionItalic,           cursor.charFormat().fontItalic());
+    justifyButtons();
 }
 
 void Main::doCut() {
@@ -114,7 +135,8 @@ void Main::doFullJustify() {
     block.setAlignment(Qt::AlignJustify);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
-    mNovel.change();
+    justifyButtons();
+    changed();
 }
 
 void Main::doFullScreen() {
@@ -129,6 +151,7 @@ void Main::doFullScreen() {
     cursor.setPosition(dlg.position());
     mUi->textEdit->setTextCursor(cursor);
     mUi->textEdit->ensureCursorVisible();
+    doCursorPositionChanged();
 }
 
 void Main::doIndent() {
@@ -143,7 +166,15 @@ void Main::doIndent() {
 void Main::doItalic() {
     auto cursor = mUi->textEdit->textCursor();
     QTextCharFormat format;
-    format.setFontItalic(!cursor.charFormat().fontItalic());
+    if (!cursor.charFormat().fontItalic()) {
+        format.setFontItalic(true);
+        setIcon(mUi->italicToolButton, true);
+        setMenu(mUi->actionItalic, true);
+    } else {
+        format.setFontItalic(false);
+        setIcon(mUi->italicToolButton, false);
+        setMenu(mUi->actionItalic, false);
+    }
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
     changed();
@@ -159,6 +190,7 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     auto* item = mNovel.findItem(mCurrentNode);
     mUi->textEdit->setHtml(item->html());
     setPosition(item->position());
+    doCursorPositionChanged();
     changed();
 }
 
@@ -168,6 +200,7 @@ void Main::doLeftJustify() {
     block.setAlignment(Qt::AlignLeft);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    justifyButtons();
     changed();
 }
 
@@ -192,6 +225,7 @@ void Main::doNew() {
     mCurrentNode = mNovel.id();
     clearChanged();
     update();
+    doCursorPositionChanged();
 }
 
 void Main::doOpen() {
@@ -233,6 +267,7 @@ void Main::doOpen() {
         mState[id] = expanded;
     }
     update();
+    doCursorPositionChanged();
 }
 
 void Main::doOutdent() {
@@ -283,6 +318,7 @@ void Main::doRightJustify() {
     block.setAlignment(Qt::AlignRight);
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
+    justifyButtons();
     changed();
 }
 
@@ -312,7 +348,15 @@ void Main::doTextChanged() {
 void Main::doUnderline() {
     auto cursor = mUi->textEdit->textCursor();
     QTextCharFormat format;
-    format.setFontUnderline(!cursor.charFormat().fontUnderline());
+    if (!cursor.charFormat().fontUnderline()) {
+        format.setFontUnderline(true);
+        setIcon(mUi->underlineToolButton, true);
+        setMenu(mUi->actionUnderline, true);
+    } else {
+        format.setFontUnderline(false);
+        setIcon(mUi->underlineToolButton, false);
+        setMenu(mUi->actionUnderline, false);
+    }
     cursor.mergeCharFormat(format);
     mUi->textEdit->setTextCursor(cursor);
     changed();
@@ -387,6 +431,26 @@ void Main::fitWindow() {
     mPrefs.setWindowLocation(geom);
 }
 
+void Main::justifyButtons() {
+    auto cursor = mUi->textEdit->textCursor();
+    auto block = cursor.blockFormat();
+    setIcon(mUi->leftJustifyToolButton,    block.alignment() == Qt::AlignLeft);
+    setMenu(mUi->actionLeft_Justify,       block.alignment() == Qt::AlignLeft);
+    setIcon(mUi->centerToolButton,         block.alignment() == Qt::AlignCenter);
+    setMenu(mUi->actionCenter,             block.alignment() == Qt::AlignCenter);
+    setIcon(mUi->rightJustifyToolButton,   block.alignment() == Qt::AlignRight);
+    setMenu(mUi->actionRight_Justify,      block.alignment() == Qt::AlignRight);
+    setIcon(mUi->fullJustifyToolButton,    block.alignment() == Qt::AlignJustify);
+    setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
+}
+
+
+QString Main::checked(const QString& path) {
+    StringList parts(path.split("."));
+    parts[0] += "Ck";
+    return parts.join(".");
+}
+
 void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     auto id = item->data(0, Qt::UserRole).toLongLong();
     bool open = item->isExpanded();
@@ -422,6 +486,20 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
 
 void Main::setHtml(const QString& html) {
     mUi->textEdit->setHtml(html);
+}
+
+void Main::setIcon(QToolButton* button, bool isChecked) {
+    QString path = Main::ref().getIconPath(button->objectName());
+    if (mPrefs.wasDark() != mPrefs.isDark()) path = mPrefs.newPath(path);
+    if (isChecked) path = checked(path);
+    QPixmap pm(path);
+    QIcon icon;
+    icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
+    button->setIcon(icon);
+}
+
+void Main::setMenu(QAction* menuItem, bool isChecked) {
+    menuItem->setChecked(isChecked);
 }
 
 void Main::setPosition(qlonglong pos) {
@@ -541,11 +619,13 @@ void Main::setupConnections() {
     connect(mUi->actionIndent,             &QAction::triggered, this, &Main::indentAction);
     connect(mUi->actionItalic,             &QAction::triggered, this, &Main::italicAction);
     connect(mUi->actionLeft_Justify,       &QAction::triggered, this, &Main::leftJustifyAction);
+    connect(mUi->actionLowercase,          &QAction::triggered, this, &Main::lowerCaseAction);
     connect(mUi->actionUndent,             &QAction::triggered, this, &Main::outdentAction);
     connect(mUi->actionPaste,              &QAction::triggered, this, &Main::pasteAction);
     connect(mUi->actionPrefereces,         &QAction::triggered, this, &Main::preferencesAction);
     connect(mUi->actionRight_Justify,      &QAction::triggered, this, &Main::rightJustifyAction);
     connect(mUi->actionUnderline,          &QAction::triggered, this, &Main::underlineAction);
+    connect(mUi->actionUppercase,          &QAction::triggered, this, &Main::uppercaseAction);
 
     connect(mUi->actionAdd_Item,    &QAction::triggered, this, &Main::addItemAction);
     connect(mUi->actionEdit_Item,   &QAction::triggered, this, &Main::editItemAction);
@@ -571,7 +651,8 @@ void Main::setupConnections() {
     connect(mUi->treeWidget, &QTreeWidget::itemDoubleClicked,  this, &Main::doubleClickAction);
     connect(mUi->treeWidget, &QTreeWidget::currentItemChanged, this, &Main::currentItemChangedAction);
 
-    connect(mUi->textEdit, &TextEdit::textChanged, this, &Main::textChangedAction);
+    connect(mUi->textEdit, &TextEdit::cursorPositionChanged, this, &Main::cursorPositionChanged);
+    connect(mUi->textEdit, &TextEdit::textChanged,           this, &Main::textChangedAction);
 
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;
