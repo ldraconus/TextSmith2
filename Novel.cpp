@@ -8,16 +8,19 @@
 qsizetype Item::sNextID = 0;
 
 Item::Item(bool noId)
-    : mID(noId ? sNextID : sNextID++) {
+    : mCount(0)
+    , mID(noId ? sNextID : sNextID++) {
 }
 
-Item::Item(Json5Object& obj) {
+Item::Item(Json5Object& obj)
+    : mCount(0) {
     fromObject(obj);
 }
 
 void Item::clear() {
     for (auto& child: mChildren) child.second.clear();
     mChildren.clear();
+    mCount = 0;
     mHtml.clear();
     mID = 0;
     mName.clear();
@@ -41,9 +44,38 @@ void Item::changeFont(qlonglong skip, const QFont& font) {
     for (auto& child: mChildren) child.second.changeFont(skip, font);
 }
 
+qsizetype Item::childOrder(qlonglong id) {
+    int i = 0;
+    for (auto& item: mOrder) {
+        if (id == item) return i;
+        else ++i;
+    }
+    return -1;
+}
+
 void Item::clearTag(const QString &tag) {
     auto idx = mTags.indexOf(tag);
     if (idx >= 0) mTags.takeAt(idx);
+}
+
+qlonglong Item::count(int count) {
+    if (count == DontCount) return mCount;
+    qlonglong total = 0;
+    if (count == CountChildren || count == Count) {
+        QTextEdit text;
+        text.insertHtml(mHtml);
+        QString plain = text.toPlainText();
+        StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
+        total = mCount = words.count();
+    } else total = mCount;
+    if (count == CountChildren || count == DontCountDoChildren) for (auto& child: mChildren) total += child.second.count(count);
+    return total;
+}
+
+void Item::exchange(qsizetype idx1, qsizetype idx2) {
+    qlonglong pos1 = mOrder.indexOf(idx1);
+    qlonglong pos2 = mOrder.indexOf(idx2);
+    mOrder.swapItemsAt(pos1, pos2);
 }
 
 void Item::deleteItem(qlonglong id) {
@@ -175,6 +207,7 @@ bool Item::fromObject(Json5Object& obj) {
         if (tag.isEmpty()) continue;
         mTags.append(tag);
     }
+    count();
     return true;
 }
 
@@ -196,6 +229,7 @@ void Item::newHtml() {
     text.setTextCursor(cursor);
     text.document()->setDefaultFont(font);
     mHtml = text.toHtml();
+    mCount = 0;
 }
 
 Novel::Novel()

@@ -20,6 +20,7 @@ constexpr auto AutoSaveInterval { "AutoSave Interval" };
 constexpr auto FontFamily       { "FontFasmily" };
 constexpr auto FontSize         { "FontSize" };
 constexpr auto MainSplitter     { "MainSplitter" };
+constexpr auto OtherSplitter    { "OtherSplitter" };
 constexpr auto Position         { "Position" };
 constexpr auto Theme            { "Theme" };
 constexpr auto TypingSounds     { "TypingSounds" };
@@ -29,6 +30,7 @@ constexpr auto WindowLoc        { "WindowLoc" };
 constexpr auto DefaultFont      { "Segoe UI" };
 constexpr auto DefaultFontSize  { 9 };
 constexpr auto DefaultInterval  { 5 * 60 };
+const     auto DefaultOther     { QJsonArray() };
 constexpr auto DefaultPosition  { 0 };
 const     auto DefaultSplitter  { QJsonArray() };
 constexpr auto DefaultSave      { false };
@@ -45,6 +47,9 @@ bool Preferences::load() {
     QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
     mMainSplitter.clear();
     for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
+    QJsonArray other =  settings.value(OtherSplitter,    DefaultOther).toJsonArray();
+    mOtherSplitter.clear();
+    for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
     mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
@@ -56,8 +61,8 @@ bool Preferences::load() {
 
 QString Preferences::newPath(const QString& path) {
     StringList parts(path.split("/"));
-    int last = parts.count() - 1;
-    parts[last] = "Lt" + parts[last];
+    QString& last = parts.last();
+    last = "Lt" + last;
     return parts.join("/");
 }
 
@@ -67,7 +72,6 @@ bool Preferences::read(Json5Object& obj) {
     mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
     mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
     mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
-    mMainSplitter =     Item::hasArr(obj,  MainSplitter,     { });
     mPosition =         Item::hasNum(obj,  Position,         DefaultPosition);
     mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
     mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
@@ -85,6 +89,12 @@ bool Preferences::read(Json5Object& obj) {
         if (!i.isNumber()) continue;
         mMainSplitter.append(i.toInt());
     }
+    arr = Item::hasArr(obj, OtherSplitter, { });
+    mOtherSplitter.clear();
+    for (auto& i: arr) {
+        if (!i.isNumber()) continue;
+        mOtherSplitter.append(i.toInt());
+    }
     return true;
 }
 
@@ -97,6 +107,9 @@ bool Preferences::save() {
     QJsonArray arr;
     for (auto& a: mMainSplitter) arr.append(a.toInt());
     settings.setValue(MainSplitter,     arr);
+    QJsonArray otr;
+    for (auto& a: mOtherSplitter) otr.append(a.toInt());
+    settings.setValue(OtherSplitter,    otr);
     settings.setValue(Position,         mPosition);
     settings.setValue(Theme,            mTheme);
     settings.setValue(TypingSounds,     mTypingSounds);
@@ -226,7 +239,7 @@ bool Preferences::isDark() {
 void Preferences::resetIcons(bool isDark) {
     for (auto* button: Main::ref().findChildren<QToolButton*>()) {
         QString path = Main::ref().getIconPath(button->objectName());
-        if (mWasDark != isDark) path = newPath(path);
+        if (!isDark) path = newPath(path);
         if (button->isCheckable()) path = checkPath(path, button->isChecked());
         QPixmap pm(path);
         QIcon icon;
@@ -240,11 +253,11 @@ void Preferences::resetIcons(bool isDark) {
 }
 
 void Preferences::setSystemTheme() {
-    if (isDark()) setDarkTheme();
+    mIsDark = isDark();
+    if (mIsDark) setDarkTheme();
     else setLightTheme();
 
-    mIsDark = isDark();
-    resetIcons(isDark());
+    resetIcons(mIsDark);
 }
 
 Json5Object Preferences::write() {
@@ -254,6 +267,7 @@ Json5Object Preferences::write() {
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
     obj[MainSplitter] =     mMainSplitter;
+    obj[OtherSplitter] =    mOtherSplitter;
     obj[Position] =         mPosition;
     obj[Theme] =            mTheme;
     obj[TypingSounds] =     mTypingSounds;

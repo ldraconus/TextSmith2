@@ -4,6 +4,7 @@
 
 #include <QDialog>
 #include <QFont>
+#include <QTimer>
 
 namespace Ui {
 class FullScreenDialog;
@@ -17,11 +18,13 @@ public:
     explicit FullScreenDialog(Preferences& prefs, QWidget* parent = nullptr);
     ~FullScreenDialog();
 
-    QString   html();
-    qlonglong position();
-    void      setFont(const QFont& font);
-    void      setHtml(const QString& html);
-    void      setPosition(qlonglong pos);
+    QString    html();
+    Json5Array other();
+    qlonglong  position();
+    void       setFont(const QFont& font);
+    void       setHtml(const QString& html);
+    void       setOther(Json5Array& other);
+    void       setPosition(qlonglong pos);
 
 protected:
     void keyPressEvent(QKeyEvent* evt) override;
@@ -29,5 +32,10 @@ protected:
 private:
     bool                  mCtrlJSeen { false };
     Preferences*          mPrefs;
+    QTimer                mTimer;
     Ui::FullScreenDialog* mUi;
+
+    void setDark();
+    void setLight();
+    void setSystem();
 };

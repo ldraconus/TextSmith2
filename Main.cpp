@@ -15,6 +15,7 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QTextToSpeech>
 #include <QThread>
 #include <QTreeWidget>
 #include <QWindow>
@@ -46,6 +47,31 @@ void Main::closeEvent(QCloseEvent* ce) {
 void Main::showEvent(QShowEvent* event) {
     QMainWindow::showEvent(event);
     fitWindow();
+}
+
+void Main::doAboutToShowFileMenu() {
+    mUi->actionSave->setEnabled(mNovel.isChanged());
+}
+
+void Main::doAboutToShowEditMenu() {
+    mUi->actionUndo->setEnabled(mUi->textEdit->document()->isUndoAvailable());
+    mUi->actionRedo->setEnabled(mUi->textEdit->document()->isRedoAvailable());
+    mUi->actionCopy->setEnabled(mUi->textEdit->textCursor().hasSelection());
+    mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
+}
+
+void Main::doAboutToShowNovelMenu() {
+    mUi->actionRemove_Item->setEnabled(!(mUi->treeWidget->currentItem() == mUi->treeWidget->topLevelItem(0)));
+    mUi->actionMove_an_Item_Up->setEnabled(!nothingAbove());
+    mUi->actionMove_Current_Item_Down->setEnabled(!nothingBelow());
+    mUi->actionMove_Current_Item_Out->setEnabled(!nothingAbove());
+}
+
+void Main::doAboutToShowViewMenu() {
+    mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
+}
+
+void Main::doAboutToShowHelpMenu() {
 }
 
 void Main::doAddItem() {
@@ -93,8 +119,14 @@ void Main::doCenterJustify() {
     changed();
 }
 
+void Main::doCloseAll() {
+    workTree(mUi->treeWidget->topLevelItem(0), false);
+    mUi->treeWidget->setCurrentItem(mUi->treeWidget->topLevelItem(0));
+}
+
 void Main::doCopy() {
-    mUi->textEdit->copy();
+    auto cursor = mUi->textEdit->textCursor();
+    if (cursor.hasSelection()) mUi->textEdit->copy();
 }
 
 void Main::doCursorPositionChanged() {
@@ -109,12 +141,16 @@ void Main::doCursorPositionChanged() {
 }
 
 void Main::doCut() {
-    mUi->textEdit->cut();
-    changed();
+    auto cursor = mUi->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        mUi->textEdit->cut();
+        changed();
+    }
 }
 
 void Main::doEditItem() {
     Item* current = mNovel.findItem(mCurrentNode);
+    if (current == nullptr) return;
     Item item(*current);
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
@@ -144,8 +180,12 @@ void Main::doFullScreen() {
     dlg.setHtml(mUi->textEdit->toHtml());
     dlg.setFont(mUi->textEdit->document()->defaultFont());
     dlg.setPosition(mUi->textEdit->textCursor().position());
+    Json5Array arr = mPrefs.otherSplitter();
+    if (arr.size() >= 2) dlg.setOther(arr);
     dlg.showFullScreen();
     dlg.exec();
+    Json5Array other = dlg.other();
+    mPrefs.setOtherSplitter(other);
     mUi->textEdit->setHtml(dlg.html());
     auto cursor = mUi->textEdit->textCursor();
     cursor.setPosition(dlg.position());
@@ -153,6 +193,12 @@ void Main::doFullScreen() {
     mUi->textEdit->ensureCursorVisible();
     doCursorPositionChanged();
 }
+
+void Main::doHighlight(const QString& text, qlonglong start) {
+    auto cursor = mUi->textEdit->textCursor();
+    cursor.setPosition(start);
+    cursor.setPosition(start + text.length(), QTextCursor::KeepAnchor);
+    mUi->textEdit->setTextCursor(cursor);}
 
 void Main::doIndent() {
     auto cursor = mUi->textEdit->textCursor();
@@ -185,6 +231,7 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     auto* oldItem = mNovel.findItem(mCurrentNode);
     if (oldItem == nullptr) return;
     oldItem->setHtml(mUi->textEdit->toHtml());
+    oldItem->count(Item::DontCountChildren);
     oldItem->setPosition((mUi->textEdit->textCursor().position()));
     mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
     auto* item = mNovel.findItem(mCurrentNode);
@@ -205,7 +252,93 @@ void Main::doLeftJustify() {
 }
 
 void Main::doLowercase() {
+    auto cursor = mUi->textEdit->textCursor();
+    auto text = cursor.selectedText();
+    if (text.isEmpty()) return;
+    busy();
+    text = text.toLower();
+    replaceText(cursor, text);
+    ready();
+    changed();
+}
 
+void Main::doMoveDown() {
+    if (nothingBelow()) return;
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* treeItem = findItem(root, mCurrentNode);
+    auto* parent = treeItem->parent();
+    auto idx = parent->indexOfChild(treeItem);
+    auto idxOther = idx + 1;
+    auto* otherTreeItem = parent->child(idxOther);
+    auto otherNode = otherTreeItem->data(0, Qt::UserRole).toLongLong();
+    auto parentNode = parent->data(0, Qt::UserRole).toLongLong();
+    Item* parentItem = mNovel.findItem(parentNode);
+    if (idx == parentItem->count() - 1) {
+        if (parent == mUi->treeWidget->topLevelItem(0)) return;
+        parent->takeChild(idx);
+        auto* grandParent = parent->parent();
+        auto parentIdx = grandParent->indexOfChild(parent);
+        grandParent->insertChild(parentIdx + 1, otherTreeItem);
+        auto grandParentNode = grandParent->data(0, Qt::UserRole).toLongLong();
+        auto* grandParentItem = mNovel.findItem(grandParentNode);
+        auto mCurrentNode = parentItem->order().takeAt(idx);
+        grandParentItem->order().insert(parentIdx + 1, mCurrentNode);
+    } else {
+        parentItem->exchange(mCurrentNode, otherNode);
+        parent->takeChild(idx);
+        parent->insertChild(idxOther, treeItem);
+    }
+    mUi->treeWidget->setCurrentItem(treeItem);
+}
+
+void Main::doMoveOut() {
+    if (parentIsRoot()) return;
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* treeItem = findItem(root, mCurrentNode);
+    auto* parent = treeItem->parent();
+    auto idx = parent->indexOfChild(treeItem);
+    auto idxOther = idx - 1;
+    auto* otherTreeItem = parent->child(idxOther);
+    auto parentNode = parent->data(0, Qt::UserRole).toLongLong();
+    Item* parentItem = mNovel.findItem(parentNode);
+    if (parent == mUi->treeWidget->topLevelItem(0)) return;
+    parent->takeChild(idx);
+    auto* grandParent = parent->parent();
+    auto parentIdx = grandParent->indexOfChild(parent);
+    grandParent->insertChild(parentIdx, otherTreeItem);
+    auto grandParentNode = grandParent->data(0, Qt::UserRole).toLongLong();
+    auto* grandParentItem = mNovel.findItem(grandParentNode);
+    auto mCurrentNode = parentItem->order().takeAt(idx);
+    grandParentItem->order().insert(parentIdx, mCurrentNode);
+}
+
+void Main::doMoveUp() {
+    if (nothingAbove()) return;
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* treeItem = findItem(root, mCurrentNode);
+    auto* parent = treeItem->parent();
+    auto idx = parent->indexOfChild(treeItem);
+    auto idxOther = idx - 1;
+    auto parentNode = parent->data(0, Qt::UserRole).toLongLong();
+    Item* parentItem = mNovel.findItem(parentNode);
+    if (idx == 0) {
+        if (parent == mUi->treeWidget->topLevelItem(0)) return;
+        auto* grandParent = parent->parent();
+        parent->takeChild(idx);
+        auto parentIdx = grandParent->indexOfChild(parent);
+        grandParent->insertChild(parentIdx, treeItem);
+        auto grandParentNode = grandParent->data(0, Qt::UserRole).toLongLong();
+        auto* grandParentItem = mNovel.findItem(grandParentNode);
+        mCurrentNode = parentItem->order().takeAt(idx);
+        grandParentItem->order().insert(parentIdx, mCurrentNode);
+    } else {
+        auto* otherTreeItem = parent->child(idxOther);
+        auto otherNode = otherTreeItem->data(0, Qt::UserRole).toLongLong();
+        parent->takeChild(idx);
+        parent->insertChild(idxOther, treeItem);
+        parentItem->exchange(mCurrentNode, otherNode);
+    }
+    mUi->treeWidget->setCurrentItem(treeItem);
 }
 
 void Main::doNew() {
@@ -225,7 +358,16 @@ void Main::doNew() {
     mCurrentNode = mNovel.id();
     clearChanged();
     update();
+    mWordCount.setCurrentItem(0);
+    mWordCount.setTotal(0);
+    mWordCount.setSinceOpened(0);
+    mWordCount.setSinceLastCounted(0);
     doCursorPositionChanged();
+}
+
+void Main::doOpenAll() {
+    workTree(mUi->treeWidget->topLevelItem(0), true);
+    mUi->treeWidget->setCurrentItem(mUi->treeWidget->topLevelItem(0));
 }
 
 void Main::doOpen() {
@@ -241,13 +383,14 @@ void Main::doOpen() {
     }
 
     QString filename;
-    if (mNovel.filename().isEmpty()) {
-        filename = QFileDialog::getOpenFileName(this, "Open Which Novel?", mDocDir, "Novels (*.novel);;All Files (*.*)");
-    }
+    if (mNovel.filename().isEmpty()) filename = QFileDialog::getOpenFileName(this, "Open Which Novel?", mDocDir,
+                                                                             "Novels (*.novel);;All Files (*.*)");
+    else filename = mNovel.filename();
 
     QFileInfo info(filename);
     mDocDir = info.absolutePath();
 
+    busy();
     mNovel.clear();
     mNovel.setFilename(filename);
     mNovel.open();
@@ -268,6 +411,15 @@ void Main::doOpen() {
     }
     update();
     doCursorPositionChanged();
+    auto total = mNovel.count(Item::CountChildren);
+    if (QTreeWidgetItem* branch = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode); branch != nullptr) {
+        Item* item = mNovel.findItem(mCurrentNode);
+        mWordCount.setCurrentItem(item->count(Item::DontCount));
+    }
+    mWordCount.setSinceLastCounted(0);
+    mWordCount.setSinceOpened(0);
+    mWordCount.setTotal(total);
+    ready();
 }
 
 void Main::doOutdent() {
@@ -290,9 +442,28 @@ void Main::doPaste() {
 }
 
 void Main::doPreferences() {
+    Preferences prefs(mPrefs);
     PreferencesDialog dlg(mPrefs, this);
-    if (dlg.exec() == QDialog::Rejected) return;
+    if (dlg.exec() == QDialog::Rejected) mPrefs = prefs;
     updateFromPrefs();
+}
+
+void Main::doReadToMe() {
+    if (!mSpeechAvailable) return;
+
+    QTextCursor cursor = mUi->textEdit->textCursor();
+    if (cursor.hasSelection()) mTextToSpeak = cursor.selectedText();
+    else mTextToSpeak = mUi->textEdit->toPlainText();
+
+    mStopButton->setVisible(true);
+    mSavedCursor = cursor;
+
+    mSpeech.setVoice(mPrefs.voice());
+    QThread* thread = QThread::create([this]() {
+        mSpeech.speak(mTextToSpeak);
+    });
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
 }
 
 void Main::doRemoveItem() {
@@ -341,6 +512,18 @@ bool Main::doSaveAs() {
     return true;
 }
 
+void Main::doStop(bool stopped) {
+    QTextCursor cursor(mUi->textEdit->document());
+    if (mSavedCursor.hasSelection()) {
+        auto cursor = mUi->textEdit->textCursor();
+        cursor.setPosition(mSavedCursor.selectionStart());
+        cursor.setPosition(mSavedCursor.selectionEnd());
+        mUi->textEdit->setTextCursor(cursor);
+    } else setPosition(mSavedCursor.position());
+    mStopButton->setVisible(false);
+    if (!stopped) mSpeech.stop();
+}
+
 void Main::doTextChanged() {
     changed();
 }
@@ -363,7 +546,25 @@ void Main::doUnderline() {
 }
 
 void Main::doUppercase() {
+    auto cursor = mUi->textEdit->textCursor();
+    auto text = cursor.selectedText();
+    if (text.isEmpty()) return;
+    busy();
+    text = text.toUpper();
+    replaceText(cursor, text);
+    ready();
+    changed();
+}
 
+void Main::doWordCount() {
+    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
+    wordCounts();
+    auto report = QString("Total: %1 | Current Item %2 | Since Opening %3 | Since Last Count %4")
+                      .arg(mWordCount.total())
+                      .arg(mWordCount.currentItem())
+                      .arg(mWordCount.sinceOpened())
+                      .arg(mWordCount.sinceLastCounted());
+    mUi->statusbar->showMessage(report, 30 * 1000);
 }
 
 void Main::buildTree(Item* item, QTreeWidgetItem* branch, Map<qlonglong, bool>& byId) {
@@ -379,6 +580,12 @@ void Main::buildTree(Item* item, QTreeWidgetItem* branch, Map<qlonglong, bool>& 
 
     if (byId.contains(item->id())) twItem->setExpanded(byId[item->id()]);
     else twItem->setExpanded(true);
+}
+
+QString Main::checked(const QString& path) {
+    StringList parts(path.split("."));
+    parts[0] += "Ck";
+    return parts.join(".");
 }
 
 QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
@@ -444,18 +651,57 @@ void Main::justifyButtons() {
     setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
 }
 
-
-QString Main::checked(const QString& path) {
-    StringList parts(path.split("."));
-    parts[0] += "Ck";
-    return parts.join(".");
-}
-
 void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     auto id = item->data(0, Qt::UserRole).toLongLong();
     bool open = item->isExpanded();
     byId[id] = open;
     for (int i = 0; i < item->childCount(); ++i) mapTree(byId, item->child(i));
+}
+
+bool Main::nothingAbove() {
+    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    if (item == nullptr) return true;
+    auto* parent = item->parent();
+    if (parent == nullptr) return true;
+    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    return false;
+}
+
+bool Main::nothingBelow() {
+    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    if (item == nullptr) return true;
+    auto* parent = item->parent();
+    if (parent == nullptr) return true;
+    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    auto itemIdx = parent->indexOfChild(item);
+    if (itemIdx < parent->childCount() ) return false;
+    auto* grandparent = parent->parent();
+    if (grandparent == nullptr) return true;
+    auto parentIndex = grandparent->indexOfChild(parent);
+    if (parentIndex < grandparent->childCount()) return false;
+    return true;
+}
+
+void Main::replaceText(QTextCursor cursor, const QString& text) {
+    auto position = cursor.selectionStart();
+    for (const auto& ch: text) {
+        if (ch != '\n') {
+            cursor.setPosition(position + 1);
+            cursor.insertText(ch);
+            cursor.setPosition(position);
+            cursor.deleteChar();
+        }
+        ++position;
+    }
+}
+
+bool Main::parentIsRoot() {
+    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    if (item == nullptr) return true;
+    auto* parent = item->parent();
+    if (parent == nullptr) return true;
+    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    return false;
 }
 
 void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
@@ -540,6 +786,8 @@ void Main::updateFromPrefs() {
         for (auto& m: mPrefs.mainSplitter()) arr.append(m.toInt());
         mUi->splitter->setSizes(arr);
     }
+
+    mUi->actionRead_To_Me->setEnabled(mPrefs.voice() >= 0);
 }
 
 void Main:: updateHtml() { // update, and post-fullscreen
@@ -554,6 +802,11 @@ void Main:: updateHtml() { // update, and post-fullscreen
     }
 }
 
+void Main::workTree(QTreeWidgetItem* item, bool expand) {
+    item->setExpanded(expand);
+    for (int i = 0; i < item->childCount(); ++i) workTree(item->child(i), expand);
+}
+
 Main::Main(QApplication* app, QWidget* parent)
     : QMainWindow(parent)
     , mApp(app)
@@ -565,16 +818,27 @@ Main::Main(QApplication* app, QWidget* parent)
     sMain = this;
     mUi->setupUi(this);
 
+    QTextToSpeech* speech = new QTextToSpeech();
+    mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
+    delete speech;
+
     mNovel.init();
     mCurrentNode = mNovel.id();
 
     setupIcons();
 
-    // set up three directories: App/Doc/Local
     QDir().mkpath(mAppDir);
     QDir().mkpath(mDocDir);
     QDir().mkpath(mDocDir + "/TextSmith");
     QDir().mkpath(mLocalDir);
+
+    mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
+    if (mSpeechAvailable) {
+        mStopButton = new QToolButton(mUi->statusbar);
+        mStopButton->setText("■");
+        mStopButton->setVisible(false);
+        mUi->statusbar->addPermanentWidget(mStopButton);
+    }
 
     setupConnections();
     setupTabOrder();
@@ -582,8 +846,8 @@ Main::Main(QApplication* app, QWidget* parent)
     mPrefs.load();
 
     mUi->treeWidget->setColumnCount(1);
+    mUi->textEdit->setTabChangesFocus(true);
 
-    // parse command line for novel to open
     StringList arguments { app->arguments() };
     if (arguments.size() > 1) {
         mNovel.setFilename(arguments[1]);
@@ -596,11 +860,24 @@ Main::Main(QApplication* app, QWidget* parent)
 }
 
 Main::~Main() {
+    Json5Array array;
+    for (auto size: mUi->splitter->sizes()) array.append(qlonglong(size));
+    mPrefs.setMainSplitter(array);
     delete mUi;
 }
 
 void Main::changeNovelFont(qlonglong skip, const QFont& font) {
     mNovel.changeFont(skip, font);
+}
+
+void Main::wordCounts() {
+    auto oldCount = mWordCount.currentItem();
+    auto newCount = mNovel.count(Item::Count);
+    auto difference = newCount - oldCount;
+    mWordCount.setCurrentItem(newCount);
+    mWordCount.setTotal(mWordCount.total() + difference);
+    mWordCount.setSinceOpened(mWordCount.sinceOpened() + difference);
+    mWordCount.setSinceLastCounted(mWordCount.sinceLastCounted() + difference);
 }
 
 void Main::setupConnections() {
@@ -627,20 +904,29 @@ void Main::setupConnections() {
     connect(mUi->actionUnderline,          &QAction::triggered, this, &Main::underlineAction);
     connect(mUi->actionUppercase,          &QAction::triggered, this, &Main::uppercaseAction);
 
-    connect(mUi->actionAdd_Item,    &QAction::triggered, this, &Main::addItemAction);
-    connect(mUi->actionEdit_Item,   &QAction::triggered, this, &Main::editItemAction);
-    connect(mUi->actionRemove_Item, &QAction::triggered, this, &Main::removeItemAction);
+    connect(mUi->actionAdd_Item,               &QAction::triggered, this, &Main::addItemAction);
+    connect(mUi->actionClose_All,              &QAction::triggered, this, &Main::closeAllAction);
+    connect(mUi->actionEdit_Item,              &QAction::triggered, this, &Main::editItemAction);
+    connect(mUi->actionMove_Current_Item_Down, &QAction::triggered, this, &Main::actionMoveDown);
+    connect(mUi->actionMove_Current_Item_Out,  &QAction::triggered, this, &Main::actionMoveOut);
+    connect(mUi->actionMove_an_Item_Up,        &QAction::triggered, this, &Main::actionMoveUp);
+    connect(mUi->actionOpen_All,               &QAction::triggered, this, &Main::openAllAction);
+    connect(mUi->actionRemove_Item,            &QAction::triggered, this, &Main::removeItemAction);
 
-    mUi->actionRead_To_Me->setShortcut(QKeySequence("Alt+R"));
     connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
+    connect(mUi->actionRead_To_Me,       &QAction::triggered, this, &Main::readToMeAction);
+    connect(mUi->actionWord_Count,       &QAction::triggered, this, &Main::doWordCount);
 
     connect(mUi->newItemToolButton,    &QToolButton::clicked, this, &Main::addItemAction);
     connect(mUi->deleteItemToolButton, &QToolButton::clicked, this, &Main::removeItemAction);
+    connect(mUi->downToolButton,       &QToolButton::clicked, this, &Main::actionMoveDown);
+    connect(mUi->outToolButton,        &QToolButton::clicked, this, &Main::actionMoveOut);
+    connect(mUi->upToolButton,         &QToolButton::clicked, this, &Main::actionMoveUp);
 
     connect(mUi->boldToolButton,           &QToolButton::clicked, this, &Main::boldAction);
-    connect(mUi->centerToolButton,         &QToolButton::clicked, this, &Main::doCenterJustify);
-    connect(mUi->fullJustifyToolButton,    &QToolButton::clicked, this, &Main::doFullJustify);
-    connect(mUi->leftJustifyToolButton,    &QToolButton::clicked, this, &Main::doLeftJustify);
+    connect(mUi->centerToolButton,         &QToolButton::clicked, this, &Main::centerJustifyAction);
+    connect(mUi->fullJustifyToolButton,    &QToolButton::clicked, this, &Main::fullJustifyAction);
+    connect(mUi->leftJustifyToolButton,    &QToolButton::clicked, this, &Main::leftJustifyAction);
     connect(mUi->increaseIndentToolButton, &QToolButton::clicked, this, &Main::indentAction);
     connect(mUi->italicToolButton,         &QToolButton::clicked, this, &Main::italicAction);
     connect(mUi->leftJustifyToolButton,    &QToolButton::clicked, this, &Main::leftJustifyAction);
@@ -648,11 +934,20 @@ void Main::setupConnections() {
     connect(mUi->rightJustifyToolButton,   &QToolButton::clicked, this, &Main::rightJustifyAction);
     connect(mUi->underlineToolButton,      &QToolButton::clicked, this, &Main::underlineAction);
 
+    connect(mUi->menuFile,  &QMenu::aboutToShow, this, &Main::aboutToShowFileMenuAction);
+    connect(mUi->menuEdit,  &QMenu::aboutToShow, this, &Main::aboutToShowEditMenuAction);
+    connect(mUi->menuNovel, &QMenu::aboutToShow, this, &Main::aboutToShowNovelMenuAction);
+    connect(mUi->menuView,  &QMenu::aboutToShow, this, &Main::aboutToShowViewMenuAction);
+
     connect(mUi->treeWidget, &QTreeWidget::itemDoubleClicked,  this, &Main::doubleClickAction);
     connect(mUi->treeWidget, &QTreeWidget::currentItemChanged, this, &Main::currentItemChangedAction);
 
     connect(mUi->textEdit, &TextEdit::cursorPositionChanged, this, &Main::cursorPositionChanged);
     connect(mUi->textEdit, &TextEdit::textChanged,           this, &Main::textChangedAction);
+
+    connect(mStopButton, &QToolButton::clicked,     this, &Main::stop);
+    connect(&mSpeech,    &Speech::speaking,         this, &Main::highlight);
+    connect(&mSpeech,    &Speech::speakingFinished, this, &Main::stopped);
 
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;
@@ -661,9 +956,9 @@ void Main::setupConnections() {
                 mapTree(mById, mUi->treeWidget->topLevelItem(0));
                 mGeom = geometry();
                 QThread* thread = QThread::create([this]() {
-                                                               save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
-                                                               mSaving = false;
-                                                           });
+                    save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
+                    mSaving = false;
+                });
                 connect(thread, &QThread::finished, thread, &QObject::deleteLater);
                 thread->start();
             });

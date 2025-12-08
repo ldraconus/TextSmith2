@@ -7,6 +7,7 @@ cp -ruf ../../packages install/packages
 cp -ruf ../../config install/config
 cp -uf release/TextSmith2.exe install/packages/com.vendor.product/data/TextSmith.exe
 # copy documentation into data dir as well
+# copy scripts into scripts directory
 cd install/packages/com.vendor.product/data
 /D/ProgramFiles/Qt/6.10.1/mingw_64/bin/windeployqt --no-translations TextSmith.exe
 cd ../../..

@@ -27,8 +27,6 @@ PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     theme(mPrefs->theme());
 
     setupConnections();
-
-    // read from prefs and set the values in the dialog
 }
 
 PreferencesDialog::~PreferencesDialog() {
@@ -50,7 +48,7 @@ void PreferencesDialog::saveChanges() {
     mPrefs->setFontSize(font.pointSize());
     mPrefs->setTheme(mUi->displayThemeComboBox->currentIndex());
     mPrefs->setTypingSounds(mUi->typewriteSoundsCheckBox->isChecked());
-    mPrefs->setVoice(mUi->readAloudVoiceComboBox->currentIndex());
+    if (mUi->readAloudVoiceComboBox->isEnabled()) mPrefs->setVoice(mUi->readAloudVoiceComboBox->currentIndex());
 }
 
 void PreferencesDialog::theme(int idx) {
@@ -66,6 +64,7 @@ void PreferencesDialog::font() {
     QFont font = QFontDialog::getFont(&ok, mUi->novelFontPushButton->font(), this, "Pick a font to use for your novel");
     if (!ok) return;
 
+    Main::ref().busy();
     mUi->novelFontPushButton->setFont(font);
     mUi->novelFontPushButton->setText(QString("%1:%2").arg(font.family()).arg(font.pointSize()));
 
@@ -73,13 +72,18 @@ void PreferencesDialog::font() {
 }
 
 void PreferencesDialog::loadAvailableVoices() {
-    if (mSpeech == nullptr) {
+    if (mSpeech == nullptr || mSpeech->state() == QTextToSpeech::Error) {
         mUi->readAloudVoiceComboBox->clear();
         mUi->readAloudVoiceComboBox->setDisabled(true);
         return;
     }
 
     auto voices = mSpeech->availableVoices();
+    if (voices.isEmpty()) {
+        mUi->readAloudVoiceComboBox->clear();
+        mUi->readAloudVoiceComboBox->setDisabled(true);
+        return;
+    }
     StringList availableVoices;
     for (auto& voice: voices) availableVoices << voice.name();
     availableVoices.sort();

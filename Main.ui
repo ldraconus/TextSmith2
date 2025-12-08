@@ -697,8 +697,8 @@ QSplitter::handle:hover {
     <addaction name="separator"/>
     <addaction name="menuFont"/>
     <addaction name="menuParagraph"/>
-    <addaction name="actionUppercase"/>
     <addaction name="actionLowercase"/>
+    <addaction name="actionUppercase"/>
     <addaction name="separator"/>
     <addaction name="actionPrefereces"/>
    </widget>
@@ -715,7 +715,7 @@ QSplitter::handle:hover {
     <addaction name="actionMove_Current_Item_Out"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Current_Item"/>
-    <addaction name="actionOopen_All"/>
+    <addaction name="actionOpen_All"/>
     <addaction name="actionClose_All"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -856,7 +856,7 @@ QSplitter::handle:hover {
     <string>Uppercase</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+U</string>
+    <string>Alt+L</string>
    </property>
   </action>
   <action name="actionLowercase">
@@ -1016,7 +1016,7 @@ QSplitter::handle:hover {
     <string>Alt+C</string>
    </property>
   </action>
-  <action name="actionOopen_All">
+  <action name="actionOpen_All">
    <property name="text">
     <string>Open All</string>
    </property>
@@ -1045,7 +1045,7 @@ QSplitter::handle:hover {
     <string>Read To Me</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionAbout_TextSmith">
@@ -1069,7 +1069,7 @@ QSplitter::handle:hover {
     <string>Web Site</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+W</string>
+    <string>Alt+W</string>
    </property>
   </action>
   <action name="actionScripting">
@@ -1098,7 +1098,13 @@ QSplitter::handle:hover {
   </action>
   <action name="actionWord_Count">
    <property name="text">
-    <string>Word Count</string>
+    <string>Word Counts</string>
+   </property>
+   <property name="iconText">
+    <string>Word Counts</string>
+   </property>
+   <property name="toolTip">
+    <string>Word Counts</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>

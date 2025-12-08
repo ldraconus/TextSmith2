@@ -8,13 +8,19 @@
 
 class Item {
 public:
-    Item(bool noId = false);
+    static constexpr int  Count =               2;
+    static constexpr int  CountChildren =       1;
+    static constexpr int  DontCountChildren =   0;
+    static constexpr int  DontCount =           -1;
+    static constexpr int  DontCountDoChildren = -2;
+    static constexpr bool NoID =                true;
+    static constexpr bool GiveID =              !NoID;
+
+    Item(bool noId = GiveID);
     explicit Item(Json5Object& obj);
 
     virtual void clear();
     virtual void init();
-
-    static constexpr bool NoID = true;
 
     auto& children()       { return mChildren; }
     auto  html()           { return mHtml; }
@@ -32,14 +38,17 @@ public:
     bool isNull() const  { return isEmpty() && mName.isEmpty() && mHtml.isEmpty(); }
 
     void addChild(Item i)          { mChildren[i.id()] = i; mOrder.append(i.id()); }
-    void setHtml(const QString& h) { mHtml = h; }
+    void setHtml(const QString& h) { mHtml = h; count(DontCountChildren); }
     void setName(const QString& n) { mName = n; }
     void setPosition(qlonglong p)  { mPosition = p; }
 
-    void  changeFont(qlonglong skip, const QFont& font);
-    void  clearTag(const QString& tag);
-    Item* findItem(qlonglong id);
-    void  newHtml();
+    void      changeFont(qlonglong skip, const QFont& font);
+    qsizetype childOrder(qlonglong id);
+    void      clearTag(const QString& tag);
+    qlonglong count(int countChildren = DontCountChildren);
+    void      exchange(qsizetype idx1, qsizetype idx2);
+    Item*     findItem(qlonglong id);
+    void      newHtml();
 
     virtual void        deleteItem(qlonglong id);
     virtual Json5Object toObject();
@@ -61,12 +70,13 @@ protected:
 
 private:
     Map<qsizetype, Item>    mChildren;
+    qlonglong               mCount;
     QString                 mHtml;
     qsizetype               mID { -1 };
     QString                 mName;
     Map<QString, qsizetype> mNamesToID;
     QList<qsizetype>        mOrder;
-    qlonglong               mPosition;
+    qlonglong               mPosition { 0 };
     StringList              mTags;
 
     static qsizetype sNextID;
@@ -80,14 +90,18 @@ public:
 
     Json5Object toObject() override;
 
-    void        change()                      { mChanged = true; }
-    Json5Object extra()                       { return mExtra; }
-    auto        filename()                    { return mFilename; }
-    auto        isChanged()                   { return mChanged; }
-    void        noChanges()                   { mChanged = false; }
-    bool        saveAs(const QString& f)      { mFilename = f; return save(); }
-    void        setExtra(Json5Object& obj)    { mExtra = obj; change(); }
-    void        setFilename(const QString& f) { mFilename = f; change(); }
+    static constexpr bool Recount =   true;
+    static constexpr bool NoRecount = !Recount;
+
+    void        change()                           { mChanged = true; }
+    qlonglong   countAll(bool recount = DontCount) { return count(recount); }
+    Json5Object extra()                            { return mExtra; }
+    auto        filename()                         { return mFilename; }
+    auto        isChanged()                        { return mChanged; }
+    void        noChanges()                        { mChanged = false; }
+    bool        saveAs(const QString& f)           { mFilename = f; return save(); }
+    void        setExtra(Json5Object& obj)         { mExtra = obj; change(); }
+    void        setFilename(const QString& f)      { mFilename = f; change(); }
 
     void clear() override;
     void deleteItem(qlonglong id) override;

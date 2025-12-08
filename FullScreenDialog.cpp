@@ -13,6 +13,14 @@ FullScreenDialog::FullScreenDialog(Preferences& prefs, QWidget *parent)
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_NoSystemBackground, false);
     setAttribute(Qt::WA_TranslucentBackground, false);
+
+    switch (mPrefs->theme()) {
+    case 0: setLight();  break;
+    case 1: setDark();   break;
+    case 2: setSystem(); break;
+    }
+
+    mUi->label->setVisible(false);
 }
 
 FullScreenDialog::~FullScreenDialog() {
@@ -21,6 +29,13 @@ FullScreenDialog::~FullScreenDialog() {
 
 QString FullScreenDialog::html() {
     return mUi->textEdit->toHtml();
+}
+
+Json5Array FullScreenDialog::other() {
+    Json5Array arr;
+    QList<int> otr = mUi->splitter->sizes();
+    for (auto& size: otr) arr.append(qlonglong(size));
+    return arr;
 }
 
 qlonglong FullScreenDialog::position() {
@@ -35,6 +50,12 @@ void FullScreenDialog::setHtml(const QString &html) {
     mUi->textEdit->setHtml(html);
 }
 
+void FullScreenDialog::setOther(Json5Array& other) {
+    QList<int> otr;
+    for (auto& size: other) otr.append(size.toInt());
+    mUi->splitter->setSizes(otr);
+}
+
 void FullScreenDialog::setPosition(qlonglong pos) {
     auto cursor = mUi->textEdit->textCursor();
     cursor.setPosition(pos);
@@ -43,6 +64,7 @@ void FullScreenDialog::setPosition(qlonglong pos) {
 }
 
 void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
+    QString report;
     QTextBlockFormat block;
     QTextCursor cursor;
     QTextCharFormat format;
@@ -121,6 +143,8 @@ void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
                 mUi->textEdit->setTextCursor(cursor);
                 return;
             case Qt::Key_J:
+                mCtrlJSeen = true;
+                return;
             case Qt::Key_S:
                 Main::ref().saveAction();
                 return;
@@ -141,6 +165,23 @@ void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
                 mUi->textEdit->ensureCursorVisible();
                 mUi->textEdit->paste();
                 return;
+            case Qt::Key_W:
+                Main::ref().novel().setHtml(Main::ref().currentNode(), mUi->textEdit->toHtml());
+                Main::ref().wordCounts();
+                report = QString("Total: %1 | Current Item %2 | Since Opening %3 | Since Last Count %4")
+                             .arg(Main::ref().wordCount().total())
+                             .arg(Main::ref().wordCount().currentItem())
+                             .arg(Main::ref().wordCount().sinceOpened())
+                             .arg(Main::ref().wordCount().sinceLastCounted());
+                mUi->label->setText(report);
+                mUi->label->setVisible(true);
+                Main::ref().wordCount().setSinceLastCounted(0);
+                mTimer.setSingleShot(true);
+                connect(&mTimer, &QTimer::timeout, this, [this]() {
+                    mUi->label->setVisible(false);
+                });
+                mTimer.start(30 * 1000);
+                return;
             case Qt::Key_X:
                 mUi->textEdit->cut();
                 return;
@@ -149,4 +190,31 @@ void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
         QDialog::keyPressEvent(evt);
         return;
     }
+}
+
+void FullScreenDialog::setDark() {
+    mUi->textEdit->setStyleSheet("QTextEdit { "
+                                 "  background-color: lightgray;"
+                                 "  color: black;"
+                                 "}");
+    mUi->label->setStyleSheet("QLabel {"
+                              "  background-color: #888888;"
+                              "  color: black;"
+                              "}");
+}
+
+void FullScreenDialog::setLight() {
+    mUi->textEdit->setStyleSheet("QTextEdit { "
+                                 "  background-color: white;"
+                                 "  color: black;"
+                                 "}");
+    mUi->label->setStyleSheet("QLabel {"
+                              "  background-color: lightgray;"
+                              "  color: black;"
+                              "}");
+}
+
+void FullScreenDialog::setSystem() {
+    if (mPrefs->isDark()) setDark();
+    else setLight();
 }

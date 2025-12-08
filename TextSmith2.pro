@@ -21,6 +21,7 @@ SOURCES += \
     Novel.cpp \
     Preferences.cpp \
     PreferencesDialog.cpp \
+    Speech.cpp \
     Start.cpp \
     TextEdit.cpp
 
@@ -31,6 +32,7 @@ HEADERS += \
     Novel.h \
     Preferences.h \
     PreferencesDialog.h \
+    Speech.h \
     TextEdit.h
 
 FORMS += \
@@ -57,6 +59,7 @@ DISTFILES += \
     Center.ico \
     Center.png \
     Installer.ico \
+    TODO.txt \
     TextSmith2.ico \
     TextSmithIcon.png \
     appicon.rc \

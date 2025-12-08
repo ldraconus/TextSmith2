@@ -2,7 +2,9 @@
 
 #include <QFont>
 #include <QMainWindow>
+#include <QTextCursor>
 #include <QTimer>
+#include <QToolButton>
 
 #include <atomic>
 
@@ -11,7 +13,7 @@
 
 #include "Novel.h"
 #include "Preferences.h"
-#include "qtoolbutton.h"
+#include "Speech.h"
 
 class QApplication;
 class QCloseEvent;
@@ -29,6 +31,26 @@ class QTreeWidgetItem;
 class Main: public QMainWindow {
     Q_OBJECT
 
+public:
+    class WordCounts {
+    private:
+        qlonglong mCurrentItem { 0 };
+        qlonglong mOpen        { 0 };
+        qlonglong mLastCounted { 0 };
+        qlonglong mTotal       { 0 };
+
+    public:
+        auto currentItem()      { return mCurrentItem; }
+        auto sinceLastCounted() { return mLastCounted; }
+        auto sinceOpened()      { return mOpen; }
+        auto total()            { return mTotal; }
+
+        void setCurrentItem(qlonglong c)      { mCurrentItem = c; }
+        void setSinceLastCounted(qlonglong c) { mLastCounted = c; }
+        void setSinceOpened(qlonglong c)      { mOpen = c; }
+        void setTotal(qlonglong c)            { mTotal = c; }
+    };
+
 private:
     QApplication*         mApp;
     QString               mAppDir;
@@ -44,9 +66,15 @@ private:
     qlonglong             mPosition;
     std::atomic<bool>     mSaving { false };
     Map<qlonglong, bool>  mState;
+    bool                  mSpeechAvailable { false };
     Preferences           mPrefs;
+    QTextCursor           mSavedCursor;
+    Speech                mSpeech;
+    QToolButton*          mStopButton { nullptr };
+    QString               mTextToSpeak;
     QTimer                mTimer;
     Ui::Main*             mUi;
+    WordCounts            mWordCount;
 
     static Main* sMain;
 
@@ -57,9 +85,15 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
+    void doAboutToShowFileMenu();
+    void doAboutToShowEditMenu();
+    void doAboutToShowNovelMenu();
+    void doAboutToShowViewMenu();
+    void doAboutToShowHelpMenu();
     void doAddItem();
     void doBold();
     void doCenterJustify();
+    void doCloseAll();
     void doCopy();
     void doCursorPositionChanged();
     void doCut();
@@ -67,23 +101,31 @@ private:
     void doExit();
     void doFullJustify();
     void doFullScreen();
+    void doHighlight(const QString& text, qlonglong start);
     void doIndent();
     void doItalic();
     void doItemChanged(QTreeWidgetItem* current);
     void doLeftJustify();
     void doLowercase();
+    void doMoveDown();
+    void doMoveOut();
+    void doMoveUp();
     void doNew();
+    void doOpenAll();
     void doOpen();
     void doOutdent();
     void doPaste();
     void doPreferences();
+    void doReadToMe();
     void doRemoveItem();
     void doRightJustify();
     void doSave();
     bool doSaveAs();
+    void doStop(bool stopped = false);
     void doTextChanged();
     void doUnderline();
     void doUppercase();
+    void doWordCount();
 
     static constexpr bool NoUi = true;
 
@@ -93,6 +135,10 @@ private:
     void             fitWindow();
     void             justifyButtons();
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
+    bool             nothingAbove();
+    bool             nothingBelow();
+    void             replaceText(QTextCursor cursor, const QString& text);
+    bool             parentIsRoot();
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     void             setHtml(const QString& html);
     void             setIcon(QToolButton* button, bool isChecked);
@@ -104,16 +150,23 @@ private:
     void             update();
     void             updateFromPrefs();
     void             updateHtml();
+    void             workTree(QTreeWidgetItem* item, bool expand);
 
 public:
     Main(QApplication* app, QWidget* parent = nullptr);
     ~Main();
 
-    Ui::Main*    ui()                             { return mUi; }
+    void         busy()                           { QApplication::setOverrideCursor(Qt::WaitCursor); }
+    qlonglong    currentNode()                    { return mCurrentNode; }
     QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
+    Novel&       novel()                          { return mNovel; }
     Preferences& prefs()                          { return mPrefs; }
+    void         ready()                          { QApplication::restoreOverrideCursor(); }
+    Ui::Main*    ui()                             { return mUi; }
+    WordCounts&  wordCount()                      { return mWordCount; }
 
     void changeNovelFont(qlonglong skip, const QFont& font);
+    void wordCounts();
 
     static Main* ptr() { return sMain; }
     static Main& ref() { return *ptr(); }
@@ -144,14 +197,31 @@ public slots:
     void uppercaseAction()     { doUppercase(); }
 
     void addItemAction()    { doAddItem(); }
+    void closeAllAction()   { doCloseAll(); }
     void editItemAction()   { doEditItem(); }
+    void actionMoveDown()   { doMoveDown(); }
+    void actionMoveOut()    { doMoveOut(); }
+    void actionMoveUp()     { doMoveUp(); }
+    void openAllAction()    { doOpenAll(); }
     void removeItemAction() { doRemoveItem(); }
 
     void fullScreenAction() { doFullScreen(); }
+    void readToMeAction()   { doReadToMe(); }
+    void wordCountAction()  { doWordCount(); }
+
+    void aboutToShowFileMenuAction()  { doAboutToShowFileMenu(); }
+    void aboutToShowEditMenuAction()  { doAboutToShowEditMenu(); }
+    void aboutToShowNovelMenuAction() { doAboutToShowNovelMenu(); }
+    void aboutToShowViewMenuAction()  { doAboutToShowViewMenu(); }
+    void aboutToShowFileHelpAction()  { doAboutToShowHelpMenu(); }
 
     void currentItemChangedAction(QTreeWidgetItem* current, QTreeWidgetItem*) { doItemChanged(current); }
     void doubleClickAction(QTreeWidgetItem*, int)                             { doEditItem(); }
 
     void cursorPositionChanged() { doCursorPositionChanged(); }
     void textChangedAction()     { doTextChanged(); }
+
+    void highlight(const QString& text, qlonglong start) { doHighlight(text, start); }
+    void stop()                                          { doStop(); }
+    void stopped()                                       { doStop(true); }
 };

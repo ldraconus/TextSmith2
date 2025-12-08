@@ -13,7 +13,7 @@
 class Preferences {    
 public:
     Preferences()
-        : mWasDark(mIsDark = isDark())               { load(); }
+        : mWasDark(isDark())               { load(); }
     explicit Preferences(Json5Object& obj) { read(obj); }
     ~Preferences()                         { save(); }
 
@@ -35,6 +35,7 @@ public:
     qlonglong  fontSize()          { return mFontSize; }
     bool       isDarkTheme()       { return mIsDark; }
     Json5Array mainSplitter()      { return mMainSplitter; }
+    Json5Array otherSplitter()     { return mOtherSplitter; }
     qlonglong  position()          { return mPosition; }
     qlonglong  theme()             { return mTheme; }
     bool       typingSounds()      { return mTypingSounds; }
@@ -48,6 +49,7 @@ public:
     void setFontFamily(const QString& f)  { mFontFamily = f; }
     void setFontSize(qlonglong s)         { mFontSize = s; }
     void setMainSplitter(Json5Array& s)   { mMainSplitter = s; }
+    void setOtherSplitter(Json5Array& s)  { mOtherSplitter = s; }
     void setPosition(qlonglong pos)       { mPosition = pos; }
     void setTheme(qlonglong t)            { mTheme = t; }
     void setTypingSounds(bool t)          { mTypingSounds = t; }
@@ -60,11 +62,12 @@ private:
     qlonglong     mAutoSaveInterval { 5 * 60 };
     QString       mFontFamily       { "Segoe UI" };
     qlonglong     mFontSize         { 9 };
-    bool          mIsDark;
+    bool          mIsDark           { false };
     Json5Array    mMainSplitter     { };
+    Json5Array    mOtherSplitter    { };
+    qlonglong     mPosition         { 0 };
     qlonglong     mTheme            { 2 };
     bool          mTypingSounds     { false };
-    qlonglong     mPosition         { 0 };
     qlonglong     mVoice            { 0 };
     bool          mWasDark          { false };
     QRect         mWindow;
