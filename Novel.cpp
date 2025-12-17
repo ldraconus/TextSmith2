@@ -17,40 +17,36 @@ Item::Item(Json5Object& obj)
     fromObject(obj);
 }
 
+void Item::changeFont(const QFont& font) {
+    QTextEdit text;
+    text.setHtml(mHtml);
+    Main::changeDocumentFont(text.document(), font);
+    mHtml = text.toHtml();
+}
+
 void Item::clear() {
-    for (auto& child: mChildren) child.second.clear();
-    mChildren.clear();
     mCount = 0;
     mHtml.clear();
     mID = 0;
     mName.clear();
-    mOrder.clear();
     mTags.clear();
     mPosition = 0;
-    sNextID = 1;
 }
 
 void Item::init() {
     newHtml();
 }
 
-void Item::changeFont(qlonglong skip, const QFont& font) {
-    if (mID != skip) {
-        QTextEdit text;
-        text.setHtml(mHtml);
-        Main::changeDocumentFont(text.document(), font);
-        mHtml = text.toHtml();
+void Item::buildTree(Json5Object& obj, TreeNode& current) {
+    qlonglong id = Item::hasNum(obj, Novel::V1Id, -1);
+    if (id != -1) current.setId(id);
+    Json5Array arr = Item::hasArr(obj, Novel::Children, {});
+    for (auto& node: arr) {
+        if (!node.isObject()) continue;
+        TreeNode branch;
+        buildTree(node.toObject(), branch);
+        current.addBranch(branch);
     }
-    for (auto& child: mChildren) child.second.changeFont(skip, font);
-}
-
-qsizetype Item::childOrder(qlonglong id) {
-    int i = 0;
-    for (auto& item: mOrder) {
-        if (id == item) return i;
-        else ++i;
-    }
-    return -1;
 }
 
 void Item::clearTag(const QString &tag) {
@@ -58,70 +54,45 @@ void Item::clearTag(const QString &tag) {
     if (idx >= 0) mTags.takeAt(idx);
 }
 
-qlonglong Item::count(int count) {
-    if (count == DontCount) return mCount;
-    qlonglong total = 0;
-    if (count == CountChildren || count == Count) {
-        QTextEdit text;
-        text.insertHtml(mHtml);
-        QString plain = text.toPlainText();
-        StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
-        total = mCount = words.count();
-    } else total = mCount;
-    if (count == CountChildren || count == DontCountDoChildren) for (auto& child: mChildren) total += child.second.count(count);
-    return total;
+qlonglong Item::count() {
+    QTextEdit text;
+    text.insertHtml(mHtml);
+    QString plain = text.toPlainText();
+    StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
+    return mCount = words.count();
 }
 
-void Item::exchange(qsizetype idx1, qsizetype idx2) {
-    qlonglong pos1 = mOrder.indexOf(idx1);
-    qlonglong pos2 = mOrder.indexOf(idx2);
-    mOrder.swapItemsAt(pos1, pos2);
-}
-
-void Item::deleteItem(qlonglong id) {
-    for (auto& child: mChildren) {
-        if (child.first == id) {
-            mChildren.erase(id);
-            for (auto i = 0; i < mOrder.size(); ++i) {
-                if (mOrder[i] == id) {
-                    mOrder.takeAt(i);
-                    break;
-                }
-            }
-            for (auto idx = mNamesToID.begin(); idx != mNamesToID.end(); ++idx) {
-                if (idx->second == id) {
-                    mNamesToID.remove(idx);
-                    break;
-                }
-            }
-            return;
-        } else child.second.deleteItem(id);
+void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
+    node.setName(Item::hasStr(obj, Novel::V1Name, ""));
+    node.setHtml(Item::hasStr(obj, Novel::Doc,    ""));
+    Json5Array arr = Item::hasArr(obj, Novel::V1Tags, {});
+    for (auto& tag: arr) {
+        if (!tag.isString()) continue;
+        node.addTag(tag.toString());
     }
-}
-
-Item* Item::findItem(qlonglong id) {
-    if (id == mID) return this;
-    for (auto& child: mChildren) {
-        if (auto* found = child.second.findItem(id); found != nullptr) return found;
+    node.setId(Item::getNextID());
+    tree.setId(node.id());
+    auto children = Item::hasArr(obj, Novel::Children, {});
+    for (auto& child: children) {
+        if (!child.isObject()) continue;
+        Json5Object& item = child.toObject();
+        TreeNode branch;
+        Item next(NoID);
+        next.fromV1Object(item, next, branch);
+        if (!branch.isEmpty()) tree.addBranch(branch);
     }
-    return nullptr;
+    Novel::ref().addItem(node);
 }
 
 Json5Object Item::toObject() {
     Json5Object obj;
-    obj["HTML"] = mHtml;
-    obj["Position"] = mPosition;
-    obj["ID"] = mID;
-    obj["Name"] = mName;
-    Json5Object children;
-    for (auto& child: mChildren) children[QString::number(child.first)] = child.second.toObject();
-    obj["Children"] = children;
-    Json5Array order;
-    for (auto i = 0; i < mOrder.count(); ++i) order.append(mOrder[i]);
-    obj["Order"] = order;
+    obj[Novel::Html] =     mHtml;
+    obj[Novel::Position] = mPosition;
+    obj[Novel::Id] =       mID;
+    obj[Novel::Name] =     mName;
     Json5Array tags;
     for (auto i = 0; i < mTags.count(); ++i) tags.append(mTags[i]);
-    obj["Tags"] = tags;
+    obj[Novel::Tags] =     tags;
     return obj;
 }
 
@@ -166,115 +137,139 @@ QString Item::hasStr(Json5Array& arr, const qsizetype idx, const QString& def) {
     return def;
 }
 
-bool Item::fromObject(Json5Object& obj) {
-    mHtml = hasStr(obj, "HTML");
-    mPosition = hasNum(obj, "Position");
-    mID = hasNum(obj, "ID");
-    mName = hasStr(obj, "Name");
+void Item::copy(const Item& i) {
+    mCount = i.mCount;
+    mHtml = i.mHtml;
+    mID = i.mID;
+    mName = i.mName;
+    mPosition = i.mPosition;
+    mTags = i.mTags;
+}
 
-    if (mID >= sNextID) sNextID = mID + 1;
+bool Item::fromObject(Json5Object& obj) {
+    mHtml =     hasStr(obj, Novel::Html);
+    mPosition = hasNum(obj, Novel::Position);
+    auto id =   hasNum(obj, Novel::Id);
+    mName =     hasStr(obj, Novel::Name);
+
+    setId(id);
     if (mName.isEmpty()) mName = name();
 
-    Json5Object children = hasObj(obj, "Children", {});
-    for (auto& child: children) {
-        bool ok;
-        const auto& idx = child.first.toLongLong(&ok);
-        if (ok && idx >= 0 && child.second.isObject()) {
-            Item item(child.second.toObject());
-            if (item.id() != idx) continue;
-            QString name = item.name();
-            if (item.name().isEmpty()) continue;
-            mChildren[idx] = item;
-            mNamesToID[name] = idx;
-            if (idx >= sNextID) sNextID = idx + 1;
-            mOrder.append(idx);
-        }
-    }
-
-    Json5Array order = hasArr(obj, "Order", {});
-    for (qsizetype i = 0; i < order.count(); ++i) {
-        if (i > mOrder.count()) continue;
-        qsizetype idx = hasNum(order, i, -1);
-        qsizetype old = mOrder[i];
-        qsizetype at = mOrder.indexOf(idx);
-        mOrder[i] = idx;
-        mOrder[at] = old;
-    }
-
-    Json5Array tags = hasArr(obj, "Tags", {});
+    Json5Array tags = hasArr(obj, Novel::Tags, {});
     for (qsizetype i = 0; i < tags.count(); ++i) {
         QString tag = hasStr(tags, i, "");
         if (tag.isEmpty()) continue;
         mTags.append(tag);
     }
-    count();
+    Novel::ref().addItem(*this);
     return true;
+}
+
+void Item::move(Item&& i) {
+    copy(i);
+    i.mCount = 0;
+    i.mHtml.clear();
+    i.mID = 0;
+    i.mName.clear();
+    i.mPosition = 0;;
+    i.mTags.clear();
 }
 
 void Item::newHtml() {
     QTextEdit text;
     text.setText("");
-    Preferences& prefs = Main::ref().prefs();
-    QFont font(prefs.fontFamily(), prefs.fontSize());
-    QFontMetrics metrics(font);
-    int lineHeight = metrics.height();
-    int indent = 2 * lineHeight;
-    QTextBlockFormat format;
-    format.setTextIndent(indent);
-    format.setBottomMargin(lineHeight);
+    if (Main::ptr() && Main::ref().prefsLoaded()) Main::ref().setupHtml(text);
 
-    QTextCursor cursor(text.document());
-    cursor.select(QTextCursor::Document);
-    cursor.mergeBlockFormat(format);
-    text.setTextCursor(cursor);
-    text.document()->setDefaultFont(font);
     mHtml = text.toHtml();
     mCount = 0;
 }
 
-Novel::Novel()
-    : Item()
-    , mFilename("") {
+QString Item::toPlainText() {
+    QTextEdit converter;
+    converter.setHtml(mHtml);
+    QString text = converter.toPlainText();
+    return text;
 }
 
-Novel::Novel(Json5Object obj)
-    : Item(obj) {
+Novel* Novel::sNovel = nullptr;
+
+Novel::Novel():
+    mFilename("") {
+    sNovel = this;
+    init();
+}
+
+Novel::Novel(Json5Object obj) {
+    sNovel = this;
     Novel::fromObject(obj);
 }
 
 Novel::Novel(const QString& filename) {
+    sNovel = this;
     Json5Document doc;
     bool readOk = doc.read(filename);
     if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
 }
 
 Json5Object Novel::toObject() {
-    auto obj = Item::toObject();
-    obj["Filename"] = mFilename;
-    obj["Extra"] = mExtra;
+    Json5Object obj;
+    obj[Filename] = mFilename;
+    obj[Extra] =    mExtra;
+    obj[Root] =     mRoot;
+    Json5Object items;
+    for (auto& node: mItems) items[QString::number(node.first)] = node.second.toObject();
+    obj[Items] =    items;
+    obj[Branches] = mBranches.toObject();
     return obj;
 }
 
-void Novel::clear() {
-    Item::clear();
-    mExtra.clear();
-    mFilename.clear();
+void Novel::changeFont(const QFont& font) {
+    for (auto& child: mItems) child.second.changeFont(font);
+}
+
+qlonglong Novel::countAll() {
+    qlonglong total = 0;
+    for (auto& node: mItems) {
+        Item& item = node.second;
+        total += item.count();
+    }
+    return total;
 }
 
 void Novel::deleteItem(qlonglong id) {
-    if (id == this->id()) clear();
-    else Item::deleteItem(id);
+    if (id == mRoot) clear();
+    else mItems.erase(id);
+}
+
+Item& Novel::findItem(qlonglong id) {
+    static Item nil;
+    if (mItems.keys().contains(id)) {
+        return mItems[id];
+    }
+    return nil;
 }
 
 void Novel::init() {
-    Item::init();
+    mExtra.clear();
+    mFilename.clear();
+    Item::resetLastID();
+    Item item;
+    item.init();
+    mItems.clear();
+    mRoot = item.id();
+    auto id = item.id();
+    mItems[id] = item;
+    mBranches.clear();
 }
 
 bool Novel::open() {
     Json5Document doc;
     noChanges();
-    if (bool success = doc.read(mFilename) && doc.top().isObject(); success) fromObject(doc.top().toObject());
-    else return false;
+    if (bool success = doc.read(mFilename) && doc.top().isObject(); success) {
+        auto& obj = doc.top().toObject();
+        if (obj.contains(Document)) fromV1Object(obj);
+        else fromObject(obj);
+    } else return false;
     return true;
 }
 
@@ -289,13 +284,76 @@ bool Novel::save() {
 }
 
 void Novel::setHtml(qlonglong node, const QString& html) {
-    Item* item = findItem(node);
-    item->setHtml(html);
+    Item& item = findItem(node);
+    item.setHtml(html);
 }
 
 bool Novel::fromObject(Json5Object& obj) {
-    Item::fromObject(obj);
-    mFilename = hasStr(obj, "Filename", "");
-    mExtra = hasObj(obj, "Extra", {});
+    mFilename = Item::hasStr(obj, Filename, "");
+    mExtra =    Item::hasObj(obj, Extra, {});
+    mItems.clear();
+    mRoot =     Item::hasNum(obj, Root, 0);
+    Json5Object items = Item::hasObj(obj, Items, {});
+    for (auto& node: items) {
+        if (!node.second.isObject()) continue;
+        auto& branch = node.second.toObject();
+        if (node.first.toLongLong() != branch[Id].toInt()) continue;
+        Item item(branch);
+        addItem(item);
+    }
+    if (Json5Object treeNode = Item::hasObj(obj, Branches, {}); treeNode.empty()) return false;
+    else {
+        TreeNode tree(treeNode);
+        mBranches = tree;
+    }
+    countAll();
     return true;
+}
+
+bool Novel::fromV1Object(Json5Object& obj) {
+    if (obj.size() != 3) return false;
+    Json5Object document = Item::hasObj(obj, Document, {});
+    Json5Object options =  Item::hasObj(obj, Options,  {});
+    Json5Object windows =  Item::hasObj(obj, Windows,  {});
+    mExtra[V1] = true;
+    mExtra[Options] = options;
+    mExtra[Windows] = windows;
+    Json5Object root = Item::hasObj(document, V1Root, {});
+    Item::resetLastID();
+    Item rootItem(Item::NoID);
+    TreeNode tree;
+    rootItem.fromV1Object(root, rootItem, tree);
+    mBranches = tree;
+    countAll();
+    return true;
+}
+
+TreeNode::TreeNode(Json5Object& obj) {
+    mId                 = Item::hasNum(obj, Novel::BranchId, 0);
+    Json5Array branches = Item::hasArr(obj, Novel::Branches, {});
+    for (auto& node: branches) {
+        if (!node.isObject()) continue;
+        TreeNode branch(node.toObject());
+        mBranches.append(branch);
+    }
+}
+
+TreeNode& TreeNode::find(TreeNode& branch, qlonglong i) {
+    static TreeNode nil(-1);
+
+    if (branch.id() == i) return *this;
+    for (auto& twig: branch.branches()) {
+        auto& res = find(twig, i);
+        if (!res.empty()) return res;
+    }
+    return nil;
+}
+
+Json5Object TreeNode::toObject() {
+    Json5Object obj;
+    obj[Novel::BranchId] = mId;
+    Json5Array arr;
+    for (auto& branch: mBranches) arr.append(branch.toObject());
+    obj[Novel::Branches] = arr;
+    return obj;
 }

@@ -6,9 +6,6 @@
 
 Speech::Speech(QObject* parent)
     : QObject(parent) {
-    StringList engines { mTts.availableEngines() };
-    qDebug("Engines:");
-    for (auto& engine: engines) qDebug() << engine;
     connect(&mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
              if (state == QTextToSpeech::Ready && mCurrentIndex < mSentences.size()) speakNextSentence();
         else if (state == QTextToSpeech::Ready && mCurrentIndex >= mSentences.size()) emit speakingFinished();
@@ -78,14 +75,14 @@ void Speech::speak(const QString& text) {
 }
 
 void Speech::speakNextSentence() {
+    if (mNeedsPrimed) {
+        mNeedsPrimed = false;
+        mTts.say("One...");
+        speakNextSentence();
+        return;
+    }
     if (mCurrentIndex < mSentences.size()) {
-        if (mNeedsPrimed) {
-            mNeedsPrimed = false;
-            mTts.say("One.");
-            speakNextSentence();
-            return;
-        }
-        Sentence data = mSentences.at(mCurrentIndex++);
+        Sentence data = mSentences[mCurrentIndex++];
         QString sentence = data.mSentence.trimmed() + data.mPunct;
         highlightSentence(data);
         mTts.say(sentence);

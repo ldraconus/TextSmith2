@@ -22,8 +22,12 @@ private:
         QString path = url.adjusted(QUrl::RemoveFilename).path();
         if (path.isEmpty()) path = mDir;
         QString filename = url.fileName();
-        if (filename.right(3) != "png") filename += ".png";
-        QImageReader reader(path + "/" + filename, "png");
+        auto type = "png";
+        if (filename.right(4) != ".png") {
+            if (filename.right(4) != ".jpg") filename += ".png";
+            else type = "jpg";
+        }
+        QImageReader reader(path + "/" + filename, type);
         QImage img = reader.read();
         document()->addResource(QTextDocument::ImageResource, url, img);
         return img;
@@ -33,7 +37,7 @@ private:
         QString path = url.adjusted(QUrl::RemoveFilename).path();
         if (path.isEmpty()) path = mDir;
         QString filename = url.fileName();
-        if (filename.right(3) != "png") filename += ".png";
+        if (filename.right(4) != ".png") filename += ".png";
         QImageWriter writer(path + "/" + filename, "png");
         writer.write(img);
     }

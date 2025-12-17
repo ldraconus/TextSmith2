@@ -244,7 +244,7 @@ QSplitter::handle:hover {
          </widget>
         </item>
         <item>
-         <widget class="QTreeWidget" name="treeWidget">
+         <widget class="TreeWidget" name="treeWidget">
           <property name="contextMenuPolicy">
            <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
@@ -1053,7 +1053,7 @@ QSplitter::handle:hover {
     <string>About TextSmith</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+A</string>
+    <string>Ctrl+F1</string>
    </property>
   </action>
   <action name="actionHelp">
@@ -1124,6 +1124,11 @@ QSplitter::handle:hover {
    <class>TextEdit</class>
    <extends>QTextEdit</extends>
    <header>TextEdit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>TreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>TreeWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

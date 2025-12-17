@@ -33,7 +33,8 @@ HEADERS += \
     Preferences.h \
     PreferencesDialog.h \
     Speech.h \
-    TextEdit.h
+    TextEdit.h \
+    TreeWidget.h
 
 FORMS += \
     FullScreenDialog.ui \
@@ -58,7 +59,11 @@ DISTFILES += \
     Background.png \
     Center.ico \
     Center.png \
+    Closed.png \
+    DarkClosed.png \
+    DarkOpen.png \
     Installer.ico \
+    Open.png \
     TODO.txt \
     TextSmith2.ico \
     TextSmithIcon.png \

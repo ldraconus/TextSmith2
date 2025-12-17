@@ -8,8 +8,9 @@
 
 #include <atomic>
 
-#include <StringList.h>
+#include <List.h>
 #include <Message.h>
+#include <StringList.h>
 
 #include "Novel.h"
 #include "Preferences.h"
@@ -25,6 +26,7 @@ namespace Ui {
 }
 QT_END_NAMESPACE
 
+class QCompleter;
 class QTextDocument;
 class QTreeWidgetItem;
 
@@ -52,9 +54,11 @@ public:
     };
 
 private:
+    List<QAction*>        mActions;
     QApplication*         mApp;
     QString               mAppDir;
     Map<qlonglong, bool>  mById;
+    QCompleter*           mCompleter;
     Novel                 mCopy;
     qlonglong             mCurrentNode { -1 };
     QString               mDocDir;
@@ -68,6 +72,7 @@ private:
     Map<qlonglong, bool>  mState;
     bool                  mSpeechAvailable { false };
     Preferences           mPrefs;
+    bool                  mPrefsLoaded { false };
     QTextCursor           mSavedCursor;
     Speech                mSpeech;
     QToolButton*          mStopButton { nullptr };
@@ -117,6 +122,7 @@ private:
     void doPaste();
     void doPreferences();
     void doReadToMe();
+    void doRedo();
     void doRemoveItem();
     void doRightJustify();
     void doSave();
@@ -124,12 +130,14 @@ private:
     void doStop(bool stopped = false);
     void doTextChanged();
     void doUnderline();
+    void doUndo();
     void doUppercase();
     void doWordCount();
 
     static constexpr bool NoUi = true;
 
-    void             buildTree(Item* item, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
+    void             buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
+    void             buildTreeMimeData(QTreeWidgetItem* item, QMimeData* mimeData);
     QString          checked(const QString& path);
     QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
@@ -139,11 +147,14 @@ private:
     bool             nothingBelow();
     void             replaceText(QTextCursor cursor, const QString& text);
     bool             parentIsRoot();
+    bool             receiveTreeMimeData(const QMimeData* mimeData);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
+    TreeNode         saveTree(QTreeWidgetItem* node);
     void             setHtml(const QString& html);
     void             setIcon(QToolButton* button, bool isChecked);
     void             setMenu(QAction* button, bool isChecked);
     void             setPosition(qlonglong pos);
+    void             setupActions();
     void             setupConnections();
     void             setupIcons();
     void             setupTabOrder();
@@ -161,11 +172,14 @@ public:
     QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
     Novel&       novel()                          { return mNovel; }
     Preferences& prefs()                          { return mPrefs; }
+    bool         prefsLoaded()                    { return mPrefsLoaded; }
     void         ready()                          { QApplication::restoreOverrideCursor(); }
     Ui::Main*    ui()                             { return mUi; }
     WordCounts&  wordCount()                      { return mWordCount; }
 
-    void changeNovelFont(qlonglong skip, const QFont& font);
+    void buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
+    void changeNovelFont(const QFont& font);
+    void setupHtml(QTextEdit& text);
     void wordCounts();
 
     static Main* ptr() { return sMain; }
@@ -192,8 +206,10 @@ public slots:
     void outdentAction()       { doOutdent(); }
     void pasteAction()         { doPaste(); }
     void preferencesAction()   { doPreferences(); }
+    void redoAction()          { doRedo(); }
     void rightJustifyAction()  { doRightJustify(); }
     void underlineAction()     { doUnderline(); }
+    void undoAction()          { doUndo(); }
     void uppercaseAction()     { doUppercase(); }
 
     void addItemAction()    { doAddItem(); }

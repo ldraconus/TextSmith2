@@ -3,7 +3,9 @@
 #include <QObject>
 #include <QTextToSpeech>
 #include <QTextEdit>
-#include <QStringList>
+#include <StringList.h>
+
+#include <List.h>
 
 class Speech: public QObject {
     Q_OBJECT
@@ -31,7 +33,7 @@ private:
     };
 
     int             mCurrentIndex { 0 };
-    QList<Sentence> mSentences;
+    List<Sentence>  mSentences;
     bool            mNeedsPrimed { true };
     QTextToSpeech   mTts;
     QVoice          mVoice;
