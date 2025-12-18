@@ -334,6 +334,7 @@ void Main::doNew() {
     mPosition = 0;
     mState.clear();
     mCurrentNode = mNovel.root();
+    mUi->textEdit->clearImages();
     clearChanged();
     update();
     mWordCount.setCurrentItem(0);
@@ -370,6 +371,9 @@ void Main::doOpen() {
 
     busy();
     mNovel.clear();
+    mPosition = 0;
+    mState.clear();
+    mUi->textEdit->clearImages();
     mNovel.setFilename(filename);
     mNovel.open();
     clearChanged();
@@ -387,6 +391,11 @@ void Main::doOpen() {
             int id = Item::hasNum(item, 0);
             bool expanded = Item::hasBool(item, 1);
             mState[id] = expanded;
+        }
+        Json5Object images = Item::hasObj(obj, "Images", {});
+        for (auto& image: images) {
+            QUrl url(image.first);
+            mUi->textEdit->addImage(images, url);
         }
     } else if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -713,8 +722,56 @@ bool Main::parentIsRoot() {
     return false;
 }
 
-bool Main::receiveTreeMimeData(const QMimeData* mimeData) {
-    return false;
+bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
+    auto* tree = mUi->treeWidget;
+    Item item;
+    TextEdit edit(nullptr);
+
+    bool invalidJson = false;
+    bool invalidText = true;
+    while (true) {
+        if (mimeData->hasFormat("application/json5")) {
+            QByteArray data = mimeData->data("application/json5");
+            QString text(data);
+            Json5Document doc(text);
+            Json5Object& obj = doc.top().toObject();
+            item.fromObject(obj);
+            if (item.isNull()) invalidJson = true;
+            else break;
+        } if (mimeData->hasHtml() || mimeData->hasText()) {
+            if (mimeData->hasHtml()) {
+                QString html = mimeData->html();
+                edit.setHtml(html);
+            } else {
+                QString text = mimeData->text();
+                edit.setText(text);
+            }
+            invalidText = false;
+            setupHtml(edit);
+            item.setHtml(edit.toHtml());
+        }
+    }
+    if (invalidJson && invalidText) return false;
+
+    QTreeWidgetItem *newNode = new QTreeWidgetItem();
+
+    QModelIndex idx = tree->indexAt(de->position().toPoint());
+    if (idx.isValid()) {
+        QTreeWidgetItem *targetItem = tree->itemFromIndex(idx);
+        QTreeWidgetItem *parent = targetItem->parent();
+        int row;
+
+        if (!parent) {
+            parent = mUi->treeWidget->topLevelItem(0);
+            row = idx.row();
+        } else row = parent->indexOfChild(targetItem);
+        parent->insertChild(row, newNode);
+    } else {
+        QTreeWidgetItem* parent = tree->topLevelItem(0);
+        parent->insertChild(parent->childCount(), newNode);
+    }
+
+    return true;
 }
 
 void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
@@ -728,6 +785,9 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     extra["Position"] = qlonglong(pos);
     mPrefs.setWindowLocation(geom);
     extra["Prefs"] = mPrefs.write();
+    Json5Object images;
+    mUi->textEdit->saveImages(images);
+    extra["Images"] = images;
     mState = byId;
     Json5Array state;
     for (const auto& idState: byId) {
@@ -909,7 +969,7 @@ void Main::changeNovelFont(const QFont& font) {
     mNovel.changeFont(font);
 }
 
-void Main::setupHtml(QTextEdit& text) {
+void Main::setupHtml(TextEdit& text) {
     Preferences& prefs = Main::ref().prefs();
     QFont font(prefs.fontFamily(), prefs.fontSize());
     QFontMetrics metrics(font);
@@ -1058,7 +1118,7 @@ void Main::setupConnections() {
     mUi->treeWidget->setDragDropMode(QAbstractItemView::DragDrop);
     mUi->treeWidget->setDefaultDropAction(Qt::MoveAction);
     mUi->treeWidget->setMimeDataBuilder(std::bind(&Main::buildTreeMimeData,    this, std::placeholders::_1, std::placeholders::_2));
-    mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this, std::placeholders::_1));
+    mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this, std::placeholders::_1, std::placeholders::_2));
 
     mUi->textEdit->setAcceptDrops(true);
     mUi->textEdit->setAcceptRichText(true);

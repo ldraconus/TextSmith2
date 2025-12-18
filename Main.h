@@ -15,6 +15,7 @@
 #include "Novel.h"
 #include "Preferences.h"
 #include "Speech.h"
+#include "TextEdit-Old.h"
 
 class QApplication;
 class QCloseEvent;
@@ -147,7 +148,7 @@ private:
     bool             nothingBelow();
     void             replaceText(QTextCursor cursor, const QString& text);
     bool             parentIsRoot();
-    bool             receiveTreeMimeData(const QMimeData* mimeData);
+    bool             receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode         saveTree(QTreeWidgetItem* node);
     void             setHtml(const QString& html);
@@ -179,7 +180,7 @@ public:
 
     void buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
     void changeNovelFont(const QFont& font);
-    void setupHtml(QTextEdit& text);
+    void setupHtml(TextEdit& text);
     void wordCounts();
 
     static Main* ptr() { return sMain; }

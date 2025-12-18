@@ -176,7 +176,7 @@ void Item::move(Item&& i) {
 }
 
 void Item::newHtml() {
-    QTextEdit text;
+    TextEdit text(nullptr);
     text.setText("");
     if (Main::ptr() && Main::ref().prefsLoaded()) Main::ref().setupHtml(text);
 

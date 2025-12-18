@@ -15,52 +15,30 @@ class TreeWidget : public QTreeWidget {
 public:
     using QTreeWidget::QTreeWidget;
 
-    std::function<void(QTreeWidgetItem*, QMimeData*)> mimeDataBuilder()  { return mBuildMimeData; }
-    std::function<bool(QMimeData*)>                   mimeDataReciever() { return mReceiveMimeData; }
+    std::function<void(QTreeWidgetItem*, QMimeData*)>  mimeDataBuilder()  { return mBuildMimeData; }
+    std::function<bool(QDropEvent*, const QMimeData*)> mimeDataReciever() { return mReceiveMimeData; }
 
-    void setMimeDataBuilder(std::function<void(QTreeWidgetItem*, QMimeData*)> func)  { mBuildMimeData = func; }
-    void setMimeDataReceiver(std::function<bool(const QMimeData*)> func)             { mReceiveMimeData = func; }
+    void setMimeDataBuilder(std::function<void(QTreeWidgetItem*, QMimeData*)> func)   { mBuildMimeData = func; }
+    void setMimeDataReceiver(std::function<bool(QDropEvent*, const QMimeData*)> func) { mReceiveMimeData = func; }
 
 protected:
-    std::function<void(QTreeWidgetItem*, QMimeData*)> mBuildMimeData =   [](QTreeWidgetItem*, QMimeData*) { };
-    std::function<bool(const QMimeData*)>             mReceiveMimeData = [](const QMimeData*)             { return false; };
+    std::function<void(QTreeWidgetItem*, QMimeData*)>  mBuildMimeData =   [](QTreeWidgetItem*, QMimeData*)  { };
+    std::function<bool(QDropEvent*, const QMimeData*)> mReceiveMimeData = [](QDropEvent*, const QMimeData*) { return false; };
 
-    void dropEvent(QDropEvent* event) override {
-        const QMimeData* mime = event->mimeData();
+    void dropEvent(QDropEvent* de) override {
+        const QMimeData* mime = de->mimeData();
 
         if (mime->hasFormat("application/x-qabstractitemmodeldatalist")) {
             // Internal move: let QTreeWidget handle it
-            QTreeWidget::dropEvent(event);
+            QTreeWidget::dropEvent(de);
             return;
         }
 
-        if (mReceiveMimeData(mime)) {
-            event->acceptProposedAction();
+        if (mReceiveMimeData(de, mime)) {
+            de->acceptProposedAction();
             return;
         }
-/*
-        if (mime->hasFormat("application/json5")) {
-            QByteArray data = mime->data("application/json5");
-            NovelItem *newItem = NovelItem::fromJson5(data);
-            addTopLevelItem(newItem);
-            event->acceptProposedAction();
-            return;
-        }
-
-        if (mime->hasText()) {
-            // External text: create a new item
-            QString text = mime->text();
-            QTreeWidgetItem *newItem = new QTreeWidgetItem();
-            newItem->setText(0, text);
-            // don't do this!
-            addTopLevelItem(newItem);
-
-            event->acceptProposedAction();
-            return;
-        }
-*/
-    // 8003801186
-        event->ignore();
+        de->ignore();
     }
 
     void startDrag(Qt::DropActions supportedActions) override {

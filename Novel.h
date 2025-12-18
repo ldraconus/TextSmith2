@@ -69,6 +69,7 @@ public:
     void      changeFont(const QFont& font);
     void      clearTag(const QString& tag);
     qlonglong count();
+    bool      fromObject(Json5Object& obj);
     void      fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     void      newHtml();
     QString   toPlainText();
@@ -89,7 +90,6 @@ public:
 
 protected:
     void copy(const Item& i);
-    bool fromObject(Json5Object& obj);
     void move(Item&& i);
 
     static qsizetype nextID() { return sNextID++; }
