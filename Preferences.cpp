@@ -69,14 +69,6 @@ QString Preferences::newPath(const QString& path) {
 bool Preferences::read(Json5Object& obj) {
     Json5Array arr;
     if (obj.contains("v1")) {
-        /*
-                    openCheckbox: bool,      // use in root to set the open state
-                    autoSave: bool,          // mPrefs: autoSave
-                    autoSaveInterval: num,   // mPrefs: autoSaveInterval
-                    typewriterSounds: bool,  // mPrefs: voice
-                    textFont: name:size,     // mPrefs: fontFamily, mPrefs.fontSize
-                    voioce: num              // mPrefs: voice
-         */
         Json5Object prefs = Item::hasObj(obj, "options", {});
         mAutoSave =         Item::hasBool(prefs, "autoSave",         DefaultSave);
         mAutoSaveInterval = Item::hasNum(prefs,  "autoSaveInerval",  DefaultInterval);
@@ -179,6 +171,8 @@ void Preferences::setDarkTheme() {
     darkPalette.setColor(QPalette::Highlight, QColor(53,53,53).lighter());
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
     mApp->setPalette(darkPalette);
+    QFont font = mApp->font();
+    font.setBold(false);
     if (Main::ptr() != nullptr) {
         Main::ref().ui()->treeWidget->setStyleSheet("QTreeView {\n"
                                                     "    color: white;\n"
@@ -203,6 +197,32 @@ void Preferences::setDarkTheme() {
                                                  "    color: white;\n"
                                                  "    background-color: #2A2A2A"
                                                  "}");
+        QString menuStyle {
+            "QMenu {\n"
+            "    background-color: #2A2A2A;\n"
+            "    color: white;\n"
+            "    border: 1px solid #444;\n"
+            "}\n"
+            "\n"
+            "QMenu::item {\n"
+            "    padding: 6px 20px;\n"
+            "    background: transparent;\n"
+            "}\n"
+            "\n"
+            "QMenu::item:selected {\n"
+            "    background: #444;\n"
+            "}\n"
+            "QMenu::item:disabled {\n"
+            "    color: #888;\n"
+            "}\n"
+        };
+        Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuEdit->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuFont->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuParagraph->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuNovel->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuView->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuHelp->setStyleSheet(menuStyle);
     }
     if (PreferencesDialog::ptr() != nullptr) {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
@@ -216,7 +236,7 @@ void Preferences::setDarkTheme() {
 
 void Preferences::setLightTheme() {
     QPalette lightPalette;
-    lightPalette.setColor(QPalette::Window, QColor(180, 180, 180));
+    lightPalette.setColor(QPalette::Window, QColor(160, 160, 160));
     lightPalette.setColor(QPalette::WindowText, Qt::black);
     lightPalette.setColor(QPalette::Base, QColor(132, 132, 132));
     lightPalette.setColor(QPalette::AlternateBase, QColor(132, 132, 132));
@@ -224,12 +244,14 @@ void Preferences::setLightTheme() {
     lightPalette.setColor(QPalette::ToolTipText, Qt::black);
     lightPalette.setColor(QPalette::Mid, QColor(135, 135, 135));
     lightPalette.setColor(QPalette::Dark, QColor(100, 100, 100));
-    lightPalette.setColor(QPalette::Button, QColor(160, 160, 160));
+    lightPalette.setColor(QPalette::Button, QColor(180, 180, 180));
     lightPalette.setColor(QPalette::ButtonText, Qt::black);
     lightPalette.setColor(QPalette::BrightText, Qt::red);
-    lightPalette.setColor(QPalette::Highlight, QColor(100, 100, 100).darker());
+    lightPalette.setColor(QPalette::Highlight, QColor(160, 160, 160).darker());
     lightPalette.setColor(QPalette::HighlightedText, Qt::darkGray);
     mApp->setPalette(lightPalette);
+    QFont font = mApp->font();
+    font.setBold(true);
     if (Main::ptr() != nullptr) {
         Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::item {\n"
                                                     "    color: black;\n"
@@ -256,6 +278,32 @@ void Preferences::setLightTheme() {
                                                  "    color: black;\n"
                                                  "    background-color: #BEBEBE;\n"
                                                  "}");
+        QString menuStyle {
+            "QMenu {\n"
+            "    background-color: #BEBEBE;\n"
+            "    color: black;\n"
+            "    border: 1px solid #999;\n"
+            "}\n"
+            "\n"
+            "QMenu::item {\n"
+            "    padding: 6px 20px;\n"
+            "    background: transparent;\n"
+            "}\n"
+            "\n"
+            "QMenu::item:selected {\n"
+            "    background: #999;\n"
+            "}\n"
+            "QMenu::item:disabled {\n"
+            "    color: #888;\n"
+            "}\n"
+        };
+        Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuEdit->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuFont->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuParagraph->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuNovel->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuView->setStyleSheet(menuStyle);
+        Main::ref().ui()->menuHelp->setStyleSheet(menuStyle);
     }
     if (PreferencesDialog::ptr() != nullptr) {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
@@ -287,10 +335,12 @@ void Preferences::resetIcons(bool isDark) {
     for (auto* button: Main::ref().findChildren<QToolButton*>()) {
         QString path = Main::ref().getIconPath(button->objectName());
         if (!isDark) path = newPath(path);
-        if (button->isCheckable()) path = checkPath(path, button->isChecked());
         QPixmap pm(path);
         QIcon icon;
         icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
+        if (button->isCheckable()) path = checkPath(path, button->isChecked());
+        QPixmap cpm(path);
+        icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::On);
         button->setIcon(icon);
         button->setIconSize(QSize(32, 32));
         button->setStyleSheet("QToolButton {\n"

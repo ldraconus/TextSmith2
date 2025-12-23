@@ -69,6 +69,7 @@ void PreferencesDialog::font() {
     mUi->novelFontPushButton->setText(QString("%1:%2").arg(font.family()).arg(font.pointSize()));
 
     setTextEditFont(font);
+    Main::ref().ready();
 }
 
 void PreferencesDialog::loadAvailableVoices() {

@@ -35,6 +35,7 @@ private:
     QTimer                mTimer;
     Ui::FullScreenDialog* mUi;
 
+    void imageFix();
     void setDark();
     void setLight();
     void setSystem();

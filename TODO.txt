@@ -1,20 +1,24 @@
-[/] Add ability to read old format .novel files
+[/] Fix saving and loading images in text
 [/] Implement drag & drop:
     - Remove vs. Copy semantics
     - If the user holds Ctrl, treat it as copy.
     - If not, treat it as move (remove from source).
     - Qt’s Qt::DropAction gives you this distinction.
+    - rewrite tree to alloow this
 [ ] Improve cut/copy and paste to/from tree and document (stop usiung the built in cut/copy/paste, or check the paste buffer for novel
     items first and insert those, and if the treeWidget has focus do cut/copy/paste there ... cut and copy need to be modified to push
-    custom items on the stack so I know to switch nodes)
+    custom items on the stack so I know to switch modes for undo/redo)
 [ ] Make the tree part of the Undo/Redo path by subclassing QUndoCommand and adding to the QUndoStack.
 [ ] Search and replace
 [ ] Export
 [ ] Print
 [ ] Typewriter sounds
-[ ] Help
 [ ] Spellcheck
-[ ] integrate 5th into the program
+[ ] - add custom words per novel and global
+[ ] Help
+[ ] Add pause/play handling to speech
+[ ] Integrate 5th into the program for scripting
+[X] Add ability to read old format .novel files
 [X] add command searching (code snippets below)
 [X] Read to me (see code below: SPeech controller)
 [X] Word count (fix counting, fix shortcut, fix occuring during open/close)
@@ -24,51 +28,30 @@
 [X] prepare menus to disable actions that can't be performed, make sure the do's follow this.
 [X] Fix fullscreen to better follow the preferences but still look like a page of paper
 
-{
-    document: {
-        root: { // nMovel
-            name: string, // name
-            root: ignore,
-            doc:          // html
-            wc: ignore
-            tags:         // tags
-        },
-        options: {
-            openCheckbox: bool,      // use in root to set the open state
-            autoSave: bool,          // mPrefs: autoSave
-            autoSaveInterval: num,   // mPrefs: autoSaveInterval
-            typewriterSounds: bool,  // mPrefs: voice
-            textFont: name:size,     // mPrefs: fontFamily, mPrefs.fontSize
-            voioce: num              // mPrefs: voice
-            // default everything else
-        },
-        windows: {
-            mainwindow: {
-                splitter: [ ... ]    // mPrefs: mainSplitter
-            },
-            fullscreen: {
-                sizes: [ ... ]       // mPrefs: otherSplitter
-            },
-            .
-            .
-            .
-        }
-    }
-}
+Scripting ideas:
 
-mNovel: filename (fullpath as normal)
+📄 Export & Formatting
+- Scene Outline Export: generate a list of scene titles with summaries/tags.
+- POV/Tag Filter Export: export only scenes tagged with a specific POV character or keyword.
+- Timeline Export: collect scene dates/times from tags and output a chronological timeline.
 
-QString name = obj["name"].toString("");
-bool root = obj["root"].toBool(false);
-Scene scene(name, root);
-scene.doc(obj["doc"].toString(""));
-scene.wc(obj["wc"].toInt(0));
-const QJsonArray& tags = obj["tags"].toArray();
-for (auto tag: tags) scene.tags().append(tag.toString(""));
-total += scene.wc();
-QTreeWidgetItem* item = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr),
-                                            QStringList(scene.name().isEmpty() ? "<unnamed>" : scene.name()));
-const QJsonArray& children = obj["children"].toArray();
-for (auto child: children) item->addChild(objectToItem(child.toObject(), total));
-item->setData(0, Qt::ItemDataRole::UserRole, QVariant(this->_scenes.size()));
-_scenes.append(scene);
+🔍 Analysis & Consistency
+- Word Count per Scene/Chapter: tally words and report totals for pacing analysis.
+- Tag Frequency Report: count how often specific tags (e.g. POV, location) appear.
+- Dialogue Ratio Check: calculate percentage of dialogue vs. narration in each scene.
+- Character Mention Tracker: scan text for character names and produce a per‑scene presence map.
+
+✍️ Text Manipulation
+- Smart Find/Replace: replace words/phrases across all scenes with undo‑safe logging.
+- Tag Injection: automatically add tags based on regex matches (e.g. detect “Letter:” and tag scene as correspondence).
+
+🛠️ UI & Workflow Automation
+- Menu Macro Runner: bind a script to a menu item that runs a sequence of editor commands.
+- Batch Scene Reorder: reorder scenes based on tag criteria (e.g. timeline) instead of manual drag.
+- Quick Outline Generator: insert a new document section with chapter/scene headings only.
+- Delete Empty Scenes: scan tree and remove nodes with no text content.
+
+🎁 Showcase / Fun
+- Random Prompt Inserter: insert a writing prompt at the cursor from a supplied list.
+- Mood Tagger: scan for sentiment words and tag scenes with “tone: dark/light/romantic.”
+- Chapter Title Styler: auto‑apply formatting (caps, underline) to chapter headings.

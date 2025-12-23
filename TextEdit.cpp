@@ -1,69 +1,74 @@
 #include "TextEdit.h"
+#include <QAbstractTextDocumentLayout>
 #include <QTextCursor>
 #include <QTextBlock>
+#include <QTextDocumentFragment>
 #include <QTextFragment>
 #include <QTextImageFormat>
 #include <QUrl>
 #include <QDateTime>
+
+class ReentryGuard {
+public:
+    ReentryGuard(int& counter): c(counter) { ++c; }
+    ~ReentryGuard()                        { --c; }
+
+    bool active() const { return c > 1; } // already inside
+
+private:
+    int& c;
+};
+
 
 TextEdit::TextEdit(QWidget* parent)
     : QTextEdit(parent) {
     mIdBase = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch());
     setAcceptRichText(true);
     setAcceptDrops(true);
-    setUndoRedoEnabled(true);
+//    setUndoRedoEnabled(true);
     // Default margin is fine; you can tweak per your layout
 }
 
-bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
-    if (!source) return false;
-    if (source->hasImage()) return true;
-    if (source->hasUrls()) return true;
-    return QTextEdit::canInsertFromMimeData(source);
-}
+void TextEdit::insertFromMimeData(const QMimeData *source) {    
+    ReentryGuard guard(mReentry);
+    if (guard.active() || mInserting || mResizing) return; // guard against re-entry
 
-void TextEdit::insertFromMimeData(const QMimeData *source) {
     if (!source) return;
 
-    // Pasted image (single image object)
+    if (source->hasHtml()) {
+        // scan for possible image issues?
+        insertHtml(source->html());
+        // scan for possible image issues?
+        return;
+    }
+
+    if (source->hasText()) {
+        insertPlainText(source->text());
+        return;
+    }
+
     if (source->hasImage()) {
-        const QImage img = qvariant_cast<QImage>(source->imageData());
+        QImage img = qvariant_cast<QImage>(source->imageData());
         if (!img.isNull()) {
             insertInternalImage(img);
             return;
         }
     }
 
-    // Dropped URLs
     if (source->hasUrls()) {
-        for (const QUrl& url : source->urls()) {
+        for (const QUrl& url: source->urls()) {
             if (!url.isValid()) continue;
-
-            // Treat http/https as external
             const QString scheme = url.scheme().toLower();
-            if (scheme == "http" || scheme == "https") {
-                insertExternalUrlImage(url);
-                continue;
-            }
-
-            // Local file
-            const QString local = url.toLocalFile();
-            if (!local.isEmpty()) {
-                insertLocalImage(local);
-                continue;
-            }
-
-            // Fallback: attempt local path via .path(), if present
-            if (!url.path().isEmpty()) {
-                insertLocalImage(url.path());
-                continue;
+            if (scheme == "http" || scheme == "https") insertExternalUrlImage(url);
+            else {
+                const QString local = url.toLocalFile();
+                if (!local.isEmpty()) insertInternalImage(QImage(local));
+                else insertInternalImage(QImage(url.path()));
             }
         }
         return;
     }
-
-    // Fallback to default rich text insertion
-    QTextEdit::insertFromMimeData(source);
+    QTextEdit::insertFromMimeData(source); // non-image content
 }
 
 void TextEdit::insertLocalImage(const QString& localFilePath) {
@@ -78,6 +83,12 @@ void TextEdit::insertInternalImage(const QImage& image) {
     if (image.isNull()) return;
 
     mInserting = true;
+    const bool prevAcceptDrops = acceptDrops();
+    setAcceptDrops(false);
+    viewport()->setUpdatesEnabled(false);
+
+    QSignalBlocker blockDoc(document());
+    QSignalBlocker blockLay(document()->documentLayout());
 
     // Create an internal URL
     const QUrl url = makeInternalUrl();
@@ -97,12 +108,26 @@ void TextEdit::insertInternalImage(const QImage& image) {
     document()->addResource(QTextDocument::ImageResource, url, image);
 
     // Insert with display size
+    QTextCursor cursor = textCursor();
+
+    // Ensure we’re at a fresh block
+    cursor.insertBlock();
+
+    // Clear indentation/margins
+    QTextBlockFormat blockFmt;
+    blockFmt.setLeftMargin(0);
+    blockFmt.setIndent(0);
+    cursor.setBlockFormat(blockFmt);
+
     QTextImageFormat fmt;
     fmt.setName(url.toString());
     fmt.setWidth(displayW);
     fmt.setHeight(displayH);
-    textCursor().insertImage(fmt);
+    cursor.insertImage(fmt);
 
+    // Release isolation
+    viewport()->setUpdatesEnabled(true);
+    setAcceptDrops(prevAcceptDrops);
     mInserting = false;
 
     scheduleResize();
@@ -110,6 +135,13 @@ void TextEdit::insertInternalImage(const QImage& image) {
 
 void TextEdit::insertExternalUrlImage(const QUrl& url) {
     if (!url.isValid()) return;
+
+    const bool prevAcceptDrops = acceptDrops();
+    setAcceptDrops(false);
+    viewport()->setUpdatesEnabled(false);
+
+    QSignalBlocker blockDoc(document());
+    QSignalBlocker blockLay(document()->documentLayout());
 
     // Keep URL as-is, no internal storage; just insert with a conservative width
     mExternalUrls.insert(url);
@@ -120,11 +152,26 @@ void TextEdit::insertExternalUrlImage(const QUrl& url) {
     const int displayW = maxW > 0 ? maxW : 512; // fallback
     const int displayH = displayW; // square placeholder if unknown
 
+    QTextCursor cursor = textCursor();
+
+    // Ensure we’re at a fresh block
+    cursor.insertBlock();
+
+    // Clear indentation/margins
+    QTextBlockFormat blockFmt;
+    blockFmt.setLeftMargin(0);
+    blockFmt.setIndent(0);
+    cursor.setBlockFormat(blockFmt);
+
     QTextImageFormat fmt;
     fmt.setName(url.toString());
     fmt.setWidth(displayW);
     fmt.setHeight(displayH);
-    textCursor().insertImage(fmt);
+    cursor.insertImage(fmt);
+
+    viewport()->setUpdatesEnabled(true);
+    setAcceptDrops(prevAcceptDrops);
+    mInserting = false;
 
     scheduleResize();
 }
@@ -146,7 +193,6 @@ void TextEdit::resizeEvent(QResizeEvent *event) {
 }
 
 void TextEdit::scheduleResize() {
-    // Defer to next event loop tick to avoid synchronous relayout loops
     QTimer::singleShot(0, this, [this]{ resizeImagesToFit(); });
 }
 
@@ -155,91 +201,93 @@ void TextEdit::resizeImagesToFit() {
     mResizing = true;
 
     const int maxW = contentMaxWidth();
-    if (maxW <= 0) { mResizing = false; return; }
-
-    // 1) Collect image fragments first (positions + URLs), then update.
-    struct ImgFrag {
-        int posStart;
-        int posEnd;
-        QUrl url;
-        QSize origSize; // for internal images; empty for external
-    };
-    QVector<ImgFrag> frags;
-
-    QTextCursor c(document());
-    c.movePosition(QTextCursor::Start);
-
-    while (!c.atEnd()) {
-        const QTextBlock block = c.block();
-        for (QTextBlock::iterator it = block.begin(); !(it.atEnd()); ++it) {
-            const QTextFragment frag = it.fragment();
-            if (!frag.isValid()) continue;
-
-            const QTextCharFormat cf = frag.charFormat();
-            if (!cf.isImageFormat()) continue;
-
-            const QTextImageFormat imgFmt = cf.toImageFormat();
-            const QUrl url(imgFmt.name());
-
-            ImgFrag f;
-            f.posStart = frag.position();
-            f.posEnd   = frag.position() + frag.length();
-            f.url      = url;
-
-            // Internal originals provide exact aspect ratio
-            const auto itOrig = mOriginals.find(url);
-            if (itOrig != mOriginals.end()) {
-                f.origSize = itOrig.value().size();
-            } else {
-                f.origSize = QSize(); // unknown; keep current aspect
-            }
-            frags.push_back(f);
-        }
-        c.movePosition(QTextCursor::NextBlock);
+    if (maxW <= 0) {
+        mResizing = false;
+        return;
     }
 
-    // 2) Apply updates without querying resources or re-inserting.
-    // Disable undo for these non-user-initiated layout adjustments.
+    // Phase 1: collect using block iteration (cursor-free scan)
+    struct ImgFrag { int s, e; QUrl url; QSize orig; };
+    QVector<ImgFrag> frags;
+
+    for (QTextBlock b = document()->begin(); b.isValid(); b = b.next()) {
+        for (QTextBlock::iterator it = b.begin(); !(it.atEnd()); ++it) {
+            const QTextFragment f = it.fragment();
+            if (!f.isValid()) continue;
+
+            const QTextCharFormat cf = f.charFormat();
+            if (!cf.isImageFormat()) continue;
+
+            const QTextImageFormat imf = cf.toImageFormat();
+            ImgFrag g;
+            g.s = f.position();
+            g.e = f.position() + f.length();
+            g.url = QUrl(imf.name());
+
+            const auto itOrig = mOriginals.find(g.url);
+            g.orig = (itOrig != mOriginals.end()) ? itOrig.value().size() : QSize();
+
+            frags.push_back(g);
+        }
+    }
+
+    if (frags.isEmpty()) {
+        mResizing = false;
+        return;
+    }
+
+    // Phase 2: apply format-only updates in a single edit block
     const bool prevUndo = document()->isUndoRedoEnabled();
     document()->setUndoRedoEnabled(false);
 
+    QTextCursor editCursor(document());
+    editCursor.beginEditBlock();  // group changes; avoids thrash
+
     const double eps = 0.5;
 
-    for (const ImgFrag& f : frags) {
+    for (const ImgFrag& g : frags) {
         QTextCursor rc(document());
-        rc.setPosition(f.posStart);
-        rc.setPosition(f.posEnd, QTextCursor::KeepAnchor);
+        rc.setPosition(g.s);
+        rc.setPosition(g.e, QTextCursor::KeepAnchor);
 
         QTextCharFormat cf = rc.charFormat();
         if (!cf.isImageFormat()) continue;
-        QTextImageFormat imgFmt = cf.toImageFormat();
 
-        // Skip if width is already effectively maxW
-        if (std::abs(imgFmt.width() - maxW) < eps) continue;
+        QTextImageFormat imf = cf.toImageFormat();
+        if (std::abs(imf.width() - maxW) < eps) continue;
 
         int newW = maxW;
-        int newH = int(imgFmt.height()); // fallback
+        int newH;
 
-        if (f.origSize.isValid() && f.origSize.width() > 0) {
-            const double scale = double(maxW) / double(f.origSize.width());
-            newH = int(f.origSize.height() * scale);
+        if (g.orig.isValid() && g.orig.width() > 0) {
+            if (newW > g.orig.width()) {
+                newW = g.orig.width();
+                newH = g.orig.height();
+            } else {
+                const double s = double(maxW) / double(g.orig.width());
+                newH = int(double(g.orig.height()) * s);
+            }
+            QTextBlockFormat blockFmt;
+            blockFmt.setLeftMargin(0);
+            blockFmt.setIndent(0);
+            rc.setBlockFormat(blockFmt);
         } else {
-            // Unknown original size (external URL): keep current aspect
-            const double aspect = (imgFmt.width() > 0) ? (imgFmt.height() / imgFmt.width()) : 1.0;
-            newH = int(double(newW) * aspect);
+            newW = imf.width();
+            newH = imf.height();
         }
 
-        imgFmt.setWidth(newW);
-        imgFmt.setHeight(newH);
-        rc.setCharFormat(imgFmt);
+        imf.setWidth(newW);
+        imf.setHeight(newH);
+        rc.setCharFormat(imf);
     }
 
+    editCursor.endEditBlock();
     document()->setUndoRedoEnabled(prevUndo);
+
     mResizing = false;
 }
 
 QUrl TextEdit::makeInternalUrl() {
-    // Unique internal URL for in-document images
     const quint64 id = mIdBase++;
     return QUrl(QString("internal://image_%1").arg(id));
 }
@@ -252,7 +300,7 @@ QByteArray TextEdit::imageToPngBytes(const QImage& img) {
     return bytes;
 }
 
-QString TextEdit::serializeInternalImagesToJson() const {
+QJsonArray TextEdit::serializeInternalImagesToJson() const {
     QJsonArray arr;
     for (auto it = mOriginals.constBegin(); it != mOriginals.constEnd(); ++it) {
         const QUrl url = it.key();
@@ -267,6 +315,59 @@ QString TextEdit::serializeInternalImagesToJson() const {
         obj["height"] = img.height();
         arr.push_back(obj);
     }
-    QJsonDocument doc(arr);
-    return QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+    return arr;
 }
+
+void TextEdit::addInternalImage(const QUrl& url, const QImage& image) {
+    if (url.isEmpty() || image.isNull()) return;
+
+    mOriginals.insert(url, image);
+
+    document()->addResource(QTextDocument::ImageResource, url, image);
+}
+
+void TextEdit::clearInternalImages() {
+    mOriginals.clear();
+    mExternalUrls.clear();
+}
+
+void TextEdit::removeInternalImage(const QUrl& url) {
+    mOriginals.remove(url);
+}
+
+bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
+    if (source && (source->hasHtml() || source->hasText())) return true;
+    if (source && (source->hasImage() || source->hasUrls())) return true;
+    return QTextEdit::canInsertFromMimeData(source);
+}
+
+QMimeData* TextEdit::createMimeDataFromSelection() const {
+    QMimeData* mime = new QMimeData();
+
+    QString html = textCursor().selection().toHtml();
+    QString text = textCursor().selection().toPlainText();
+
+    if (!html.isEmpty()) mime->setHtml(html);
+
+    if (!text.isEmpty()) mime->setText(text);
+
+    return mime;
+}
+
+// Own drag/drop pipeline (never invoke base for images/urls)
+void TextEdit::dragEnterEvent(QDragEnterEvent *de) {
+    const QMimeData* m = de->mimeData();
+    if (m->hasImage() || m->hasUrls()) de->acceptProposedAction();
+    else QTextEdit::dragEnterEvent(de);
+}
+
+void TextEdit::dropEvent(QDropEvent* de) {
+    const QMimeData* m = de->mimeData();
+    if (m->hasText() || m->hasHtml() || m->hasImage() || m->hasUrls()) {
+        insertFromMimeData(m);
+        de->acceptProposedAction();
+    } else QTextEdit::dropEvent(de);
+}
+
+
+

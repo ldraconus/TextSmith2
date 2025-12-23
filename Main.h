@@ -15,7 +15,7 @@
 #include "Novel.h"
 #include "Preferences.h"
 #include "Speech.h"
-#include "TextEdit-Old.h"
+#include "TextEdit.h"
 
 class QApplication;
 class QCloseEvent;
@@ -138,16 +138,19 @@ private:
     static constexpr bool NoUi = true;
 
     void             buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
-    void             buildTreeMimeData(QTreeWidgetItem* item, QMimeData* mimeData);
+    void             buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
     QString          checked(const QString& path);
     QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
     void             justifyButtons();
+    void             copyTreeItem();
+    void             cutTreeItem();
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     bool             nothingAbove();
     bool             nothingBelow();
     void             replaceText(QTextCursor cursor, const QString& text);
     bool             parentIsRoot();
+    void             pasteTreeItem();
     bool             receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode         saveTree(QTreeWidgetItem* node);
@@ -178,10 +181,14 @@ public:
     Ui::Main*    ui()                             { return mUi; }
     WordCounts&  wordCount()                      { return mWordCount; }
 
-    void buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
-    void changeNovelFont(const QFont& font);
-    void setupHtml(TextEdit& text);
-    void wordCounts();
+    void             buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
+    QTreeWidgetItem* buildTreeFromJson(Json5Object& obj);
+    void             changeNovelFont(const QFont& font);
+    void             removeEmptyFirstBlock(TextEdit* text);
+    void             setupHtml(TextEdit& text);
+    Json5Object      treeOfItems(QTreeWidgetItem* branch);
+    QList<Item*>     vectorOfItems(QTreeWidgetItem* branch);
+    void             wordCounts();
 
     static Main* ptr() { return sMain; }
     static Main& ref() { return *ptr(); }

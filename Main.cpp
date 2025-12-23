@@ -4,20 +4,24 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QCompleter>
+#include <QClipboard>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLineEdit>
 #include <QScreen>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QStandardPaths>
 #include <QStyleFactory>
-#include <QTextBlock>
+#include <QTextBlock> // 531-495-6412
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
+#include <QAbstractTextDocumentLayout>
 #include <QTextToSpeech>
 #include <QThread>
 #include <QTreeWidget>
@@ -126,8 +130,18 @@ void Main::doCloseAll() {
 }
 
 void Main::doCopy() {
-    auto cursor = mUi->textEdit->textCursor();
-    if (cursor.hasSelection()) mUi->textEdit->copy();
+    QWidget *w = QApplication::focusWidget();
+
+    if (w == mUi->textEdit || mUi->textEdit->isAncestorOf(w)) {
+        auto cursor = mUi->textEdit->textCursor();
+        if (cursor.hasSelection()) mUi->textEdit->copy();
+        return;
+    }
+
+    if (w == mUi->treeWidget || mUi->treeWidget->isAncestorOf(w)) {
+        copyTreeItem();
+        return;
+    }
 }
 
 void Main::doCursorPositionChanged() {
@@ -142,10 +156,21 @@ void Main::doCursorPositionChanged() {
 }
 
 void Main::doCut() {
-    auto cursor = mUi->textEdit->textCursor();
-    if (cursor.hasSelection()) {
-        mUi->textEdit->cut();
+    QWidget *w = QApplication::focusWidget();
+
+    if (w == mUi->textEdit || mUi->textEdit->isAncestorOf(w)) {
+        auto cursor = mUi->textEdit->textCursor();
+        if (cursor.hasSelection()) {
+            mUi->textEdit->cut();
+            changed();
+        }
+        return;
+    }
+
+    if (w == mUi->treeWidget || mUi->treeWidget->isAncestorOf(w)) {
+        cutTreeItem();
         changed();
+        return;
     }
 }
 
@@ -186,11 +211,8 @@ void Main::doFullScreen() {
     dlg.exec();
     Json5Array other = dlg.other();
     mPrefs.setOtherSplitter(other);
-    mUi->textEdit->setHtml(dlg.html());
-    auto cursor = mUi->textEdit->textCursor();
-    cursor.setPosition(dlg.position());
-    mUi->textEdit->setTextCursor(cursor);
-    mUi->textEdit->ensureCursorVisible();
+    setHtml(dlg.html());
+    setPosition(dlg.position());
     doCursorPositionChanged();
 }
 
@@ -232,11 +254,11 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     QString html = mUi->textEdit->toHtml();
     oldItem.setHtml(html);
     oldItem.count();
-    oldItem.setPosition((mUi->textEdit->textCursor().position()));
+    oldItem.setPosition(mUi->textEdit->textCursor().position());
     mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
     auto& item = mNovel.findItem(mCurrentNode);
-    mUi->textEdit->setHtml(item.html());
-    setPosition(item.position());
+    mPosition = item.position();
+    setHtml(item.html());
     doCursorPositionChanged();
     changed();
 }
@@ -334,7 +356,6 @@ void Main::doNew() {
     mPosition = 0;
     mState.clear();
     mCurrentNode = mNovel.root();
-    mUi->textEdit->clearImages();
     clearChanged();
     update();
     mWordCount.setCurrentItem(0);
@@ -351,14 +372,12 @@ void Main::doOpenAll() {
 
 void Main::doOpen() {
     if (mNovel.isChanged()) {
-        if (mNovel.isChanged()) {
-            mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave this novel before working a different Novel?",
-                             [this]() { doSave(); },
-                             [this]() { clearChanged(); },
-                             [this]() { doNothing(); },
-                             "Warning!");
-            if (mNovel.isChanged()) return;
-        }
+        mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave this novel before working a different Novel?",
+                         [this]() { doSave(); },
+                         [this]() { clearChanged(); },
+                         [this]() { doNothing(); },
+                         "Warning!");
+        if (mNovel.isChanged()) return;
     }
 
     QString filename;
@@ -373,7 +392,6 @@ void Main::doOpen() {
     mNovel.clear();
     mPosition = 0;
     mState.clear();
-    mUi->textEdit->clearImages();
     mNovel.setFilename(filename);
     mNovel.open();
     clearChanged();
@@ -394,8 +412,16 @@ void Main::doOpen() {
         }
         Json5Object images = Item::hasObj(obj, "Images", {});
         for (auto& image: images) {
-            QUrl url(image.first);
-            mUi->textEdit->addImage(images, url);
+            if (!image.second.isString()) continue;
+            QUrl url = image.first;
+            if (url.isEmpty()) continue;
+            QString str = image.second.toString();
+            if (str.isEmpty()) continue;
+            QByteArray data = QByteArray::fromBase64(str.toUtf8());
+            if (data.isEmpty()) continue;
+            QImage img;
+            img.loadFromData(data);
+            mUi->textEdit->addInternalImage(url, img);
         }
     } else if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -407,6 +433,7 @@ void Main::doOpen() {
         Json5Array ids = Item::hasArr(obj, "Ids", {});
         for (auto& id: ids) mState[id.toInt()] = state;
     }
+
     update();
     doCursorPositionChanged();
     auto total = mNovel.countAll();
@@ -426,13 +453,23 @@ void Main::doOutdent() {
 }
 
 void Main::doPaste() {
-    mUi->textEdit->paste();
-    auto* doc = mUi->textEdit->document();
-    auto pos = mUi->textEdit->textCursor().position();
-    changeDocumentFont(doc, doc->defaultFont());
-    setPosition(pos);
-    mUi->textEdit->ensureCursorVisible();
-    changed();
+    QWidget *w = QApplication::focusWidget();
+
+    if (w == mUi->textEdit || mUi->textEdit->isAncestorOf(w)) {
+        mUi->textEdit->paste();
+        auto* doc = mUi->textEdit->document();
+        auto pos = mUi->textEdit->textCursor().position();
+        changeDocumentFont(doc, doc->defaultFont());
+        setPosition(pos);
+        mUi->textEdit->ensureCursorVisible();
+        changed();
+        return;
+    }
+
+    if (w == mUi->treeWidget || mUi->treeWidget->isAncestorOf(w)) {
+        pasteTreeItem();
+        return;
+    }
 }
 
 void Main::doPreferences() {
@@ -596,8 +633,28 @@ void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<ql
     else twItem->setExpanded(true);
 }
 
-void Main::buildTreeMimeData(QTreeWidgetItem* item, QMimeData* mimeData) {
-
+void Main::buildTreeMimeData(const QList<QTreeWidgetItem*>& branch, QMimeData* mimeData) {
+    Json5Object obj = treeOfItems(branch[0]); // single selection mode in tree!
+    QString str = obj.toJson5(Json5Object::Compress);
+    QByteArray data = str.toUtf8();
+    mimeData->setData("application/json5", data);
+    QTextEdit document;
+    auto list = vectorOfItems(branch[0]); // single selection mode in tree!
+    auto cursor = document.textCursor();
+    bool first = true;
+    Item* prev = nullptr;
+    for (auto& item: list) {
+        if (first) first = false;
+        else {
+            QString text = prev->toPlainText();
+            if (text.last(1) != "\n") cursor.insertText("\n");
+        }
+        cursor.insertHtml(item->html());
+        cursor.movePosition(QTextCursor::End);
+        prev = item;
+    }
+    mimeData->setHtml(document.toHtml());
+    mimeData->setText(document.toPlainText());
 }
 
 QString Main::checked(const QString& path) {
@@ -669,6 +726,26 @@ void Main::justifyButtons() {
     setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
 }
 
+void Main::copyTreeItem() {
+    auto *tree = mUi->treeWidget;
+    QTreeWidgetItem* item = tree->currentItem();
+    if (!item) return;
+
+    QList<QTreeWidgetItem*> items = { item };
+    QMimeData* mime = tree->itemMimeData(items);
+
+    QApplication::clipboard()->setMimeData(mime);
+}
+
+void Main::cutTreeItem() {
+    auto *tree = mUi->treeWidget;
+    QTreeWidgetItem* item = tree->currentItem();
+    if (!item) return;
+
+    copyTreeItem();
+    delete item;
+}
+
 void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     auto id = item->data(0, Qt::UserRole).toLongLong();
     bool open = item->isExpanded();
@@ -722,23 +799,49 @@ bool Main::parentIsRoot() {
     return false;
 }
 
+void Main::pasteTreeItem() {
+    auto *tree = mUi->treeWidget;
+    const QMimeData* data = QApplication::clipboard()->mimeData();
+    if (data) tree->insertFromMimeData(data);
+}
+
 bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
     auto* tree = mUi->treeWidget;
     Item item;
     TextEdit edit(nullptr);
 
+    QTreeWidgetItem* parent = nullptr;
+    int row = 0;
+    QTreeWidgetItem* targetItem = nullptr;
+    if (de == nullptr) targetItem = mUi->treeWidget->currentItem();
+    else {
+        QModelIndex idx = tree->indexAt(de->position().toPoint());
+        if (idx.isValid()) targetItem = tree->itemFromIndex(idx);
+    }
+
+    if (targetItem != nullptr) {
+        parent = targetItem->parent();
+
+        if (parent == nullptr) parent = mUi->treeWidget->topLevelItem(0);
+        row = parent->indexOfChild(targetItem);
+        if (row == -1) row = 0;
+    } else {
+        parent = tree->topLevelItem(0);
+        row = parent->childCount();
+    }
+
     bool invalidJson = false;
     bool invalidText = true;
+    QTreeWidgetItem* newBranch = nullptr;
     while (true) {
         if (mimeData->hasFormat("application/json5")) {
             QByteArray data = mimeData->data("application/json5");
             QString text(data);
             Json5Document doc(text);
-            Json5Object& obj = doc.top().toObject();
-            item.fromObject(obj);
-            if (item.isNull()) invalidJson = true;
-            else break;
-        } if (mimeData->hasHtml() || mimeData->hasText()) {
+            if (doc.top().isObject()) invalidJson = (newBranch = buildTreeFromJson(doc.top().toObject())) == nullptr;
+            else invalidJson = true;
+            break;
+        } else if (mimeData->hasHtml() || mimeData->hasText()) {
             if (mimeData->hasHtml()) {
                 QString html = mimeData->html();
                 edit.setHtml(html);
@@ -748,30 +851,43 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
             }
             invalidText = false;
             setupHtml(edit);
+            Item item;
             item.setHtml(edit.toHtml());
-        }
+            auto id = item.id();
+            mNovel.addItem(item);
+            QTreeWidgetItem* newBranch = new QTreeWidgetItem();
+            newBranch->setText(0, item.name());
+            newBranch->setData(0, Qt::UserRole, id);
+            break;
+        } else break;
     }
     if (invalidJson && invalidText) return false;
 
-    QTreeWidgetItem *newNode = new QTreeWidgetItem();
-
-    QModelIndex idx = tree->indexAt(de->position().toPoint());
-    if (idx.isValid()) {
-        QTreeWidgetItem *targetItem = tree->itemFromIndex(idx);
-        QTreeWidgetItem *parent = targetItem->parent();
-        int row;
-
-        if (!parent) {
-            parent = mUi->treeWidget->topLevelItem(0);
-            row = idx.row();
-        } else row = parent->indexOfChild(targetItem);
-        parent->insertChild(row, newNode);
-    } else {
-        QTreeWidgetItem* parent = tree->topLevelItem(0);
-        parent->insertChild(parent->childCount(), newNode);
+    if (parent != nullptr) {
+        parent->insertChild(row, newBranch);
+        changed();
     }
 
     return true;
+}
+
+void Main::removeEmptyFirstBlock(TextEdit* text) {
+    QTextCursor c(text->document());
+    c.movePosition(QTextCursor::Start);
+
+    QTextBlock first = c.block();
+    bool hasFragments = false;
+    for (QTextBlock::iterator it = first.begin(); !(it.atEnd()); ++it) {
+        QTextFragment frag = it.fragment();
+        if (frag.isValid()) {
+            hasFragments = true;
+            break;
+        }
+    }
+
+    bool trulyEmpty = !hasFragments && first.text().isEmpty();
+
+    if (trulyEmpty) c.deleteChar();
 }
 
 void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
@@ -786,7 +902,13 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     mPrefs.setWindowLocation(geom);
     extra["Prefs"] = mPrefs.write();
     Json5Object images;
-    mUi->textEdit->saveImages(images);
+    auto arr = mUi->textEdit->serializeInternalImagesToJson();
+    for (auto it = arr.begin(); it != arr.end(); ++it) {
+        QJsonObject from(it->toObject());
+        QString url = from["url"].toString();
+        QString data = from["data"].toString();
+        images[url] = data;
+    }
     extra["Images"] = images;
     mState = byId;
     Json5Array state;
@@ -813,6 +935,33 @@ TreeNode Main::saveTree(QTreeWidgetItem* node) {
 
 void Main::setHtml(const QString& html) {
     mUi->textEdit->setHtml(html);
+    removeEmptyFirstBlock(mUi->textEdit);
+
+    mUi->textEdit->document()->setTextWidth(mUi->textEdit->viewport()->width());
+    mUi->textEdit->document()->documentLayout()->update();
+    mUi->textEdit->update();
+
+    // Ensure cursor is visible
+    auto maxPosition = mUi->textEdit->toPlainText().size();
+    if (mPosition > maxPosition) mPosition = maxPosition;
+    setPosition(mPosition);
+
+    // Reset cursor formatting so it doesn't inherit image-drop formatting
+    QTextCursor c = mUi->textEdit->textCursor();
+    QTextCharFormat fmt;
+
+    switch (mPrefs.theme()) {
+    case 0: fmt.setForeground(QBrush(Qt::black)); break;
+    case 1: fmt.setForeground(QBrush(Qt::white)); break;
+    case 2:
+        if (mPrefs.isDark()) fmt.setForeground(QBrush(Qt::white));
+        else                 fmt.setForeground(QBrush(Qt::black));
+        break;
+    }
+
+    fmt.setFontPointSize(mUi->textEdit->font().pointSizeF());
+    c.setCharFormat(fmt);
+    mUi->textEdit->setTextCursor(c);
 }
 
 void Main::setIcon(QToolButton* button, bool isChecked) {
@@ -841,6 +990,7 @@ void Main::update() { // new, open
     buildTree(mNovel.branches(), nullptr, mState);
     updateHtml();
     updateFromPrefs();
+
     mUi->textEdit->setFocus();
 }
 
@@ -876,9 +1026,8 @@ void Main:: updateHtml() { // update, and post-fullscreen
     QTreeWidgetItem* branch = findItem(tree->topLevelItem(0), mCurrentNode);
     if (branch != nullptr) {
         Item& item = mNovel.findItem(mCurrentNode);
-        mUi->textEdit->setHtml(item.html());
-        mUi->textEdit->textCursor().position();
-        mUi->textEdit->ensureCursorVisible();
+        setHtml(item.html());
+
         tree->setCurrentItem(branch);
     }
 }
@@ -899,15 +1048,18 @@ Main::Main(QApplication* app, QWidget* parent)
     sMain = this;
     mUi->setupUi(this);
 
-    mUi->textEdit->setDir(mDocDir);
-
     mUi->treeWidget->setDragEnabled(true);
     mUi->treeWidget->setAcceptDrops(true);
     mUi->treeWidget->setDropIndicatorShown(true);
     mUi->treeWidget->setDragDropMode(QAbstractItemView::InternalMove);
-    mUi->treeWidget->setMimeDataBuilder(std::bind(&Main::buildDrag, this,
+    mUi->treeWidget->setMimeDataBuilder(std::bind(&Main::buildTreeMimeData, this,
                                                   std::placeholders::_1,
                                                   std::placeholders::_2));
+    mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this,
+                                                   std::placeholders::_1,
+                                                   std::placeholders::_2));
+
+    mUi->textEdit->setAcceptDrops(true);
 
     QTextToSpeech* speech = new QTextToSpeech();
     mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
@@ -958,11 +1110,32 @@ Main::~Main() {
     delete mUi;
 }
 
-void Main::buildDrag(QTreeWidgetItem* branch, QMimeData* mime) {
-    qlonglong id = branch->data(0, Qt::UserRole).toLongLong();
-    Item& item = mNovel.findItem(id);
-    mime->setText(item.toPlainText());
-    mime->setData("application/json5", item.toObject().toJson5().toUtf8());
+QTreeWidgetItem* Main::buildTreeFromJson(Json5Object& obj) {
+    Item item;
+    item.setHtml(Item::hasStr(obj, "Html"));
+    item.setName(Item::hasStr(obj, "Name"));
+    item.setPosition(Item::hasNum(obj, "Position", 0));
+    if (Json5Array arr = Item::hasArr(obj, "Tags", {}); !arr.empty()) {
+        for (auto& tag: arr) {
+            if (tag.isString()) item.addTag(tag.toString());
+        }
+    }
+    TextEdit html;
+    html.setHtml(item.html());
+    setupHtml(html);
+    item.setHtml(html.toHtml());
+    QTreeWidgetItem* branch = new QTreeWidgetItem();
+    branch->setText(0, item.name());
+    branch->setData(0, Qt::UserRole, item.id());
+    mNovel.addItem(item);
+    Json5Array arr = Item::hasArr(obj, "Children", {});
+    for (auto& child: arr) {
+        Json5Object data = child.isObject() ? child.toObject() : Json5Object();
+        if (data.isEmpty()) continue;
+        QTreeWidgetItem* sprout = buildTreeFromJson(data);
+        if (sprout) branch->addChild(sprout);
+    }
+    return branch;
 }
 
 void Main::changeNovelFont(const QFont& font) {
@@ -985,6 +1158,30 @@ void Main::setupHtml(TextEdit& text) {
     text.document()->setDefaultFont(font);
 }
 
+Json5Object Main::treeOfItems(QTreeWidgetItem* branch) {
+    auto id = branch->data(0, Qt::UserRole).toLongLong();
+    auto item = mNovel.findItem(id);
+    Json5Object obj = item.toObject();
+    for (auto idx = 0; idx < branch->childCount(); ++idx) {
+        auto sprout = branch->child(idx);
+        auto id = sprout->data(0, Qt::UserRole).toLongLong();
+        auto item = mNovel.findItem(id);
+        obj[QString::number(id)] = treeOfItems(sprout);
+    }
+    return obj;
+}
+
+QList<Item*> Main::vectorOfItems(QTreeWidgetItem* branch) {
+    QList<Item*> items;
+    auto id = branch->data(0, Qt::UserRole).toLongLong();
+    Item& item = mNovel.findItem(id);
+    items.append(&item);
+    for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
+        auto childItems = vectorOfItems(branch->child(childNum));
+        items.append(childItems);
+    }
+    return items;
+}
 
 void Main::wordCounts() {
     auto oldCount = mWordCount.currentItem();
@@ -1160,8 +1357,8 @@ void Main::setupConnections() {
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;
                 mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
-                mCopy = mNovel;
                 mapTree(mById, mUi->treeWidget->topLevelItem(0));
+                mCopy = mNovel;
                 mGeom = geometry();
                 QThread* thread = QThread::create([this]() {
                     save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
