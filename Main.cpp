@@ -35,6 +35,161 @@ constexpr qlonglong second = 1000;
 
 Main* Main::sMain = nullptr;
 
+class EditItemCommand
+    : public QUndoCommand {
+public:
+    EditItemCommand(QTreeWidgetItem* branch,
+                    Item newItem,
+                    Item oldItem)
+        : mBranch(branch)
+        , mNewItem(newItem)
+        , mOldItem(oldItem) {
+        setText("Insert Tree Item");
+    }
+
+    void undo() override {
+        auto id = mOldItem.id();
+        Item& item = Main::ref().novel().findItem(id);
+        item.setName(mOldItem.name());
+        item.setTags(mOldItem.tags());
+        mBranch->setText(0, mOldItem.name());
+    }
+
+    void redo() override {
+        auto id = mNewItem.id();
+        Item& item = Main::ref().novel().findItem(id);
+        item.setName(mNewItem.name());
+        item.setTags(mNewItem.tags());
+        mBranch->setText(0, mNewItem.name());
+    }
+
+private:
+    QTreeWidgetItem* mBranch;
+    Item             mNewItem;
+    Item             mOldItem;
+};
+
+class InsertItemCommand
+    : public QUndoCommand {
+public:
+    InsertItemCommand(TreeWidget* tree,
+                      QTreeWidgetItem* parent,
+                      int index,
+                      QTreeWidgetItem* branch,
+                      Item& item)
+        : mTree(tree)
+        , mParent(parent)
+        , mIndex(index)
+        , mBranch(branch)
+        , mItem(item) {
+        setText("Insert Tree Item");
+    }
+
+    void undo() override {
+        if (mParent)
+            mParent->removeChild(mBranch);
+        else
+            mTree->takeTopLevelItem(mTree->indexOfTopLevelItem(mBranch));
+        Main::ref().novel().deleteItem(mItem.id());
+    }
+
+    void redo() override {
+        if (mParent)
+            mParent->insertChild(mIndex, mBranch);
+        else
+            mTree->insertTopLevelItem(mIndex, mBranch);
+        Main::ref().novel().addItem(mItem);
+    }
+
+private:
+    TreeWidget*      mTree;
+    QTreeWidgetItem* mParent;
+    int              mIndex;
+    QTreeWidgetItem* mBranch;
+    Item             mItem;
+};
+
+class MoveItemCommand
+    : public QUndoCommand {
+public:
+    MoveItemCommand(QTreeWidgetItem* grandParent,
+                    QTreeWidgetItem* parent,
+                    int oldIndex,
+                    int newIndex)
+        : mGrandParent(grandParent)
+        , mParent(parent)
+        , mOldIndex(oldIndex)
+        , mNewIndex(newIndex) {
+        setText("Move Tree Item");
+    }
+
+    void redo() override {
+        if (mGrandParent != nullptr) {
+            auto* branch = mParent->takeChild(mOldIndex);
+            mGrandParent->insertChild(mNewIndex, branch);
+        } else {
+            auto* branch = mParent->takeChild(mOldIndex);
+            mParent->insertChild(mNewIndex, branch);
+        }
+    }
+
+    void undo() override {
+        if (mGrandParent != nullptr) {
+            auto* branch = mGrandParent->takeChild(mNewIndex);
+            mParent->insertChild(mOldIndex, branch);
+        } else {
+            auto* branch = mParent->takeChild(mNewIndex);
+            mParent->insertChild(mOldIndex, branch);
+        }
+    }
+
+private:
+    QTreeWidgetItem* mGrandParent;
+    QTreeWidgetItem* mParent;
+    int              mOldIndex;
+    int              mNewIndex;
+};
+
+class RemoveItemCommand
+    : public QUndoCommand {
+public:
+    RemoveItemCommand(TreeWidget* tree,
+                      QTreeWidgetItem* parent,
+                      int index,
+                      QTreeWidgetItem* branch,
+                      Item& item)
+        : mTree(tree)
+        , mParent(parent)
+        , mIndex(index)
+        , mBranch(branch)
+        , mItem(item) {
+        setText("Remove Tree Item");
+    }
+
+    void redo() override {
+        if (mParent)
+            mParent->removeChild(mBranch);
+        else
+            mTree->takeTopLevelItem(mTree->indexOfTopLevelItem(mBranch));
+        Main::ref().novel().deleteItem(mItem.id());
+    }
+
+    void undo() override {
+        if (mParent)
+            mParent->insertChild(mIndex, mBranch);
+        else
+            mTree->insertTopLevelItem(mIndex, mBranch);
+        Main::ref().novel().addItem(mItem);
+    }
+
+private:
+    TreeWidget*      mTree;
+    QTreeWidgetItem* mParent;
+    int              mIndex;
+    QTreeWidgetItem* mBranch;
+    Item             mItem;
+};
+
 void Main::closeEvent(QCloseEvent* ce) {
     if (mNovel.isChanged()) {
         mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave novel before exiting?",
@@ -61,10 +216,19 @@ void Main::doAboutToShowFileMenu() {
 }
 
 void Main::doAboutToShowEditMenu() {
-    mUi->actionUndo->setEnabled(mUi->textEdit->document()->isUndoAvailable());
-    mUi->actionRedo->setEnabled(mUi->textEdit->document()->isRedoAvailable());
-    mUi->actionCopy->setEnabled(mUi->textEdit->textCursor().hasSelection());
-    mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
+    if (focusWidget() == mUi->textEdit) {
+        mUi->actionUndo->setEnabled(mUi->textEdit->document()->isUndoAvailable());
+        mUi->actionRedo->setEnabled(mUi->textEdit->document()->isRedoAvailable());
+        mUi->actionCopy->setEnabled(mUi->textEdit->textCursor().hasSelection());
+        mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
+        mUi->actionPaste->setEnabled(mUi->textEdit->canPaste());
+    } else {
+        mUi->actionUndo->setEnabled(mUi->treeWidget->canUndo());
+        mUi->actionRedo->setEnabled(mUi->treeWidget->canRedo());
+        mUi->actionCopy->setEnabled(true);
+        mUi->actionCut->setEnabled(mUi->treeWidget->currentItem()->parent() != nullptr);
+        mUi->actionPaste->setEnabled(mUi->treeWidget->canPaste());
+    }
 }
 
 void Main::doAboutToShowNovelMenu() {
@@ -92,6 +256,7 @@ void Main::doAddItem() {
     auto twItem = new QTreeWidgetItem;
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
+    mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, branch, branch->childCount(), twItem, item));
     branch->addChild(twItem);
     branch->setExpanded(true);
     changed();
@@ -177,17 +342,25 @@ void Main::doCut() {
 void Main::doEditItem() {
     Item& current = mNovel.findItem(mCurrentNode);
     Item item(current);
+    Item save(current);
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
     current.setName(item.name());
     current.setTags(item.tags());
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     branch->setText(0, current.name());
+    mUi->treeWidget->saveUndo(new EditItemCommand(branch, save, current));
     changed();
 }
 
 void Main::doExit() {
     close();
+}
+
+void Main::doFindNext() {
+}
+
+void Main::doFindReplace() {
 }
 
 void Main::doFullJustify() {
@@ -289,20 +462,22 @@ void Main::doMoveDown() {
     auto* root = mUi->treeWidget->topLevelItem(0);
     auto* treeItem = findItem(root, mCurrentNode);
     auto* parent = treeItem->parent();
-    auto idx = parent->indexOfChild(treeItem);
-    auto idxOther = idx + 1;
+    auto oldIdx = parent->indexOfChild(treeItem);
+    auto idxOther = oldIdx + 1;
     auto* otherTreeItem = parent->child(idxOther);
-    if (idx == parent->childCount() - 1) {
+    QTreeWidgetItem* grandParent = nullptr;
+    if (oldIdx == parent->childCount() - 1) {
         if (parent == mUi->treeWidget->topLevelItem(0)) return;
-        parent->takeChild(idx);
-        auto* grandParent = parent->parent();
-        auto parentIdx = grandParent->indexOfChild(parent);
-        grandParent->insertChild(parentIdx + 1, otherTreeItem);
+        parent->takeChild(oldIdx);
+        grandParent = parent->parent();
+        idxOther = grandParent->indexOfChild(parent) + 1;
+        grandParent->insertChild(idxOther, otherTreeItem);
     } else {
-        parent->takeChild(idx);
+        parent->takeChild(oldIdx);
         parent->insertChild(idxOther, treeItem);
     }
     mUi->treeWidget->setCurrentItem(treeItem);
+    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, oldIdx, idxOther));
 }
 
 void Main::doMoveOut() {
@@ -311,13 +486,13 @@ void Main::doMoveOut() {
     auto* treeItem = findItem(root, mCurrentNode);
     auto* parent = treeItem->parent();
     auto idx = parent->indexOfChild(treeItem);
-    auto idxOther = idx - 1;
-    auto* otherTreeItem = parent->child(idxOther);
     if (parent == mUi->treeWidget->topLevelItem(0)) return;
     parent->takeChild(idx);
     auto* grandParent = parent->parent();
     auto parentIdx = grandParent->indexOfChild(parent);
-    grandParent->insertChild(parentIdx, otherTreeItem);
+    grandParent->insertChild(parentIdx, treeItem);
+    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, parentIdx));
+    mUi->treeWidget->setCurrentItem(treeItem);
 }
 
 void Main::doMoveUp() {
@@ -327,16 +502,18 @@ void Main::doMoveUp() {
     auto* parent = treeItem->parent();
     auto idx = parent->indexOfChild(treeItem);
     auto idxOther = idx - 1;
+    QTreeWidgetItem* grandParent = nullptr;
     if (idx == 0) {
         if (parent == mUi->treeWidget->topLevelItem(0)) return;
-        auto* grandParent = parent->parent();
+        grandParent = parent->parent();
         parent->takeChild(idx);
-        auto parentIdx = grandParent->indexOfChild(parent);
-        grandParent->insertChild(parentIdx, treeItem);
+        idxOther = grandParent->indexOfChild(parent);
+        grandParent->insertChild(idxOther, treeItem);
     } else {
         parent->takeChild(idx);
         parent->insertChild(idxOther, treeItem);
     }
+    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, idxOther));
     mUi->treeWidget->setCurrentItem(treeItem);
 }
 
@@ -356,6 +533,7 @@ void Main::doNew() {
     mPosition = 0;
     mState.clear();
     mCurrentNode = mNovel.root();
+    mUi->treeWidget->clearUndo();
     clearChanged();
     update();
     mWordCount.setCurrentItem(0);
@@ -394,6 +572,7 @@ void Main::doOpen() {
     mState.clear();
     mNovel.setFilename(filename);
     mNovel.open();
+    mUi->treeWidget->clearUndo();
     clearChanged();
     Json5Object obj = mNovel.extra();
     if (obj.contains("Prefs")) {
@@ -500,11 +679,15 @@ void Main::doReadToMe() {
 }
 
 void Main::doRedo() {
-    mUi->textEdit->redo();
+    if (focusWidget() == mUi->textEdit) mUi->textEdit->redo();
+    else mUi->treeWidget->undo();
 }
 
 void Main::doRemoveItem() {
     if (mCurrentNode == mNovel.root()) return;
+
+    auto node = mCurrentNode;
+    auto nvlItem = mNovel.findItem(node);
 
     mNovel.deleteItem(mCurrentNode);
 
@@ -525,6 +708,7 @@ void Main::doRemoveItem() {
         mUi->treeWidget->setCurrentItem(next);
         mCurrentNode = next->data(0, Qt::UserRole).toLongLong();
     }
+    mUi->treeWidget->saveUndo(new RemoveItemCommand(mUi->treeWidget, parent, idx, item, nvlItem));
     parent->removeChild(item);
     changed();
 }
@@ -592,7 +776,8 @@ void Main::doUnderline() {
 }
 
 void Main::doUndo() {
-    mUi->textEdit->undo();
+    if (focusWidget() == mUi->textEdit) mUi->textEdit->undo();
+    else mUi->treeWidget->undo();
 }
 
 void Main::doUppercase() {
@@ -655,6 +840,10 @@ void Main::buildTreeMimeData(const QList<QTreeWidgetItem*>& branch, QMimeData* m
     }
     mimeData->setHtml(document.toHtml());
     mimeData->setText(document.toPlainText());
+}
+
+bool Main::canPasteMimeData(const QMimeData* mimeData) {
+    return mimeData->hasFormat("application/json5") || mimeData->hasHtml() || mimeData->hasText();
 }
 
 QString Main::checked(const QString& path) {
@@ -739,11 +928,16 @@ void Main::copyTreeItem() {
 
 void Main::cutTreeItem() {
     auto *tree = mUi->treeWidget;
-    QTreeWidgetItem* item = tree->currentItem();
-    if (!item) return;
+    QTreeWidgetItem* branch = tree->currentItem();
+    if (!branch) return;
 
+    auto index = branch->parent()->indexOfChild(branch);
+    auto id = branch->data(0, Qt::UserRole).toLongLong();
+    auto item = mNovel.findItem(id);
+    mNovel.deleteItem(id);
     copyTreeItem();
-    delete item;
+    mUi->treeWidget->saveUndo(new RemoveItemCommand(mUi->treeWidget, branch->parent(), index, branch, item));
+    delete branch;
 }
 
 void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
@@ -865,6 +1059,7 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
 
     if (parent != nullptr) {
         parent->insertChild(row, newBranch);
+        mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, parent, row, newBranch, item));
         changed();
     }
 
@@ -1058,6 +1253,8 @@ Main::Main(QApplication* app, QWidget* parent)
     mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this,
                                                    std::placeholders::_1,
                                                    std::placeholders::_2));
+    mUi->treeWidget->setMimeCanPaste(std::bind(&Main::canPasteMimeData, this,
+                                               std::placeholders::_1));
 
     mUi->textEdit->setAcceptDrops(true);
 
@@ -1219,6 +1416,7 @@ void Main::setupActions() {
         << mUi->actionCut
         << mUi->actionDistraction_Free
         << mUi->actionExit
+        << mUi->actionFind_Next
         << mUi->actionFind_Replace
         << mUi->actionFull_Justification
         << mUi->actionHelp
@@ -1256,6 +1454,7 @@ void Main::setupConnections() {
     connect(mUi->actionCenter,             &QAction::triggered, this, &Main::centerJustifyAction);
     connect(mUi->actionCopy,               &QAction::triggered, this, &Main::copyAction);
     connect(mUi->actionCut,                &QAction::triggered, this, &Main::cutAction);
+    connect(mUi->actionFind_Replace,       &QAction::triggered, this, &Main::findReplace);
     connect(mUi->actionFull_Justification, &QAction::triggered, this, &Main::fullJustifyAction);
     connect(mUi->actionIndent,             &QAction::triggered, this, &Main::indentAction);
     connect(mUi->actionItalic,             &QAction::triggered, this, &Main::italicAction);

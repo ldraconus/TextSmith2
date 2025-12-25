@@ -21,6 +21,7 @@ SOURCES += \
     Novel.cpp \
     Preferences.cpp \
     PreferencesDialog.cpp \
+    SearchReplace.cpp \
     Speech.cpp \
     Start.cpp \
     TextEdit.cpp
@@ -32,6 +33,7 @@ HEADERS += \
     Novel.h \
     Preferences.h \
     PreferencesDialog.h \
+    SearchReplace.h \
     Speech.h \
     TextEdit.h \
     TreeWidget.h

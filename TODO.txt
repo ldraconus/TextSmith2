@@ -1,16 +1,5 @@
-[/] Fix saving and loading images in text
-[/] Implement drag & drop:
-    - Remove vs. Copy semantics
-    - If the user holds Ctrl, treat it as copy.
-    - If not, treat it as move (remove from source).
-    - Qt’s Qt::DropAction gives you this distinction.
-    - rewrite tree to alloow this
-[ ] Improve cut/copy and paste to/from tree and document (stop usiung the built in cut/copy/paste, or check the paste buffer for novel
-    items first and insert those, and if the treeWidget has focus do cut/copy/paste there ... cut and copy need to be modified to push
-    custom items on the stack so I know to switch modes for undo/redo)
-[ ] Make the tree part of the Undo/Redo path by subclassing QUndoCommand and adding to the QUndoStack.
 [ ] Search and replace
-[ ] Export
+[ ] Export(s)
 [ ] Print
 [ ] Typewriter sounds
 [ ] Spellcheck
@@ -18,6 +7,17 @@
 [ ] Help
 [ ] Add pause/play handling to speech
 [ ] Integrate 5th into the program for scripting
+[X] Make the tree part of the Undo/Redo path by subclassing QUndoCommand and adding to the QUndoStack.
+[X] Improve cut/copy and paste to/from tree and document (stop usiung the built in cut/copy/paste, or check the paste buffer for novel
+    items first and insert those, and if the treeWidget has focus do cut/copy/paste there ... cut and copy need to be modified to push
+    custom items on the stack so I know to switch modes for undo/redo)
+[X] Implement drag & drop:
+    - Remove vs. Copy semantics
+    - If the user holds Ctrl, treat it as copy.
+    - If not, treat it as move (remove from source).
+    - Qt’s Qt::DropAction gives you this distinction.
+    - rewrite tree to alloow this
+[X] Fix saving and loading images in text
 [X] Add ability to read old format .novel files
 [X] add command searching (code snippets below)
 [X] Read to me (see code below: SPeech controller)

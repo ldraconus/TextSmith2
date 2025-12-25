@@ -105,6 +105,8 @@ private:
     void doCut();
     void doEditItem();
     void doExit();
+    void doFindNext();
+    void doFindReplace();
     void doFullJustify();
     void doFullScreen();
     void doHighlight(const QString& text, qlonglong start);
@@ -139,6 +141,7 @@ private:
 
     void             buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     void             buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
+    bool             canPasteMimeData(const QMimeData* mimeData);
     QString          checked(const QString& path);
     QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
@@ -206,6 +209,8 @@ public slots:
     void centerJustifyAction() { doCenterJustify(); }
     void copyAction()          { doCopy(); }
     void cutAction()           { doCut(); }
+    void findNext()            { doFindNext(); }
+    void findReplace()         { doFindReplace(); }
     void fullJustifyAction()   { doFullJustify(); }
     void indentAction()        { doIndent(); }
     void italicAction()        { doItalic(); }
