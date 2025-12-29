@@ -42,7 +42,8 @@ FORMS += \
     FullScreenDialog.ui \
     ItemDescriptionDialog.ui \
     Main.ui \
-    PreferencesDialog.ui
+    PreferencesDialog.ui \
+    dialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

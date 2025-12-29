@@ -14,6 +14,7 @@
 
 #include "Novel.h"
 #include "Preferences.h"
+#include "SearchReplace.h"
 #include "Speech.h"
 #include "TextEdit.h"
 
@@ -30,6 +31,7 @@ QT_END_NAMESPACE
 class QCompleter;
 class QTextDocument;
 class QTreeWidgetItem;
+class Ui_Widget;
 
 class Main: public QMainWindow {
     Q_OBJECT
@@ -63,6 +65,8 @@ private:
     Novel                 mCopy;
     qlonglong             mCurrentNode { -1 };
     QString               mDocDir;
+    Ui_Widget*            mFindWidget;
+    QWidget*              mFindLine;
     QRect                 mGeom;
     Map<QString, QString> mIcons;
     QString               mLocalDir;
@@ -75,6 +79,7 @@ private:
     Preferences           mPrefs;
     bool                  mPrefsLoaded { false };
     QTextCursor           mSavedCursor;
+    SearchCore*           mSearch { nullptr };
     Speech                mSpeech;
     QToolButton*          mStopButton { nullptr };
     QString               mTextToSpeak;
@@ -105,8 +110,11 @@ private:
     void doCut();
     void doEditItem();
     void doExit();
+    void doFindChanged();
+    void doFindDone();
     void doFindNext();
     void doFindReplace();
+    void doFocusChanged();
     void doFullJustify();
     void doFullScreen();
     void doHighlight(const QString& text, qlonglong start);
@@ -127,6 +135,8 @@ private:
     void doReadToMe();
     void doRedo();
     void doRemoveItem();
+    void doReplace();
+    void doReplaceAll();
     void doRightJustify();
     void doSave();
     bool doSaveAs();
@@ -211,6 +221,7 @@ public slots:
     void cutAction()           { doCut(); }
     void findNext()            { doFindNext(); }
     void findReplace()         { doFindReplace(); }
+    void focusChanged()        { doFocusChanged(); }
     void fullJustifyAction()   { doFullJustify(); }
     void indentAction()        { doIndent(); }
     void italicAction()        { doItalic(); }
@@ -250,7 +261,11 @@ public slots:
     void cursorPositionChanged() { doCursorPositionChanged(); }
     void textChangedAction()     { doTextChanged(); }
 
+    void findChanged()                                   { doFindChanged(); }
+    void findDone()                                      { doFindDone(); }
     void highlight(const QString& text, qlonglong start) { doHighlight(text, start); }
+    void replace()                                       { doReplace(); }
+    void replaceAll()                                    { doReplaceAll(); }
     void stop()                                          { doStop(); }
     void stopped()                                       { doStop(true); }
 };

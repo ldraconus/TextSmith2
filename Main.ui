@@ -1046,7 +1046,7 @@ QSplitter::handle:hover {
     <string>Read To Me</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R</string>
+    <string>Ctrl+Shift+R</string>
    </property>
   </action>
   <action name="actionAbout_TextSmith">

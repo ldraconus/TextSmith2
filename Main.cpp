@@ -1,7 +1,14 @@
 #include "Main.h"
 #include "ui_Main.h"
 
+#define QDialog QWidget
+#define Ui_Dialog Ui_Widget
+#include "ui_dialog.h"
+#undef Ui_Dialog
+#undef QDialog
+
 #include <QApplication>
+#include <QButtonGroup>
 #include <QCloseEvent>
 #include <QCompleter>
 #include <QClipboard>
@@ -211,10 +218,6 @@ void Main::showEvent(QShowEvent* event) {
     fitWindow();
 }
 
-void Main::doAboutToShowFileMenu() {
-    mUi->actionSave->setEnabled(mNovel.isChanged());
-}
-
 void Main::doAboutToShowEditMenu() {
     if (focusWidget() == mUi->textEdit) {
         mUi->actionUndo->setEnabled(mUi->textEdit->document()->isUndoAvailable());
@@ -222,13 +225,19 @@ void Main::doAboutToShowEditMenu() {
         mUi->actionCopy->setEnabled(mUi->textEdit->textCursor().hasSelection());
         mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
         mUi->actionPaste->setEnabled(mUi->textEdit->canPaste());
+        mUi->actionFind_Next->setEnabled(mSearch && !mSearch->text().isEmpty());
     } else {
         mUi->actionUndo->setEnabled(mUi->treeWidget->canUndo());
         mUi->actionRedo->setEnabled(mUi->treeWidget->canRedo());
         mUi->actionCopy->setEnabled(true);
         mUi->actionCut->setEnabled(mUi->treeWidget->currentItem()->parent() != nullptr);
         mUi->actionPaste->setEnabled(mUi->treeWidget->canPaste());
+        mUi->actionFind_Next->setEnabled(false);
     }
+}
+
+void Main::doAboutToShowFileMenu() {
+    mUi->actionSave->setEnabled(mNovel.isChanged());
 }
 
 void Main::doAboutToShowNovelMenu() {
@@ -254,8 +263,10 @@ void Main::doAddItem() {
     mNovel.addItem(item);
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     auto twItem = new QTreeWidgetItem;
+    QTextDocument* doc = new QTextDocument();
     twItem->setText(0, item.name());
-    twItem->setData(0, Qt::UserRole, item.id());
+    twItem->setData(0, Qt::UserRole,     QVariant::fromValue(doc));
+    twItem->setData(0, Qt::UserRole + 1, item.id());
     mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, branch, branch->childCount(), twItem, item));
     branch->addChild(twItem);
     branch->setExpanded(true);
@@ -357,10 +368,64 @@ void Main::doExit() {
     close();
 }
 
+void Main::doFindChanged() {
+    if (mSearch && mFindWidget) {
+        auto text = mFindWidget->findLineEdit->text();
+        mSearch->setText(text);
+        doFindNext();
+    }
+}
+
+void Main::doFindDone() {
+    mFindLine->hide();
+    mUi->textEdit->setFocus();
+}
+
 void Main::doFindNext() {
+    if (mSearch && !mSearch->text().isEmpty()&& !mUi->treeWidget->hasFocus()) {
+        NovelPosition pos = mSearch->findNext();
+        if (pos.isValid()) {
+            QTreeWidgetItem* branch = findItem(mUi->treeWidget->topLevelItem(0), pos.id());
+            mUi->treeWidget->setCurrentItem(branch);
+            setPosition(pos.textPosition());
+            cursorPositionChanged();
+        }
+    }
 }
 
 void Main::doFindReplace() {
+    mFindLine->show();
+    mFindLine->setFocus();
+    delete mSearch;
+    mSearch = nullptr;
+
+    if (mUi->treeWidget->hasFocus()) return;
+
+    QString find = mFindWidget->findLineEdit->text();
+
+    bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked() ? SearchCore::NotCaseInsensitive : SearchCore::CaseInsensitive;
+    auto cursor = mUi->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        mFindWidget->thisItemRadioButton->setDisabled(true);
+        mFindWidget->thisItemAndChildItemsRadioButton->setDisabled(true);
+        auto begin = cursor.selectionStart();
+        auto end   = cursor.selectionEnd();
+        mSearch = new SearchSelection(mNovel, mCurrentNode, find, begin, end, sensitivity);
+    } else {
+        mFindWidget->thisItemRadioButton->setEnabled(true);
+        mFindWidget->thisItemAndChildItemsRadioButton->setEnabled(true);
+        auto start = cursor.position();
+        if (mFindWidget->thisItemRadioButton) mSearch = new SearchItem(mNovel, mCurrentNode, start, find, sensitivity);
+        else mSearch = new SearchTree(mNovel, mUi->treeWidget->currentItem(), mCurrentNode, start, find, sensitivity);
+    }
+
+    if (find.isEmpty()) return;
+
+    doFindNext();
+}
+
+void Main::doFocusChanged(QWidget*, QWidget* now) {
+    if (now == mUi->treeWidget) mFindLine->hide();
 }
 
 void Main::doFullJustify() {
@@ -429,6 +494,9 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     oldItem.count();
     oldItem.setPosition(mUi->textEdit->textCursor().position());
     mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
+    QTextDocument* doc = current->data(0, Qt::UserRole + 1).value<QTextDocument*>();
+    mUi->textEdit->setDocument(doc);
+
     auto& item = mNovel.findItem(mCurrentNode);
     mPosition = item.position();
     setHtml(item.html());
@@ -713,6 +781,12 @@ void Main::doRemoveItem() {
     changed();
 }
 
+void Main::doReplace() {
+}
+
+void Main::doReplaceAll() {
+}
+
 void Main::doRightJustify() {
     auto cursor = mUi->textEdit->textCursor();
     auto block = cursor.blockFormat();
@@ -807,9 +881,13 @@ void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<ql
     auto& item = mNovel.findItem(branch.id());
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
+    QTextDocument* doc = new QTextDocument();
+    twItem->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
 
-    if (itemBranch == nullptr) mUi->treeWidget->addTopLevelItem(twItem);
-    else itemBranch->addChild(twItem);
+    if (itemBranch == nullptr) {
+        mUi->textEdit->setDocument(doc);
+        mUi->treeWidget->addTopLevelItem(twItem);
+    } else itemBranch->addChild(twItem);
 
     const auto& children = const_cast<TreeNode&>(branch).branches();
     for (auto& child: children) buildTree(child, twItem, byId);
@@ -1443,6 +1521,8 @@ void Main::setupActions() {
 }
 
 void Main::setupConnections() {
+    qRegisterMetaType<QTextDocument*>("QTextDocument*");
+
     mUi->actionExit->setShortcut(QKeySequence("Alt+F4"));
     connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
     connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
@@ -1454,6 +1534,7 @@ void Main::setupConnections() {
     connect(mUi->actionCenter,             &QAction::triggered, this, &Main::centerJustifyAction);
     connect(mUi->actionCopy,               &QAction::triggered, this, &Main::copyAction);
     connect(mUi->actionCut,                &QAction::triggered, this, &Main::cutAction);
+    connect(mUi->actionFind_Next,          &QAction::triggered, this, &Main::findNext);
     connect(mUi->actionFind_Replace,       &QAction::triggered, this, &Main::findReplace);
     connect(mUi->actionFull_Justification, &QAction::triggered, this, &Main::fullJustifyAction);
     connect(mUi->actionIndent,             &QAction::triggered, this, &Main::indentAction);
@@ -1478,6 +1559,7 @@ void Main::setupConnections() {
     connect(mUi->actionOpen_All,               &QAction::triggered, this, &Main::openAllAction);
     connect(mUi->actionRemove_Item,            &QAction::triggered, this, &Main::removeItemAction);
 
+    mUi->actionRead_To_Me->setShortcut(QKeySequence("Ctrl+Alt+R"));
     connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
     connect(mUi->actionRead_To_Me,       &QAction::triggered, this, &Main::readToMeAction);
     connect(mUi->actionWord_Count,       &QAction::triggered, this, &Main::doWordCount);
@@ -1518,12 +1600,35 @@ void Main::setupConnections() {
 
     mUi->textEdit->setAcceptDrops(true);
     mUi->textEdit->setAcceptRichText(true);
-    // create the custom drag event and the drop event handlers in TextEdit
-    // set the mime data builder and receivers
+
+    connect(qApp, &QApplication::focusChanged, this, &Main::focusChanged);
 
     connect(mStopButton, &QToolButton::clicked,     this, &Main::stop);
     connect(&mSpeech,    &Speech::speaking,         this, &Main::highlight);
     connect(&mSpeech,    &Speech::speakingFinished, this, &Main::stopped);
+
+    mFindLine = new QWidget();
+    mFindWidget = new Ui_Widget();
+    mFindWidget->setupUi(mFindLine);
+    mFindLine->hide();
+    statusBar()->addPermanentWidget(mFindLine);
+
+    connect(mFindWidget->findLineEdit,            &QLineEdit::textEdited,        this, &Main::findChanged);
+    connect(mFindWidget->caseInsensitiveCheckBox, &QCheckBox::checkStateChanged, this, &Main::findReplace);
+    auto buttonGroup = new QButtonGroup();
+    mFindWidget->thisItemRadioButton->setChecked(true);
+    buttonGroup->addButton(mFindWidget->thisItemRadioButton);
+    buttonGroup->addButton(mFindWidget->thisItemAndChildItemsRadioButton);
+    connect(buttonGroup, &QButtonGroup::buttonClicked, this, &Main::findReplace);
+
+    QShortcut* replaceShortcut = new QShortcut(QKeySequence("Ctrl+R"), this);
+    connect(replaceShortcut,                &QShortcut::activated, this, &Main::replace);
+    connect(mFindWidget->replacePushButton, &QPushButton::toggled, this, &Main::replace);
+    QShortcut* replaceAllShortcut = new QShortcut(QKeySequence("Ctrl+Shift+R"), this);
+    connect(replaceAllShortcut,                &QShortcut::activated, this, &Main::replaceAll);
+    connect(mFindWidget->replaceAllPushButton, &QPushButton::toggled, this, &Main::replaceAll);
+    QShortcut* findDoneShortcut = new QShortcut(QKeySequence("Esc"), this);
+    connect(findDoneShortcut, &QShortcut::activated, this, &Main::findDone);
 
     QLineEdit *commandLine = new QLineEdit;
     commandLine->setPlaceholderText("Type a command...");

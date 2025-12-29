@@ -1,4 +1,3 @@
-[ ] Search and replace
 [ ] Export(s)
 [ ] Print
 [ ] Typewriter sounds
@@ -7,6 +6,8 @@
 [ ] Help
 [ ] Add pause/play handling to speech
 [ ] Integrate 5th into the program for scripting
+[ ] Add a script writing display mode
+[X] Search and replace
 [X] Make the tree part of the Undo/Redo path by subclassing QUndoCommand and adding to the QUndoStack.
 [X] Improve cut/copy and paste to/from tree and document (stop usiung the built in cut/copy/paste, or check the paste buffer for novel
     items first and insert those, and if the treeWidget has focus do cut/copy/paste there ... cut and copy need to be modified to push
@@ -32,7 +33,7 @@ Scripting ideas:
 
 📄 Export & Formatting
 - Scene Outline Export: generate a list of scene titles with summaries/tags.
-- POV/Tag Filter Export: export only scenes tagged with a specific POV character or keyword.
+- POV/Tag Filter Export: export only scenes tagged with a specified keyword.
 - Timeline Export: collect scene dates/times from tags and output a chronological timeline.
 
 🔍 Analysis & Consistency
