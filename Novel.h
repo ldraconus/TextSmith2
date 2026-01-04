@@ -54,9 +54,18 @@ public:
     auto position() const   { return mPosition; }
     void setId(qlonglong i) { mID = i++; if (i > sNextID) sNextID = i; }
 
-    void       addTag(const QString& tag)       { if (!hasTag(tag)) mTags.append(tag); }
-    bool       hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
-    void       setTags(const StringList& tags)  { mTags = tags; }
+    void addTag(const QString& tag)       {
+        if (!hasTag(tag)) {
+            mTags.append(tag);
+        }
+    }
+    bool hasTag(const QString& tag) const {
+        bool temp = mTags.contains(tag, Qt::CaseInsensitive);
+        return temp;
+    }
+    void setTags(const StringList& tags)  {
+        mTags = tags;
+    }
     StringList tags() const                     { return mTags; }
 
     bool isNull() const  { return mName.isEmpty() && mHtml.isEmpty(); }
@@ -71,6 +80,7 @@ public:
     qlonglong count();
     bool      fromObject(Json5Object& obj);
     void      fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
+    bool      hasTag(const StringList& tags) const;
     void      newHtml();
     QString   toPlainText();
 
@@ -79,14 +89,14 @@ public:
     static auto getNextID()                  { return sNextID; }
     static void resetLastID(qlonglong i = 0) { sNextID = i; }
 
-    static Json5Array  hasArr(Json5Object& obj, const QString& str, const Json5Array& def = {});
-    static bool        hasBool(Json5Object& obj, const QString& str, bool def = false);
-    static bool        hasBool(Json5Array& obj, const qsizetype idx, bool def = false);
-    static qsizetype   hasNum(Json5Object& obj, const QString& str, const qsizetype def = 0);
-    static qsizetype   hasNum(Json5Array& arr, const qsizetype idx, const qsizetype def = 0);
-    static Json5Object hasObj(Json5Object& obj, const QString& str, const Json5Object& def = {});
-    static QString     hasStr(Json5Object& obj, const QString& str, const QString& def = "");
-    static QString     hasStr(Json5Array& arr, const qsizetype idx, const QString& def = "");
+    static Json5Array  hasArr(Json5Object& obj,  const QString&  str, const Json5Array&  def = { });
+    static bool        hasBool(Json5Object& obj, const QString&  str, bool               def = false);
+    static bool        hasBool(Json5Array& obj,  const qsizetype idx, bool               def = false);
+    static qsizetype   hasNum(Json5Object& obj,  const QString&  str, const qsizetype    def = 0);
+    static qsizetype   hasNum(Json5Array& arr,   const qsizetype idx, const qsizetype    def = 0);
+    static Json5Object hasObj(Json5Object& obj,  const QString&  str, const Json5Object& def = { });
+    static QString     hasStr(Json5Object& obj,  const QString&  str, const QString&     def = "");
+    static QString     hasStr(Json5Array& arr,   const qsizetype idx, const QString&     def = "");
 
 protected:
     void copy(const Item& i);

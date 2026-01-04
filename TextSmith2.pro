@@ -1,12 +1,16 @@
 QT       += core gui texttospeech
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 CONFIG += \
     c++23
 
 INCLUDEPATH += \
-    E:\QtSource\include
+    E:\QtSource\include \
+    E:\QtSource\libzip\lib \
+    E:\QtSource\libzip\build
+
+LIBS += -LE:\QtSource\libzip\build\lib -lzip -lz
 
 RC_FILE = appicon.rc
 
@@ -15,30 +19,48 @@ appicon.rc.depends = TextSmith2.ico
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    EBookExporter.cpp \
+    ExportDialog.cpp \
     FullScreenDialog.cpp \
+    HtmlExporter.cpp \
     ItemDescriptionDialog.cpp \
     Main.cpp \
+    MarkdownExporter.cpp \
     Novel.cpp \
+    PdfExporter.cpp \
     Preferences.cpp \
     PreferencesDialog.cpp \
     SearchReplace.cpp \
     Speech.cpp \
     Start.cpp \
-    TextEdit.cpp
+    TextEdit.cpp \
+    entity.c \
+    html2md-main/src/html2md.cpp \
+    html2md-main/src/table.cpp
 
 HEADERS += \
+    EBookExporter.h \
+    ExportDialog.h \
+    Exporter.h \
     FullScreenDialog.h \
+    HtmlExporter.h \
     ItemDescriptionDialog.h \
     Main.h \
+    MarkdownExporter.h \
     Novel.h \
+    PdfExporter.h \
     Preferences.h \
     PreferencesDialog.h \
     SearchReplace.h \
     Speech.h \
     TextEdit.h \
-    TreeWidget.h
+    TreeWidget.h \
+    entity.h \
+    html2md-main/include/html2md.h \
+    html2md-main/include/table.h
 
 FORMS += \
+    ExportDialog.ui \
     FullScreenDialog.ui \
     ItemDescriptionDialog.ui \
     Main.ui \
@@ -59,6 +81,7 @@ Installer.commands = \
 QMAKE_EXTRA_TARGETS += Installer
 
 DISTFILES += \
+    .clangd \
     Background.png \
     Center.ico \
     Center.png \

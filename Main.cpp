@@ -23,7 +23,7 @@
 #include <QShowEvent>
 #include <QStandardPaths>
 #include <QStyleFactory>
-#include <QTextBlock> // 531-495-6412
+#include <QTextBlock>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -34,9 +34,22 @@
 #include <QTreeWidget>
 #include <QWindow>
 
+Q_DECLARE_METATYPE(QTextDocument*)
+
+#include "ExportDialog.h"
+#include "Exporter.h"
 #include "FullScreenDialog.h"
 #include "ItemDescriptionDialog.h"
 #include "PreferencesDialog.h"
+
+#include "HtmlExporter.h"
+template class Exporter<HtmlExporter>;
+#include "MarkdownExporter.h"
+template class Exporter<MarkdownExporter>;
+#include "PdfExporter.h"
+template class Exporter<PdfExporter>;
+#include "EBookExporter.h"
+template class Exporter<EBookExporter>;
 
 constexpr qlonglong second = 1000;
 
@@ -46,12 +59,12 @@ class EditItemCommand
     : public QUndoCommand {
 public:
     EditItemCommand(QTreeWidgetItem* branch,
-                    Item newItem,
-                    Item oldItem)
+                    Item& newItem,
+                    Item& oldItem)
         : mBranch(branch)
         , mNewItem(newItem)
         , mOldItem(oldItem) {
-        setText("Insert Tree Item");
+        setText("Edit Tree Item");
     }
 
     void undo() override {
@@ -265,8 +278,8 @@ void Main::doAddItem() {
     auto twItem = new QTreeWidgetItem;
     QTextDocument* doc = new QTextDocument();
     twItem->setText(0, item.name());
-    twItem->setData(0, Qt::UserRole,     QVariant::fromValue(doc));
-    twItem->setData(0, Qt::UserRole + 1, item.id());
+    twItem->setData(0, Qt::UserRole,     item.id());
+    twItem->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
     mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, branch, branch->childCount(), twItem, item));
     branch->addChild(twItem);
     branch->setExpanded(true);
@@ -356,16 +369,40 @@ void Main::doEditItem() {
     Item save(current);
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
+
     current.setName(item.name());
     current.setTags(item.tags());
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     branch->setText(0, current.name());
-    mUi->treeWidget->saveUndo(new EditItemCommand(branch, save, current));
+    mUi->treeWidget->saveUndo(new EditItemCommand(branch, current, save ));
     changed();
 }
 
 void Main::doExit() {
     close();
+}
+
+void Main::doExport(const QString& name) {
+    const auto& factory = ExporterBase::registry()[name];
+    const auto ids = vectorOfIds(mUi->treeWidget->currentItem(), { mPrefs.chapterTag(), mPrefs.sceneTag() });
+    ExporterBase* exporter = factory(mNovel, ids);
+    ExportDialog dlg(exporter, this);
+    if (dlg.exec() == QDialog::Rejected) return;
+
+    mPrefs.setChapterTag(dlg.chapterTag());
+    mPrefs.setSceneTag(dlg.sceneTag());
+
+    QString filename = dlg.filename();
+    if (filename.isEmpty()) {
+        mMsg.Statement("Export of " + exporter->name() + " file\n requires a file name!");
+        return;
+    }
+    exporter->setFilename(filename);
+    QFileInfo info(filename);
+    filename = info.fileName();
+    mDocDir = info.absolutePath();
+    exporter->setFilename(dlg.filename());
+    if (!exporter->convert()) mMsg.Statement("Export of " + exporter->name() + " file\n'" + filename + "'\nFailed");
 }
 
 void Main::doFindChanged() {
@@ -403,7 +440,9 @@ void Main::doFindReplace() {
 
     QString find = mFindWidget->findLineEdit->text();
 
-    bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked() ? SearchCore::NotCaseInsensitive : SearchCore::CaseInsensitive;
+    bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
+                           ? SearchCore::NotCaseInsensitive
+                           : SearchCore::CaseInsensitive;
     auto cursor = mUi->textEdit->textCursor();
     if (cursor.hasSelection()) {
         mFindWidget->thisItemRadioButton->setDisabled(true);
@@ -879,10 +918,11 @@ void Main::doWordCount() {
 void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<qlonglong, bool>& byId) {
     auto twItem = new QTreeWidgetItem();
     auto& item = mNovel.findItem(branch.id());
-    twItem->setText(0, item.name());
-    twItem->setData(0, Qt::UserRole, item.id());
     QTextDocument* doc = new QTextDocument();
-    twItem->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
+    auto tree = mUi->treeWidget;
+    twItem->setText(0, item.name());
+    twItem->setData(0, Qt::UserRole,     item.id());
+    tree->setTextDocument(twItem, doc);
 
     if (itemBranch == nullptr) {
         mUi->textEdit->setDocument(doc);
@@ -1018,6 +1058,23 @@ void Main::cutTreeItem() {
     delete branch;
 }
 
+QString Main::findKey(QString& used, const QString& name, bool secondPass) {
+    for (const auto& ch: name) {
+        auto uc = ch.toUpper();
+        if (!used.contains(uc)) {
+            used += uc;
+            return uc;
+        }
+        auto lc = ch.toLower();
+        if (!used.contains(lc)) {
+            used += lc;
+            return QString("Shift+%1").arg(uc);
+        }
+    }
+    if (secondPass) return "";
+    return findKey(used, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890", true);
+}
+
 void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     auto id = item->data(0, Qt::UserRole).toLongLong();
     bool open = item->isExpanded();
@@ -1128,8 +1185,10 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
             auto id = item.id();
             mNovel.addItem(item);
             QTreeWidgetItem* newBranch = new QTreeWidgetItem();
+            QTextDocument* doc = new QTextDocument();
             newBranch->setText(0, item.name());
             newBranch->setData(0, Qt::UserRole, id);
+            tree->setTextDocument(newBranch, doc);
             break;
         } else break;
     }
@@ -1137,7 +1196,7 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
 
     if (parent != nullptr) {
         parent->insertChild(row, newBranch);
-        mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, parent, row, newBranch, item));
+        tree->saveUndo(new InsertItemCommand(mUi->treeWidget, parent, row, newBranch, item));
         changed();
     }
 
@@ -1321,6 +1380,8 @@ Main::Main(QApplication* app, QWidget* parent)
     sMain = this;
     mUi->setupUi(this);
 
+    mDocMetaType = qRegisterMetaType<QTextDocument*>("QTextDocument*");
+
     mUi->treeWidget->setDragEnabled(true);
     mUi->treeWidget->setAcceptDrops(true);
     mUi->treeWidget->setDropIndicatorShown(true);
@@ -1400,8 +1461,10 @@ QTreeWidgetItem* Main::buildTreeFromJson(Json5Object& obj) {
     setupHtml(html);
     item.setHtml(html.toHtml());
     QTreeWidgetItem* branch = new QTreeWidgetItem();
+    QTextDocument* doc = new QTextDocument();
     branch->setText(0, item.name());
-    branch->setData(0, Qt::UserRole, item.id());
+    branch->setData(0, Qt::UserRole,     item.id());
+    branch->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
     mNovel.addItem(item);
     Json5Array arr = Item::hasArr(obj, "Children", {});
     for (auto& child: arr) {
@@ -1456,6 +1519,18 @@ QList<Item*> Main::vectorOfItems(QTreeWidgetItem* branch) {
         items.append(childItems);
     }
     return items;
+}
+
+QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& tags) {
+    QList<qlonglong> ids;
+    auto id = branch->data(0, Qt::UserRole).toLongLong();
+    Item& item = mNovel.findItem(id);
+    if (item.hasTag(tags)) ids.append(id);
+    for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
+        auto childItems = vectorOfIds(branch->child(childNum), tags);
+        ids.append(childItems);
+    }
+    return ids;
 }
 
 void Main::wordCounts() {
@@ -1529,6 +1604,21 @@ void Main::setupConnections() {
     connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
     connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
     connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
+    QMenu* exportMenu = new QMenu("Export", this);
+    mUi->actionExport->setMenu(exportMenu);
+
+    const auto& map = ExporterBase::registry();
+
+    QString keysUsed;
+    for (const QString& info: map.keys()) {
+        QAction* act = exportMenu->addAction(info);
+        QString key = findKey(keysUsed, info);
+        if (!key.isEmpty()) act->setShortcut(QKeySequence("Ctrl+E, Ctrl+" + key));
+
+        connect(act, &QAction::triggered, this, [this, info]() {
+            doExport(info);
+        });
+    }
 
     connect(mUi->actionBold,               &QAction::triggered, this, &Main::boldAction);
     connect(mUi->actionCenter,             &QAction::triggered, this, &Main::centerJustifyAction);

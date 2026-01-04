@@ -300,6 +300,12 @@ QByteArray TextEdit::imageToPngBytes(const QImage& img) {
     return bytes;
 }
 
+QJsonArray TextEdit::serializeExternalImagesToJson() const {
+    QJsonArray arr;
+    for (auto& url: mExternalUrls) arr.append(url.toString());
+    return arr;
+}
+
 QJsonArray TextEdit::serializeInternalImagesToJson() const {
     QJsonArray arr;
     for (auto it = mOriginals.constBegin(); it != mOriginals.constEnd(); ++it) {

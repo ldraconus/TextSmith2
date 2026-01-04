@@ -14,11 +14,15 @@ class TextEdit : public QTextEdit {
 public:
     explicit TextEdit(QWidget* parent = nullptr);
 
+    QMap<QUrl, QImage> internalImages()    { return mOriginals; }
+    QSet<QUrl>         externalImageUrls() { return mExternalUrls; }
+
     // Serialization: internal images only
-    void       addInternalImage(const QUrl& url, const QImage& image);
-    void       clearInternalImages();
-    void       removeInternalImage(const QUrl& url);
-    QJsonArray serializeInternalImagesToJson() const;
+    void           addInternalImage(const QUrl& url, const QImage& image);
+    void           clearInternalImages();
+    void           removeInternalImage(const QUrl& url);
+    QJsonArray     serializeExternalImagesToJson() const;
+    QJsonArray     serializeInternalImagesToJson() const;
 
 protected:
     bool       canInsertFromMimeData(const QMimeData *source) const override;
@@ -43,7 +47,6 @@ private:
     static QByteArray imageToPngBytes(const QImage& img);
     QUrl              makeInternalUrl();
 
-private:
     QSet<QUrl>         mExternalUrls; // Track external URLs (http/https)
     QMap<QUrl, QImage> mOriginals;    // Originals for internal images (crisp source of truth)
 

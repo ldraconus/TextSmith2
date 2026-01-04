@@ -84,6 +84,13 @@ void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
     Novel::ref().addItem(node);
 }
 
+bool Item::hasTag(const StringList& tags) const {
+    for (const auto& tag: tags) {
+        if (hasTag(tag)) return true;
+    }
+    return false;
+}
+
 Json5Object Item::toObject() {
     Json5Object obj;
     obj[Novel::Html] =     mHtml;

@@ -13,6 +13,7 @@
 #include <Json5.h>
 #include <StringList.h>
 
+constexpr auto ChapterTag       { "ChapterTag" };
 constexpr auto Company          { "SoftwareOnHand" };
 constexpr auto Program          { "TextSmith" };
 constexpr auto AutoSave         { "AutoSave" };
@@ -22,26 +23,30 @@ constexpr auto FontSize         { "FontSize" };
 constexpr auto MainSplitter     { "MainSplitter" };
 constexpr auto OtherSplitter    { "OtherSplitter" };
 constexpr auto Position         { "Position" };
+constexpr auto SceneTag         { "SceneTag" };
 constexpr auto Theme            { "Theme" };
 constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
-constexpr auto DefaultFont      { "Segoe UI" };
-constexpr auto DefaultFontSize  { 9 };
-constexpr auto DefaultInterval  { 5 * 60 };
-const     auto DefaultOther     { QJsonArray() };
-constexpr auto DefaultPosition  { 0 };
-const     auto DefaultSplitter  { QJsonArray() };
-constexpr auto DefaultSave      { false };
-constexpr auto DefaultSounds    { false };
-constexpr auto DefaultTheme     { 2 };
-constexpr auto DefaultVoice     { 0 };
+constexpr auto DefaultChapterTag { "chapter" };
+constexpr auto DefaultFont       { "Segoe UI" };
+constexpr auto DefaultFontSize   { 9 };
+constexpr auto DefaultInterval   { 5 * 60 };
+const     auto DefaultOther      { QJsonArray() };
+constexpr auto DefaultPosition   { 0 };
+const     auto DefaultSplitter   { QJsonArray() };
+constexpr auto DefaultSave       { false };
+constexpr auto DefaultSceneTag   { "scene" };
+constexpr auto DefaultSounds     { false };
+constexpr auto DefaultTheme      { 2 };
+constexpr auto DefaultVoice      { 0 };
 
 bool Preferences::load() {
     QSettings settings(Company, Program);
     mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
+    mChapterTag =       settings.value(ChapterTag,       DefaultChapterTag).toString();
     mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
     mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
     QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
@@ -51,6 +56,7 @@ bool Preferences::load() {
     mOtherSplitter.clear();
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
     mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
+    mSceneTag =         settings.value(SceneTag,         DefaultSceneTag).toString();
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
     mVoice =            settings.value(Voice,            DefaultVoice).toInt();
@@ -85,6 +91,8 @@ bool Preferences::read(Json5Object& obj) {
             mFontSize   = DefaultFontSize;
         }
         mVoice =             Item::hasNum(obj,  "voice",           DefaultVoice);
+        mChapterTag = DefaultChapterTag;
+        mSceneTag = DefaultSceneTag;
         mTheme = DefaultTheme;
         mPosition = DefaultPosition;
         Json5Object window = Item::hasObj(obj, "windows", {});
@@ -106,10 +114,12 @@ bool Preferences::read(Json5Object& obj) {
     } else {
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
         mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, DefaultInterval);
+        mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
         mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
         mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
-        mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
         mPosition =         Item::hasNum(obj,  Position,         DefaultPosition);
+        mSceneTag =         Item::hasStr(obj,  SceneTag,         DefaultSceneTag);
+        mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
         mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
         mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
         arr =               Item::hasArr(obj,  WindowLoc,        { });
@@ -140,6 +150,7 @@ bool Preferences::save() {
     QSettings settings(Company, Program);
     settings.setValue(AutoSave,         mAutoSave);
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
+    settings.setValue(ChapterTag,       mChapterTag);
     settings.setValue(FontFamily,       mFontFamily);
     settings.setValue(FontSize,         mFontSize);
     QJsonArray arr;
@@ -149,6 +160,7 @@ bool Preferences::save() {
     for (auto& a: mOtherSplitter) otr.append(a.toInt());
     settings.setValue(OtherSplitter,    otr);
     settings.setValue(Position,         mPosition);
+    settings.setValue(SceneTag,         mSceneTag);
     settings.setValue(Theme,            mTheme);
     settings.setValue(TypingSounds,     mTypingSounds);
     settings.setValue(Voice,            mVoice);
@@ -361,11 +373,13 @@ Json5Object Preferences::write() {
     Json5Object obj;
     obj[AutoSave] =         mAutoSave;
     obj[AutoSaveInterval] = mAutoSaveInterval;
+    obj[ChapterTag] =       mChapterTag;
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
     obj[MainSplitter] =     mMainSplitter;
     obj[OtherSplitter] =    mOtherSplitter;
     obj[Position] =         mPosition;
+    obj[SceneTag] =         mSceneTag;
     obj[Theme] =            mTheme;
     obj[TypingSounds] =     mTypingSounds;
     obj[Voice] =            mVoice;

@@ -65,6 +65,7 @@ private:
     Novel                 mCopy;
     qlonglong             mCurrentNode { -1 };
     QString               mDocDir;
+    int                   mDocMetaType;
     Ui_Widget*            mFindWidget;
     QWidget*              mFindLine;
     QRect                 mGeom;
@@ -110,11 +111,12 @@ private:
     void doCut();
     void doEditItem();
     void doExit();
+    void doExport(const QString& name);
     void doFindChanged();
     void doFindDone();
     void doFindNext();
     void doFindReplace();
-    void doFocusChanged();
+    void doFocusChanged(QWidget *old, QWidget *now);
     void doFullJustify();
     void doFullScreen();
     void doHighlight(const QString& text, qlonglong start);
@@ -158,13 +160,14 @@ private:
     void             justifyButtons();
     void             copyTreeItem();
     void             cutTreeItem();
+    QString          findKey(QString& used, const QString& name, bool secondPass = false);
     void             mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     bool             nothingAbove();
     bool             nothingBelow();
-    void             replaceText(QTextCursor cursor, const QString& text);
     bool             parentIsRoot();
     void             pasteTreeItem();
     bool             receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
+    void             replaceText(QTextCursor cursor, const QString& text);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode         saveTree(QTreeWidgetItem* node);
     void             setHtml(const QString& html);
@@ -186,11 +189,13 @@ public:
 
     void         busy()                           { QApplication::setOverrideCursor(Qt::WaitCursor); }
     qlonglong    currentNode()                    { return mCurrentNode; }
+    QString      docDir()                         { return mDocDir; }
     QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
     Novel&       novel()                          { return mNovel; }
     Preferences& prefs()                          { return mPrefs; }
     bool         prefsLoaded()                    { return mPrefsLoaded; }
     void         ready()                          { QApplication::restoreOverrideCursor(); }
+    void         setDocDir(const QString& d)      { mDocDir = d; }
     Ui::Main*    ui()                             { return mUi; }
     WordCounts&  wordCount()                      { return mWordCount; }
 
@@ -201,6 +206,7 @@ public:
     void             setupHtml(TextEdit& text);
     Json5Object      treeOfItems(QTreeWidgetItem* branch);
     QList<Item*>     vectorOfItems(QTreeWidgetItem* branch);
+    QList<qlonglong> vectorOfIds(QTreeWidgetItem* branch, const StringList& tags);
     void             wordCounts();
 
     static Main* ptr() { return sMain; }
@@ -221,7 +227,6 @@ public slots:
     void cutAction()           { doCut(); }
     void findNext()            { doFindNext(); }
     void findReplace()         { doFindReplace(); }
-    void focusChanged()        { doFocusChanged(); }
     void fullJustifyAction()   { doFullJustify(); }
     void indentAction()        { doIndent(); }
     void italicAction()        { doItalic(); }
@@ -254,6 +259,8 @@ public slots:
     void aboutToShowNovelMenuAction() { doAboutToShowNovelMenu(); }
     void aboutToShowViewMenuAction()  { doAboutToShowViewMenu(); }
     void aboutToShowFileHelpAction()  { doAboutToShowHelpMenu(); }
+
+    void focusChanged(QWidget *old, QWidget *now) { doFocusChanged(old, now); }
 
     void currentItemChangedAction(QTreeWidgetItem* current, QTreeWidgetItem*) { doItemChanged(current); }
     void doubleClickAction(QTreeWidgetItem*, int)                             { doEditItem(); }

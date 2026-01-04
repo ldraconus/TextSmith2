@@ -6,13 +6,16 @@
 #include <QClipboard>
 #include <QDrag>
 #include <QDropEvent>
+#include <QHash>
 #include <QMimeData>
 #include <QPainter>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QUndoCommand>
 #include <QUndoStack>
 
 class InsertItemCommand;
+class QTextDocument;
 
 class TreeWidget : public QTreeWidget {
     Q_OBJECT
@@ -33,8 +36,15 @@ public:
     void setMimeDataReceiver(std::function<bool(QDropEvent*, const QMimeData*)> func)             { mReceiveMimeData = func; }
     void setMimeCanPaste(std::function<bool(const QMimeData*)> func)                              { mCanPasteMimeData = func; }
 
+    void           clearTextDocuments()                                     { mDocs.clear(); }
+    void           removeTextDocument(QTreeWidgetItem* twi)                 { mDocs.remove(twi); }
+    void           setTextDocument(QTreeWidgetItem* twi, QTextDocument* td) { mDocs[twi] = td; }
+    QTextDocument* textDocument(QTreeWidgetItem* twi)                       { return mDocs[twi]; }
+
 protected:
-    QUndoStack* mUndoStack;
+    QUndoStack*                             mUndoStack;
+    QHash<QTreeWidgetItem*, QTextDocument*> mDocs;
+
 
     std::function<void(const QList<QTreeWidgetItem*>&, QMimeData*)>  mBuildMimeData =    [](const QList<QTreeWidgetItem*>&, QMimeData*) { };
     std::function<bool(QDropEvent*, const QMimeData*)>               mReceiveMimeData =  [](QDropEvent*, const QMimeData*)              { return false; };
@@ -108,9 +118,9 @@ public:
     }
 
     bool canPaste() { return mCanPasteMimeData(QApplication::clipboard()->mimeData()); }
-    bool canRedo() { return mUndoStack->canRedo(); }
-    bool canUndo() { return mUndoStack->canUndo(); }
-    void redo() { mUndoStack->redo(); }
-    void undo() { mUndoStack->undo(); }
+    bool canRedo()  { return mUndoStack->canRedo(); }
+    bool canUndo()  { return mUndoStack->canUndo(); }
+    void redo()     { mUndoStack->redo(); }
+    void undo()     { mUndoStack->undo(); }
 };
 

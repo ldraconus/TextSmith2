@@ -6,7 +6,7 @@
 
 #include "Novel.h"
 
-ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget *parent)
+ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget* parent)
     : QDialog(parent)
     , mItem(item)
     , mUi(new Ui::ItemDescriptionDialog) {
@@ -48,8 +48,6 @@ void ItemDescriptionDialog::doReturnPressed() {
     if (text.isEmpty()) return;
 
     edit->setText("");
-
-    if (mItem->tags().indexOf(text) != -1) return;
 
     mItem->addTag(text);
     for (auto i = 0; i < mButtons.size(); ++i) delete mButtons[i];
