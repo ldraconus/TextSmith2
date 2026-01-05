@@ -36,14 +36,14 @@ public:
     void setMimeDataReceiver(std::function<bool(QDropEvent*, const QMimeData*)> func)             { mReceiveMimeData = func; }
     void setMimeCanPaste(std::function<bool(const QMimeData*)> func)                              { mCanPasteMimeData = func; }
 
-    void           clearTextDocuments()                                     { mDocs.clear(); }
-    void           removeTextDocument(QTreeWidgetItem* twi)                 { mDocs.remove(twi); }
-    void           setTextDocument(QTreeWidgetItem* twi, QTextDocument* td) { mDocs[twi] = td; }
-    QTextDocument* textDocument(QTreeWidgetItem* twi)                       { return mDocs[twi]; }
+    void           clearTextDocuments()                             { mDocs.clear(); }
+    void           removeTextDocument(qlonglong id)                 { mDocs.remove(id); }
+    void           setTextDocument(qlonglong id, QTextDocument* td) { mDocs[id] = td; }
+    QTextDocument* textDocument(qlonglong id)                       { return mDocs[id]; }
 
 protected:
-    QUndoStack*                             mUndoStack;
-    QHash<QTreeWidgetItem*, QTextDocument*> mDocs;
+    QUndoStack*      mUndoStack;
+    QHash<qlonglong, QTextDocument*> mDocs;
 
 
     std::function<void(const QList<QTreeWidgetItem*>&, QMimeData*)>  mBuildMimeData =    [](const QList<QTreeWidgetItem*>&, QMimeData*) { };

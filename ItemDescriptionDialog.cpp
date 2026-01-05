@@ -13,6 +13,7 @@ ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget* parent)
     mUi->setupUi(this);
 
     mUi->nameLineEdit->setText(item->name());
+    mUi->nameLineEdit->selectAll();
     addTags(mItem->tags());
 
     setupConnections();
@@ -45,7 +46,10 @@ void ItemDescriptionDialog::doEdited(const QString& t) {
 void ItemDescriptionDialog::doReturnPressed() {
     QLineEdit* edit = mUi->tagLineEdit;
     QString text = edit->text();
-    if (text.isEmpty()) return;
+    if (text.isEmpty()) {
+        accept();
+        return;
+    }
 
     edit->setText("");
 

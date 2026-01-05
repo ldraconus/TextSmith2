@@ -70,6 +70,7 @@ private:
     QWidget*              mFindLine;
     QRect                 mGeom;
     Map<QString, QString> mIcons;
+    Map<QString, QImage>  mImageStore;
     QString               mLocalDir;
     Message               mMsg;
     Novel                 mNovel;
@@ -155,7 +156,6 @@ private:
     void             buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
     bool             canPasteMimeData(const QMimeData* mimeData);
     QString          checked(const QString& path);
-    QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             fitWindow();
     void             justifyButtons();
     void             copyTreeItem();
@@ -167,6 +167,7 @@ private:
     bool             parentIsRoot();
     void             pasteTreeItem();
     bool             receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
+    void             registerImages(const QString& html, QTextDocument* doc);
     void             replaceText(QTextCursor cursor, const QString& text);
     void             save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode         saveTree(QTreeWidgetItem* node);
@@ -202,6 +203,7 @@ public:
     void             buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
     QTreeWidgetItem* buildTreeFromJson(Json5Object& obj);
     void             changeNovelFont(const QFont& font);
+    QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
     void             removeEmptyFirstBlock(TextEdit* text);
     void             setupHtml(TextEdit& text);
     Json5Object      treeOfItems(QTreeWidgetItem* branch);

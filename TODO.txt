@@ -1,12 +1,28 @@
-[ ] Export(s)
+[ ] Actually inplement replace and replace all!
+[ ] - Make replace/replaceAll only work if the buttons are enabled.
+[ ] - Make the replace and replace all shortcurts only work if find is active (so check if findbar visible?)
+[ ] Make cover tag a default in the export world too.
+[ ] Fix cover in EPUB export
 [ ] Print
 [ ] Typewriter sounds
 [ ] Spellcheck
 [ ] - add custom words per novel and global
+[ ] Port my code from SpellBook for parsing HTML and modify it to work with Qt HTML, use it in Print and PDF Export
+[ ] Add printer margins and page size (for PDF)
 [ ] Help
 [ ] Add pause/play handling to speech
 [ ] Integrate 5th into the program for scripting
-[ ] Add a script writing display mode
+[ ] Convert .pro to cmakefile
+[ ] Add a hollywood script writing display mode
+[X] Highlight the item name when the dialog is started, I keep having to do it
+[X] F2 should bring up the ItemDescriptionDialog as well, I keep trying to do that
+[X] In ItemDescriptionDialog return in on an empty tag should be the same as OK
+[X] Fix Images in the Text Document
+[X] Export(s)
+[X] - HTML
+[X] - Markdown
+[X] - PDF
+[X] - EBook
 [X] Search and replace
 [X] Make the tree part of the Undo/Redo path by subclassing QUndoCommand and adding to the QUndoStack.
 [X] Improve cut/copy and paste to/from tree and document (stop usiung the built in cut/copy/paste, or check the paste buffer for novel

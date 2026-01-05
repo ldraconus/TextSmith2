@@ -1,4 +1,5 @@
 #pragma once
+#include <QTextDocument>
 #include <QTextEdit>
 #include <QImage>
 #include <QImageReader>
@@ -14,15 +15,15 @@ class TextEdit : public QTextEdit {
 public:
     explicit TextEdit(QWidget* parent = nullptr);
 
-    QMap<QUrl, QImage> internalImages()    { return mOriginals; }
-    QSet<QUrl>         externalImageUrls() { return mExternalUrls; }
+    QMap<QUrl, QImage>& internalImages()    { return mOriginals; }
+    QSet<QUrl>&         externalImageUrls() { return mExternalUrls; }
 
     // Serialization: internal images only
-    void           addInternalImage(const QUrl& url, const QImage& image);
+    void           addInternalImage(const QUrl& url, const QImage& image, bool add = true);
     void           clearInternalImages();
     void           removeInternalImage(const QUrl& url);
-    QJsonArray     serializeExternalImagesToJson() const;
-    QJsonArray     serializeInternalImagesToJson() const;
+    QJsonArray     serializeExternalImagesToJson();
+    QJsonArray     serializeInternalImagesToJson();
 
 protected:
     bool       canInsertFromMimeData(const QMimeData *source) const override;
@@ -33,6 +34,9 @@ protected:
     void       resizeEvent(QResizeEvent* event) override;
 
 private:
+    QSet<QUrl>         mExternalUrls; // Track external URLs (http/https)
+    QMap<QUrl, QImage> mOriginals;    // Originals for internal images (crisp source of truth)
+
     // Insertion
     void insertExternalUrlImage(const QUrl& url);
     void insertInternalImage(const QImage& image);
@@ -46,9 +50,6 @@ private:
     // Helpers
     static QByteArray imageToPngBytes(const QImage& img);
     QUrl              makeInternalUrl();
-
-    QSet<QUrl>         mExternalUrls; // Track external URLs (http/https)
-    QMap<QUrl, QImage> mOriginals;    // Originals for internal images (crisp source of truth)
 
     // Guards and state
     quint64 mIdBase =            0;

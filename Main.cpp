@@ -277,9 +277,10 @@ void Main::doAddItem() {
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     auto twItem = new QTreeWidgetItem;
     QTextDocument* doc = new QTextDocument();
+    doc->setParent(nullptr);
     twItem->setText(0, item.name());
-    twItem->setData(0, Qt::UserRole,     item.id());
-    twItem->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
+    twItem->setData(0, Qt::UserRole, item.id());
+    mUi->treeWidget->setTextDocument(item.id(), doc);
     mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, branch, branch->childCount(), twItem, item));
     branch->addChild(twItem);
     branch->setExpanded(true);
@@ -533,7 +534,8 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     oldItem.count();
     oldItem.setPosition(mUi->textEdit->textCursor().position());
     mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
-    QTextDocument* doc = current->data(0, Qt::UserRole + 1).value<QTextDocument*>();
+    QTextDocument* doc = mUi->treeWidget->textDocument(mCurrentNode);
+    doc->setParent(nullptr);
     mUi->textEdit->setDocument(doc);
 
     auto& item = mNovel.findItem(mCurrentNode);
@@ -640,7 +642,12 @@ void Main::doNew() {
     mPosition = 0;
     mState.clear();
     mCurrentNode = mNovel.root();
-    mUi->treeWidget->clearUndo();
+    auto* tree = mUi->treeWidget;
+    tree->clearUndo();
+    auto* doc = tree->textDocument(mCurrentNode);
+    tree->removeTextDocument(mCurrentNode);
+    tree->clearTextDocuments();
+    tree->setTextDocument(mCurrentNode, doc);
     clearChanged();
     update();
     mWordCount.setCurrentItem(0);
@@ -696,18 +703,22 @@ void Main::doOpen() {
             bool expanded = Item::hasBool(item, 1);
             mState[id] = expanded;
         }
-        Json5Object images = Item::hasObj(obj, "Images", {});
-        for (auto& image: images) {
-            if (!image.second.isString()) continue;
-            QUrl url = image.first;
+        Json5Array images = Item::hasArr(obj, "Images",{});
+        mImageStore.clear();
+        for (auto& obj: images) {
+            if (!obj.isObject()) continue;
+            Json5Object image = obj.toObject();
+            QString url = Item::hasStr(image, "url", {});
             if (url.isEmpty()) continue;
-            QString str = image.second.toString();
+            QString str = Item::hasStr(image, "data", {});
             if (str.isEmpty()) continue;
             QByteArray data = QByteArray::fromBase64(str.toUtf8());
             if (data.isEmpty()) continue;
             QImage img;
             img.loadFromData(data);
-            mUi->textEdit->addInternalImage(url, img);
+            if (img.isNull()) continue;
+            mImageStore[url] = img;
+            mUi->textEdit->addInternalImage(url, img, false);
         }
     } else if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -815,8 +826,13 @@ void Main::doRemoveItem() {
         mUi->treeWidget->setCurrentItem(next);
         mCurrentNode = next->data(0, Qt::UserRole).toLongLong();
     }
-    mUi->treeWidget->saveUndo(new RemoveItemCommand(mUi->treeWidget, parent, idx, item, nvlItem));
+    auto* tree = mUi->treeWidget;
+    tree->saveUndo(new RemoveItemCommand(mUi->treeWidget, parent, idx, item, nvlItem));
+    auto* doc = tree->textDocument(node);
+    tree->removeTextDocument(node);
+    delete doc;
     parent->removeChild(item);
+
     changed();
 }
 
@@ -919,12 +935,15 @@ void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<ql
     auto twItem = new QTreeWidgetItem();
     auto& item = mNovel.findItem(branch.id());
     QTextDocument* doc = new QTextDocument();
+    registerImages(item.html(), doc);
+    doc->setParent(nullptr);
     auto tree = mUi->treeWidget;
     twItem->setText(0, item.name());
-    twItem->setData(0, Qt::UserRole,     item.id());
-    tree->setTextDocument(twItem, doc);
+    twItem->setData(0, Qt::UserRole, item.id());
+    tree->setTextDocument(branch.id(), doc);
 
     if (itemBranch == nullptr) {
+        doc->setParent(nullptr);
         mUi->textEdit->setDocument(doc);
         mUi->treeWidget->addTopLevelItem(twItem);
     } else itemBranch->addChild(twItem);
@@ -1054,7 +1073,9 @@ void Main::cutTreeItem() {
     auto item = mNovel.findItem(id);
     mNovel.deleteItem(id);
     copyTreeItem();
-    mUi->treeWidget->saveUndo(new RemoveItemCommand(mUi->treeWidget, branch->parent(), index, branch, item));
+    tree->saveUndo(new RemoveItemCommand(mUi->treeWidget, branch->parent(), index, branch, item));
+    tree->removeTextDocument(id);
+
     delete branch;
 }
 
@@ -1186,10 +1207,69 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
             mNovel.addItem(item);
             QTreeWidgetItem* newBranch = new QTreeWidgetItem();
             QTextDocument* doc = new QTextDocument();
+            doc->setParent(nullptr);
             newBranch->setText(0, item.name());
             newBranch->setData(0, Qt::UserRole, id);
-            tree->setTextDocument(newBranch, doc);
+            tree->setTextDocument(id, doc);
             break;
+        } else if (mimeData->hasUrls()) {
+            auto urls = mimeData->urls();
+            for (int i = 0; i < urls.count(); ++i) {
+                auto& url = urls[i];
+                if (url.isLocalFile()) {
+                    QString filename = url.fileName();
+                    if (filename.endsWith(".txt", Qt::CaseInsensitive)) {
+                        QFile file(url.path());
+                        if (file.open(QIODevice::ReadOnly)) {
+                            QString text = file.readAll();
+                            edit.setText(text);
+                            file.close();
+                            invalidText = false;
+                            break;
+                        }
+                    } else if (filename.endsWith(".html", Qt::CaseInsensitive)) {
+                        QFile file(url.path());
+                        if (file.open(QIODevice::ReadOnly)) {
+                            QString html = file.readAll();
+                            edit.setHtml(html);
+                            file.close();
+                            invalidText = false;
+                            break;
+                        }
+                    } else if (filename.endsWith(".bmp",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".gif",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".jpg",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".jpeg", Qt::CaseInsensitive) ||
+                               filename.endsWith(".png",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".pbm",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".pgm",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".ppm",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".xbm",  Qt::CaseInsensitive) ||
+                               filename.endsWith(".xpm",  Qt::CaseInsensitive)) {
+                        QImage img(url.path());
+                        edit.addInternalImage(url, img);
+                        auto cursor = edit.textCursor();
+                        QTextImageFormat format;
+                        format.setName(url.path());
+                        cursor.insertImage(format);
+                        invalidText = false;
+                        break;
+                    }
+                }
+            }
+            if (!invalidText) {
+                setupHtml(edit);
+                Item item;
+                item.setHtml(edit.toHtml());
+                auto id = item.id();
+                mNovel.addItem(item);
+                QTreeWidgetItem* newBranch = new QTreeWidgetItem();
+                QTextDocument* doc = new QTextDocument();
+                doc->setParent(nullptr);
+                newBranch->setText(0, item.name());
+                newBranch->setData(0, Qt::UserRole, id);
+                tree->setTextDocument(id, doc);
+            }
         } else break;
     }
     if (invalidJson && invalidText) return false;
@@ -1201,6 +1281,14 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
     }
 
     return true;
+}
+
+void Main::registerImages(const QString& html, QTextDocument* doc) {
+    for (const auto& entry: mImageStore) {
+        if (html.contains("<img src=\"" + entry.first)) {
+            doc->addResource(QTextDocument::ImageResource, entry.first, entry.second);
+        }
+    }
 }
 
 void Main::removeEmptyFirstBlock(TextEdit* text) {
@@ -1233,15 +1321,6 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     extra["Position"] = qlonglong(pos);
     mPrefs.setWindowLocation(geom);
     extra["Prefs"] = mPrefs.write();
-    Json5Object images;
-    auto arr = mUi->textEdit->serializeInternalImagesToJson();
-    for (auto it = arr.begin(); it != arr.end(); ++it) {
-        QJsonObject from(it->toObject());
-        QString url = from["url"].toString();
-        QString data = from["data"].toString();
-        images[url] = data;
-    }
-    extra["Images"] = images;
     mState = byId;
     Json5Array state;
     for (const auto& idState: byId) {
@@ -1251,6 +1330,23 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
         state.append(item);
     }
     extra["State"] = state;
+    Json5Array arr;
+    auto& images = mUi->textEdit->internalImages();
+    auto keys = images.keys();
+    for (auto i = 0; i < keys.count(); ++i) {
+        auto& key = keys[i];
+        Json5Object obj;
+        obj["url"] = key.toString();
+        QImage& img = images[key];
+        QByteArray bytes;
+        QBuffer buffer(&bytes);
+        buffer.open(QIODevice::WriteOnly);
+        img.save(&buffer, "PNG");
+        buffer.close();
+        obj["data"] = QString(bytes.toBase64());
+        arr.append(obj);
+    }
+    extra["Images"] = arr;
     mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
@@ -1320,6 +1416,7 @@ void Main::update() { // new, open
     QTreeWidget* tree = mUi->treeWidget;
     tree->clear();
     buildTree(mNovel.branches(), nullptr, mState);
+    mImageStore.clear();
     updateHtml();
     updateFromPrefs();
 
@@ -1462,9 +1559,10 @@ QTreeWidgetItem* Main::buildTreeFromJson(Json5Object& obj) {
     item.setHtml(html.toHtml());
     QTreeWidgetItem* branch = new QTreeWidgetItem();
     QTextDocument* doc = new QTextDocument();
+    doc->setParent(nullptr);
     branch->setText(0, item.name());
-    branch->setData(0, Qt::UserRole,     item.id());
-    branch->setData(0, Qt::UserRole + 1, QVariant::fromValue(doc));
+    branch->setData(0, Qt::UserRole, item.id());
+    mUi->treeWidget->setTextDocument(item.id(), doc);
     mNovel.addItem(item);
     Json5Array arr = Item::hasArr(obj, "Children", {});
     for (auto& child: arr) {
@@ -1696,6 +1794,9 @@ void Main::setupConnections() {
     connect(mStopButton, &QToolButton::clicked,     this, &Main::stop);
     connect(&mSpeech,    &Speech::speaking,         this, &Main::highlight);
     connect(&mSpeech,    &Speech::speakingFinished, this, &Main::stopped);
+
+    QShortcut* editItemShortcut = new QShortcut(QKeySequence("F2"), this);
+    connect(editItemShortcut, &QShortcut::activated, this, &Main::doEditItem);
 
     mFindLine = new QWidget();
     mFindWidget = new Ui_Widget();

@@ -1,5 +1,6 @@
 #include "Novel.h"
 #include "Main.h"
+#include "ui_Main.h"
 
 #include <QFontMetrics>
 #include <QTextCursor>

@@ -19,13 +19,12 @@ private:
     int& c;
 };
 
-
 TextEdit::TextEdit(QWidget* parent)
     : QTextEdit(parent) {
     mIdBase = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch());
     setAcceptRichText(true);
     setAcceptDrops(true);
-//    setUndoRedoEnabled(true);
+
     // Default margin is fine; you can tweak per your layout
 }
 
@@ -35,18 +34,6 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
 
     if (!source) return;
 
-    if (source->hasHtml()) {
-        // scan for possible image issues?
-        insertHtml(source->html());
-        // scan for possible image issues?
-        return;
-    }
-
-    if (source->hasText()) {
-        insertPlainText(source->text());
-        return;
-    }
-
     if (source->hasImage()) {
         QImage img = qvariant_cast<QImage>(source->imageData());
         if (!img.isNull()) {
@@ -55,19 +42,32 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
         }
     }
 
+    if (source->hasHtml()) {
+        // scan for possible image issues?
+        insertHtml(source->html());
+        // scan for possible image issues?
+        return;
+    }
+
     if (source->hasUrls()) {
         for (const QUrl& url: source->urls()) {
             if (!url.isValid()) continue;
-            const QString scheme = url.scheme().toLower();
-            if (scheme == "http" || scheme == "https") insertExternalUrlImage(url);
-            else {
-                const QString local = url.toLocalFile();
-                if (!local.isEmpty()) insertInternalImage(QImage(local));
-                else insertInternalImage(QImage(url.path()));
+            const QString local = url.toLocalFile();
+            QImage img;
+            if (!local.isEmpty()) {
+                img = QImage(local);
+                if (img.isNull()) continue;
+                insertInternalImage(img);
+                return;
+            } else {
+                img = QImage(url.path());
+                if (img.isNull()) continue;
+                insertInternalImage(img);
+                return;
             }
         }
-        return;
     }
+
     QTextEdit::insertFromMimeData(source); // non-image content
 }
 
@@ -94,7 +94,7 @@ void TextEdit::insertInternalImage(const QImage& image) {
     const QUrl url = makeInternalUrl();
 
     // Store original for fidelity
-    mOriginals.insert(url, image);
+    internalImages().insert(url, image);
 
     // Initial display size: clamp to viewport width
     const int maxW = contentMaxWidth();
@@ -144,7 +144,7 @@ void TextEdit::insertExternalUrlImage(const QUrl& url) {
     QSignalBlocker blockLay(document()->documentLayout());
 
     // Keep URL as-is, no internal storage; just insert with a conservative width
-    mExternalUrls.insert(url);
+    externalImageUrls().insert(url);
 
     // We don’t fetch or addResource here; Qt will request when painting via the URL.
     // Use a placeholder size until first paint; then resize pass will clamp to viewport.
@@ -224,8 +224,8 @@ void TextEdit::resizeImagesToFit() {
             g.e = f.position() + f.length();
             g.url = QUrl(imf.name());
 
-            const auto itOrig = mOriginals.find(g.url);
-            g.orig = (itOrig != mOriginals.end()) ? itOrig.value().size() : QSize();
+            const auto itOrig = internalImages().find(g.url);
+            g.orig = (itOrig != internalImages().end()) ? itOrig.value().size() : QSize();
 
             frags.push_back(g);
         }
@@ -300,15 +300,15 @@ QByteArray TextEdit::imageToPngBytes(const QImage& img) {
     return bytes;
 }
 
-QJsonArray TextEdit::serializeExternalImagesToJson() const {
+QJsonArray TextEdit::serializeExternalImagesToJson() {
     QJsonArray arr;
-    for (auto& url: mExternalUrls) arr.append(url.toString());
+    for (auto& url: externalImageUrls()) arr.append(url.toString());
     return arr;
 }
 
-QJsonArray TextEdit::serializeInternalImagesToJson() const {
+QJsonArray TextEdit::serializeInternalImagesToJson() {
     QJsonArray arr;
-    for (auto it = mOriginals.constBegin(); it != mOriginals.constEnd(); ++it) {
+    for (auto it = internalImages().begin(); it != internalImages().end(); ++it) {
         const QUrl url = it.key();
         const QImage img = it.value();
         const QByteArray png = imageToPngBytes(img);
@@ -324,21 +324,21 @@ QJsonArray TextEdit::serializeInternalImagesToJson() const {
     return arr;
 }
 
-void TextEdit::addInternalImage(const QUrl& url, const QImage& image) {
+void TextEdit::addInternalImage(const QUrl& url, const QImage& image, bool add) {
     if (url.isEmpty() || image.isNull()) return;
 
-    mOriginals.insert(url, image);
+    internalImages().insert(url, image);
 
-    document()->addResource(QTextDocument::ImageResource, url, image);
+    if (add) document()->addResource(QTextDocument::ImageResource, url, image);
 }
 
 void TextEdit::clearInternalImages() {
-    mOriginals.clear();
-    mExternalUrls.clear();
+    internalImages().clear();
+    externalImageUrls().clear();
 }
 
 void TextEdit::removeInternalImage(const QUrl& url) {
-    mOriginals.remove(url);
+    internalImages().remove(url);
 }
 
 bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
