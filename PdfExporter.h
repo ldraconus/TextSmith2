@@ -8,9 +8,8 @@
 class PdfExporter: public Exporter<PdfExporter> {
 private:
     QList<ExportMetadataField> mMetadata {
-        { "title",  "Book Title (title)", "" },
-        { "author", "Book Author",        "" },
-        { "cover",  "Book Cover",         "" }
+        { "title",  "Book Title (title:)", "" },
+        { "cover",  "Book Cover (cover:)", "" }
     };
 
 public:

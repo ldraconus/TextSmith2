@@ -12,14 +12,14 @@ struct zip;
 class EBookExporter: public Exporter<EBookExporter> {
 private:
     QList<ExportMetadataField> mMetadata {
-        { "title",     "Book Title (title)",          "" },
-        { "author",    "Book Author (author)",        "Anoonymous" },
-        { "cover",     "Book Cover (cover)",          "" },
-        { "rights",    "Publication Rights (rights)", "Public Domain" },
-        { "langauge",  "Langauge (language)",         "en-US" },
-        { "publisher", "Publisher (publisher)",       "Independent" },
-        { "id",        "ISBN (id)",                   "" },
-        { "year",      "Publication Year (year)",     "" }
+        { "title",     "Book Title (title:)",          "" },
+        { "author",    "Book Author (author:)",        "Anoonymous" },
+        { "cover",     "Book Cover (cover:)",          "" },
+        { "rights",    "Publication Rights (rights:)", "Public Domain" },
+        { "langauge",  "Langauge (language:)",         "en-US" },
+        { "publisher", "Publisher (publisher:)",       "Independent" },
+        { "id",        "ISBN (id:)",                   "" },
+        { "year",      "Publication Year (year:)",     "" }
     };
 
     QString                 mAuthor;

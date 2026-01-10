@@ -4,12 +4,13 @@
 
 #include "Exporter.h"
 #include "Novel.h"
+#include "TextEdit.h"
 
 class HtmlExporter: public Exporter<HtmlExporter> {
 private:
     QList<ExportMetadataField> mMetadata = {
-        { "title", "Book Title (title)", "" },
-        { "cover", "Book Cover",         "" }
+        { "title", "Book Title (title:)", "" },
+        { "cover", "Book Cover (cover:)", "" }
     };
 
 public:
@@ -23,6 +24,10 @@ public:
     static QString Extension() { return "html"; }
     static QString Name()      { return "Html"; }
 
-    static bool convert(Novel& novel, QList<qlonglong>& ids, QTextEdit& doc);
-    static bool convert(Novel& novel, QList<qlonglong>& ids, QTextDocument& doc);
+    static bool    convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, TextEdit& doc,
+                        const QList<QString>& tag);
+    static bool    convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, QTextDocument& doc,
+                        const QList<QString>& tag);
+    static QString generateCoverHtml(const QString& cover);
+    static void    pageBreak(QTextDocument* doc, const QString& html);
 };

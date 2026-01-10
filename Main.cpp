@@ -18,6 +18,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLineEdit>
+#include <QPrinter>
+#include <QPrintPreviewDialog>
 #include <QScreen>
 #include <QShortcut>
 #include <QShowEvent>
@@ -25,6 +27,7 @@
 #include <QStyleFactory>
 #include <QTextBlock>
 #include <QTextBlockFormat>
+#include <QTextDocumentFragment>
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextDocument>
@@ -41,6 +44,8 @@ Q_DECLARE_METATYPE(QTextDocument*)
 #include "FullScreenDialog.h"
 #include "ItemDescriptionDialog.h"
 #include "PreferencesDialog.h"
+
+using namespace Words;
 
 #include "HtmlExporter.h"
 template class Exporter<HtmlExporter>;
@@ -385,13 +390,23 @@ void Main::doExit() {
 
 void Main::doExport(const QString& name) {
     const auto& factory = ExporterBase::registry()[name];
-    const auto ids = vectorOfIds(mUi->treeWidget->currentItem(), { mPrefs.chapterTag(), mPrefs.sceneTag() });
+    const auto ids = vectorOfIds(mUi->treeWidget->currentItem(),
+                                 { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
     ExporterBase* exporter = factory(mNovel, ids);
     ExportDialog dlg(exporter, this);
     if (dlg.exec() == QDialog::Rejected) return;
 
     mPrefs.setChapterTag(dlg.chapterTag());
+    mPrefs.setCoverTag(dlg.coverTag());
     mPrefs.setSceneTag(dlg.sceneTag());
+
+    exporter->setChapterTag(dlg.chapterTag());
+    exporter->setCoverTag(dlg.coverTag());
+    exporter->setSceneTag(dlg.sceneTag());
+    exporter->setInternalImages(mUi->textEdit->internalImages());
+    const auto finalIds = vectorOfIds(mUi->treeWidget->currentItem(),
+                                      { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
+    exporter->setIds(finalIds);
 
     QString filename = dlg.filename();
     if (filename.isEmpty()) {
@@ -408,8 +423,15 @@ void Main::doExport(const QString& name) {
 
 void Main::doFindChanged() {
     if (mSearch && mFindWidget) {
-        auto text = mFindWidget->findLineEdit->text();
+        QString text = mFindWidget->findLineEdit->text();
         mSearch->setText(text);
+        bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
+                               ? SearchCore::NotCaseInsensitive
+                               : SearchCore::CaseInsensitive;
+        auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
+        QString replace = mFindWidget->replaceLineEdit->text();
+        mFindWidget->replacePushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
+        mFindWidget->replaceAllPushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
         doFindNext();
     }
 }
@@ -420,13 +442,24 @@ void Main::doFindDone() {
 }
 
 void Main::doFindNext() {
-    if (mSearch && !mSearch->text().isEmpty()&& !mUi->treeWidget->hasFocus()) {
+    if (mSearch && !mSearch->text().isEmpty() && !mUi->treeWidget->hasFocus()) {
         NovelPosition pos = mSearch->findNext();
         if (pos.isValid()) {
             QTreeWidgetItem* branch = findItem(mUi->treeWidget->topLevelItem(0), pos.id());
             mUi->treeWidget->setCurrentItem(branch);
             setPosition(pos.textPosition());
             cursorPositionChanged();
+            QString text = mFindWidget->findLineEdit->text();
+            QString replace = mFindWidget->replaceLineEdit->text();
+            bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
+                                   ? SearchCore::NotCaseInsensitive
+                                   : SearchCore::CaseInsensitive;
+            auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
+            mFindWidget->replacePushButton->setDisabled(text.compare(replace, sense) == 0);
+            mFindWidget->replaceAllPushButton->setDisabled(text.compare(replace, sense) == 0);
+        } else {
+            mFindWidget->replacePushButton->setDisabled(false);
+            mFindWidget->replacePushButton->setDisabled(false);
         }
     }
 }
@@ -440,6 +473,7 @@ void Main::doFindReplace() {
     if (mUi->treeWidget->hasFocus()) return;
 
     QString find = mFindWidget->findLineEdit->text();
+    QString replace = mFindWidget->replaceLineEdit->text();
 
     bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
                            ? SearchCore::NotCaseInsensitive
@@ -458,6 +492,10 @@ void Main::doFindReplace() {
         if (mFindWidget->thisItemRadioButton) mSearch = new SearchItem(mNovel, mCurrentNode, start, find, sensitivity);
         else mSearch = new SearchTree(mNovel, mUi->treeWidget->currentItem(), mCurrentNode, start, find, sensitivity);
     }
+
+    auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
+    mFindWidget->replacePushButton->setDisabled(find.isEmpty() || find.compare(replace, sense) == 0);
+    mFindWidget->replaceAllPushButton->setDisabled(find.isEmpty() || find.compare(replace, sense) == 0);
 
     if (find.isEmpty()) return;
 
@@ -776,6 +814,116 @@ void Main::doPreferences() {
     updateFromPrefs();
 }
 
+void Main::doPrint() {
+    if (mPrinter == nullptr) mPrinter = new Printer(QPrinter::HighResolution);
+    if (mPrinter == nullptr || mPrinter->qprinter() == nullptr) {
+        mMsg.Statement("Unable to talk to the printer");
+        return;
+    }
+    TextEdit* edit = mUi->textEdit;
+    mPrinter->setImages(edit->internalImages());
+    auto& images = edit->externalImageUrls();
+    for (const auto& url: images) mPrinter->addImage(url);
+    mPrinter->setIds(vectorOfIds(mUi->treeWidget->currentItem(),
+                                 { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
+    QPrintPreviewDialog preview(mPrinter->qprinter(), this);
+    preview.setWindowTitle("Print Novel");
+    preview.setMinimumHeight(600); // NOLINT
+    preview.setMinimumWidth(800); // NOLINT
+    connect(&preview, &QPrintPreviewDialog::paintRequested, this, &Main::printNovel);
+
+    preview.exec();
+}
+
+void Main::doPrintNovel(QPrinter*) {
+    QPrinter* printer = mPrinter->qprinter();
+    printer->setFullPage(true);
+    QRectF paperRect = printer->paperRect(QPrinter::DevicePixel);
+    QRectF pointRect = printer->paperRect(QPrinter::Point);
+    QSizeF pointSize(paperRect.width() / pointRect.width(), paperRect.height() / pointRect.height());
+    QSizeF inch(72 * pointSize.width(), 72 * pointSize.height());
+    QSizeF pageSize(paperRect.right() - 2 * inch.width(), paperRect.bottom() - 2 * inch.height());
+    QPainter painter(printer);
+    // go 1" margins all around, but modulate if the page-rect doesn't allow it.
+    QRectF usingRect(QPointF(inch.width(), inch.height()), pageSize);
+    QFont font = mUi->textEdit->font();
+    QFontMetricsF metrics(font, printer);
+    int lineHeight = metrics.height();
+    int indent = 4 * metrics.boundingRect("M").width();
+    int baseline = metrics.ascent();
+    int space = metrics.boundingRect(" ").width();
+    const auto& ids = mPrinter->ids();
+    qreal at = inch.height() + baseline;
+    int pageNo = 1;
+    bool startingPage = true;
+    for (const auto& id: ids) {
+        Item& item = mNovel.findItem(id);
+        if (!item.hasTag(mPrefs.chapterTag()) &&
+            !item.hasTag(mPrefs.sceneTag()) &&
+            !item.hasTag(mPrefs.coverTag())) continue;
+        if (item.hasTag(mPrefs.coverTag())) {
+            pageNo = handleCover(item, pageNo, startingPage, pageSize, inch, painter, printer);
+            newPage(painter, printer);
+            ++pageNo;
+            at = inch.height() + baseline;
+            startingPage = true;
+            continue;
+        } else if (item.hasTag(mPrefs.chapterTag())) {
+            if (pageNo != 1) {
+                newPage(painter, printer);
+                ++pageNo;
+                at = inch.height() + baseline;
+                startingPage = true;
+            }
+        }
+        StringList paragraphs = createParagraphs(item);
+        Tags current = Tags::None;
+        for (const auto& paragraph: paragraphs) {
+            QList<Word> words = paragraphWords(paragraph);
+            bool first = true;
+            while (!words.isEmpty()) {
+                int width = 0;
+                if (first) width = indent;
+                QList<Word> line;
+                while (width < pageSize.width()) {
+                    Word word = words.first();
+                    if (line.size() != 0 && (current & Tags::Partial) != Tags::None) width += space;
+                    if (metrics.boundingRect(words.first().str()).width() + width < pageSize.width()) {
+                        auto word = words.takeFirst();
+                        line.append(word);
+                        width += metrics.boundingRect(word.str()).width();
+                    }
+                }
+                if (at + lineHeight - inch.width() > pageSize.height()) {
+                    newPage(painter, printer);
+                    ++pageNo;
+                    at = inch.height() + baseline;
+                    startingPage = true;
+                }
+                qreal fill = 0.0;
+                if (!words.empty() /* && FullJustify */) {
+                    if (line.count() > 1) fill = width / (line.count() - 1);
+                }
+                qreal x = inch.width() + (first ? indent : 0.0);
+                first = false;
+                for (auto i = 0; i < line.count(); ++i) {
+                    Word word = line[i];
+                    current = (current & word.tags()) | word.tags();
+                    QFont wFont = font;
+                    if ((current & Tags::Bold) != Tags::None)      wFont.setWeight(QFont::Bold);
+                    if ((current & Tags::Italic) != Tags::None)    wFont.setItalic(true);
+                    if ((current & Tags::Underline) != Tags::None) wFont.setUnderline(true);
+                    painter.setFont(wFont);
+                    painter.drawText(QPoint(x + 0.5, at + 0.5), word.str());
+                    x += fill;
+                    if (!word.isPartial()) x += space;
+                }
+                at += lineHeight;
+            }
+        }
+    }
+}
+
 void Main::doReadToMe() {
     if (!mSpeechAvailable) return;
 
@@ -837,9 +985,52 @@ void Main::doRemoveItem() {
 }
 
 void Main::doReplace() {
+    auto sensitive = mFindWidget->caseInsensitiveCheckBox->isChecked()
+                         ? Qt::CaseInsensitive
+                         : Qt::CaseSensitive;
+    QString find = mFindWidget->findLineEdit->text();
+    QString replace = mFindWidget->replaceLineEdit->text();
+    if (replace.compare(find, sensitive) == 0 || find.isEmpty()) return;
+
+    auto cursor = mUi->textEdit->textCursor();
+    QString text = mUi->textEdit->toPlainText();
+    QString textAtPosition = text.mid(cursor.position());
+    QString left = textAtPosition.left(find.length());
+    if (left.compare(find, sensitive)) return;
+
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, replace.length());
+    cursor.removeSelectedText();
 }
 
 void Main::doReplaceAll() {
+    auto sensitive = mFindWidget->caseInsensitiveCheckBox->isChecked()
+                         ? Qt::CaseInsensitive
+                         : Qt::CaseSensitive;
+    QString find = mFindWidget->findLineEdit->text();
+    QString replace = mFindWidget->replaceLineEdit->text();
+    if (replace.compare(find, sensitive) == 0 || find.isEmpty()) return;
+
+    auto cursor = mUi->textEdit->textCursor();
+    QString text = mUi->textEdit->toPlainText();
+    QString textAtPosition = text.mid(cursor.position());
+    QString left = textAtPosition.left(find.length());
+    if (left.compare(find, sensitive)) return;
+
+    do {
+        doReplace();
+        doFindNext();
+        auto cursor = mUi->textEdit->textCursor();
+        QString text = mUi->textEdit->toPlainText();
+        QString textAtPosition = text.mid(cursor.position());
+        QString left = textAtPosition.left(find.length());
+    } while (left.compare(find, sensitive) == 0);
+}
+
+void Main::doReplaceChanged() {
+    QString find = mFindWidget->findLineEdit->text();
+    QString replace = mFindWidget->replaceLineEdit->text();
+    mFindWidget->replacePushButton->setDisabled(find.isEmpty() || find == replace);
+    mFindWidget->replaceAllPushButton->setDisabled(find.isEmpty() ||find == replace);
 }
 
 void Main::doRightJustify() {
@@ -989,6 +1180,21 @@ QString Main::checked(const QString& path) {
     return parts.join(".");
 }
 
+StringList Main::createParagraphs(Item& item) {
+    StringList paragraphs;
+    QTextDocument doc;
+    doc.setHtml(item.html());
+    for (QTextBlock block = doc.begin(); block != doc.end(); block = block.next()) {
+        QTextCursor cursor(block);
+        cursor.select(QTextCursor::BlockUnderCursor);
+        QString html = cursor.selection().toHtml();
+        if (!html.isEmpty())
+            paragraphs.append(html);
+    }
+
+    return paragraphs;
+}
+
 QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
     if (tree == nullptr) return nullptr;
     if (auto id = tree->data(0, Qt::UserRole).toLongLong(); id == node) return tree;
@@ -998,6 +1204,11 @@ QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
         }
     }
     return nullptr;
+}
+
+void Main::newPage(QPainter& /*painter*/, QPrinter* printer) {
+    if (printer) printer->newPage();
+    // draw header, footer, page-blocking
 }
 
 void Main::fitWindow() {
@@ -1037,6 +1248,51 @@ void Main::fitWindow() {
     resize(geom.size());
 
     mPrefs.setWindowLocation(geom);
+}
+
+int Main::handleCover(Item& item,
+                      int pageNo,
+                      bool startingPage,
+                      QSizeF& pageSize,
+                      QSizeF& inch,
+                      QPainter& painter,
+                      QPrinter* printer) {
+    QPointF at = QPointF(inch.width(), inch.height());
+    if (pageNo != 1) {
+        if (!startingPage) {
+            newPage(painter, printer);
+            ++pageNo;
+            if (pageNo % 2 != 0) {
+                newPage(painter, printer);
+                ++pageNo;
+            }
+        }
+    }
+    QString html = item.html();
+    StringList imgParts { html.split("<img src=\"") };
+    for (auto i = 1; i < imgParts.count(); ++i) {
+        StringList name { imgParts[i].split("\"")};
+        if (name.count() >= 2) {
+            QUrl url(name[0]);
+            const QImage& image = mPrinter->images()[url];
+            QImage scaledImage = image;
+            if (image.width() > pageSize.width()) {
+                scaledImage = image.scaledToWidth(pageSize.width(), Qt::SmoothTransformation);
+            }
+            if (scaledImage.height() > pageSize.height()) {
+                scaledImage = image.scaledToHeight(pageSize.height(), Qt::SmoothTransformation);
+            }
+            if (at.y() + scaledImage.height() > pageSize.height() + inch.height()) {
+                newPage(painter, printer);
+                ++pageNo;
+                at = QPointF(inch.width(), inch.height());
+            }
+            QRectF imageRect(at, scaledImage.size());
+            painter.drawImage(imageRect, scaledImage);
+            at.setY(at.y() + scaledImage.height());
+        }
+    }
+    return pageNo;
 }
 
 void Main::justifyButtons() {
@@ -1138,6 +1394,52 @@ void Main::replaceText(QTextCursor cursor, const QString& text) {
         }
         ++position;
     }
+}
+
+QList<Word> Main::paragraphWords(const QString& paragraph) {
+    QList<Word> words;
+    StringList wordList { paragraph.split(" ", Qt::SkipEmptyParts) };
+    for (const auto& item: wordList) {
+        StringList parts { item.split("<", Qt::SkipEmptyParts) };
+        // now parts has (for ex. b>text, /b>)
+        Word word;
+        for (auto [i, part]: enumerate(parts)) {
+            QString fragment = part;
+            if (i != 0) word.setTags(words[i - 1].tags());
+            for (; ; ) {
+                if (fragment.startsWith("b>")) {
+                    word += Tags::Bold;
+                    fragment = fragment.mid(2);
+                    continue;
+                } else if (fragment.startsWith("i>")) {
+                    word += Tags::Italic;
+                    fragment = fragment.mid(2);
+                    continue;
+                } else if (fragment.startsWith("u>")) {
+                    word += Tags::Underline;
+                    fragment = fragment.mid(2);
+                    continue;
+                } else if (fragment.startsWith("/b>")) {
+                    word -= Tags::Bold;
+                    fragment = fragment.mid(3);
+                    continue;
+                } else if (fragment.startsWith("/i>")) {
+                    word -= Tags::Italic;
+                    fragment = fragment.mid(3);
+                    continue;
+                } else if (fragment.startsWith("/u>")) {
+                    word -= Tags::Underline;
+                    fragment = fragment.mid(3);
+                    continue;
+                }
+            }
+            word.setStr(fragment);
+            words.append(word);
+            word.clear();
+            if (i != 0) words[i - 1] += Tags::Partial;
+        }
+    }
+    return words;
 }
 
 bool Main::parentIsRoot() {
@@ -1619,13 +1921,13 @@ QList<Item*> Main::vectorOfItems(QTreeWidgetItem* branch) {
     return items;
 }
 
-QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& tags) {
+QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& tags, StartingFlag starting) {
     QList<qlonglong> ids;
     auto id = branch->data(0, Qt::UserRole).toLongLong();
     Item& item = mNovel.findItem(id);
-    if (item.hasTag(tags)) ids.append(id);
+    if (item.hasTag(tags) || starting == StartingFlag::Starting) ids.append(id);
     for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
-        auto childItems = vectorOfIds(branch->child(childNum), tags);
+        auto childItems = vectorOfIds(branch->child(childNum), tags, StartingFlag::Continuing);
         ids.append(childItems);
     }
     return ids;
@@ -1700,6 +2002,7 @@ void Main::setupConnections() {
     connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
     connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
     connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
+    connect(mUi->actionPrint,   &QAction::triggered, this, &Main::printAction);
     connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
     connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
     QMenu* exportMenu = new QMenu("Export", this);
@@ -1812,6 +2115,7 @@ void Main::setupConnections() {
     buttonGroup->addButton(mFindWidget->thisItemAndChildItemsRadioButton);
     connect(buttonGroup, &QButtonGroup::buttonClicked, this, &Main::findReplace);
 
+    connect(mFindWidget->replaceLineEdit, &QLineEdit::textEdited, this, &Main::replaceChanged);
     QShortcut* replaceShortcut = new QShortcut(QKeySequence("Ctrl+R"), this);
     connect(replaceShortcut,                &QShortcut::activated, this, &Main::replace);
     connect(mFindWidget->replacePushButton, &QPushButton::toggled, this, &Main::replace);

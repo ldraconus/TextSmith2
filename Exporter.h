@@ -25,8 +25,10 @@ public:
     virtual QString                fileExtension() = 0;
     virtual QString                name() = 0;
     virtual void                   setChapterTag(const QString& tag) = 0;
+    virtual void                   setCoverTag(const QString& tag) = 0;
     virtual void                   setFilename(const QString& tag) = 0;
     virtual void                   setIds(const QList<qlonglong>& ids) = 0;
+    virtual void                   setInternalImages(const QMap<QUrl, QImage>& images) = 0;
     virtual void                   setMetadataValue(const QString& meta, const QString& value) = 0;
     virtual void                   setSceneTag(const QString& tag) = 0;
 
@@ -64,10 +66,12 @@ protected:
 template<typename Class>
 class tExporter: public ExporterBase {
 public:
-    void setChapterTag(const QString& c) override     { mChapterTag = c.toLower(); }
-    void setSceneTag(const QString& s) override       { mSceneTag = s.toLower(); }
-    void setFilename(const QString& f) override       { mFilename = f; }
-    void setIds(const QList<qlonglong>& ids) override { mItemIds = ids; }
+    void setChapterTag(const QString& c) override                     { mChapterTag = c.toLower(); }
+    void setCoverTag(const QString& c) override                       { mCoverTag = c.toLower(); }
+    void setInternalImages(const QMap<QUrl, QImage>& images) override { mImages = images; }
+    void setSceneTag(const QString& s) override                       { mSceneTag = s.toLower(); }
+    void setFilename(const QString& f) override                       { mFilename = f; }
+    void setIds(const QList<qlonglong>& ids) override                 { mItemIds = ids; }
 
     QMap<QString, QString> collectMetadataDefaults() override {
         QMap<QString, QString> defaults;
@@ -122,11 +126,13 @@ protected:
     }
 
 protected:
-    QString           mChapterTag;
-    QString           mFilename;
-    QList<qlonglong>  mItemIds;
-    Novel&            mNovel;
-    QString           mSceneTag;
+    QString            mChapterTag;
+    QString            mCoverTag;
+    QString            mFilename;
+    QMap<QUrl, QImage> mImages;
+    QList<qlonglong>   mItemIds;
+    Novel&             mNovel;
+    QString            mSceneTag;
 };
 
 template<typename Class>
@@ -137,7 +143,7 @@ public:
         : tExporter<Class>(novel, ids) { }
 
 private:
-    static bool registered;
+    static bool   registered;
 };
 
 template<typename Class>

@@ -32,6 +32,7 @@ public:
     bool       autoSave()          { return mAutoSave; }
     qlonglong  autoSaveIntyerval() { return mAutoSaveInterval; }
     QString    chapterTag()        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
+    QString    coverTag()          { return mCoverTag.isEmpty() ? "Cover" : mCoverTag; }
     QString    fontFamily()        { return mFontFamily; }
     qlonglong  fontSize()          { return mFontSize; }
     bool       isDarkTheme()       { return mIsDark; }
@@ -49,6 +50,7 @@ public:
     void setAutoSave(bool a)              { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i) { mAutoSaveInterval = i; }
     void setChapterTag(const QString& c)  { mChapterTag = c; }
+    void setCoverTag(const QString& c)    { mCoverTag = c; }
     void setFontFamily(const QString& f)  { mFontFamily = f; }
     void setFontSize(qlonglong s)         { mFontSize = s; }
     void setMainSplitter(Json5Array& s)   { mMainSplitter = s; }
@@ -65,6 +67,7 @@ private:
     bool          mAutoSave         { false };
     qlonglong     mAutoSaveInterval { 5 * 60 };
     QString       mChapterTag       { "chapter" };
+    QString       mCoverTag         { "cover" };
     QString       mFontFamily       { "Segoe UI" };
     qlonglong     mFontSize         { 9 };
     bool          mIsDark           { false };

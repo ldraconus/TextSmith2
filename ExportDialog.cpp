@@ -20,6 +20,7 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
     auto& prefs = Main::ref().prefs();
     mUi->chapterTagLineEdit->setPlaceholderText(prefs.chapterTag());
     mUi->sceneTagLineEdit->setPlaceholderText(prefs.sceneTag());
+    mUi->coverTagLineEdit->setPlaceholderText(prefs.coverTag());
 
     loadFields();
 
@@ -40,6 +41,10 @@ ExportDialog::~ExportDialog() {
 
 QString ExportDialog::chapterTag() const {
     return getString(mUi->chapterTagLineEdit);
+}
+
+QString ExportDialog::coverTag() const {
+    return getString(mUi->coverTagLineEdit);
 }
 
 QString ExportDialog::filename() const {
@@ -80,7 +85,9 @@ void ExportDialog::apply() {
     if (chapter.isEmpty()) chapter = mUi->chapterTagLineEdit->placeholderText();
     QString scene = mUi->sceneTagLineEdit->text();
     if (scene.isEmpty()) scene = mUi->sceneTagLineEdit->placeholderText();
-    mExporter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(), { chapter, scene }));
+    QString cover = mUi->coverTagLineEdit->text();
+    if (cover.isEmpty()) cover = mUi->coverTagLineEdit->placeholderText();
+    mExporter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(), { chapter, scene,cover }));
     auto& metaData = mExporter->metadataFields();
     int i = 0;
     for (auto& meta: metaData) {

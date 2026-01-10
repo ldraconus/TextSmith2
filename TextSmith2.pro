@@ -51,10 +51,12 @@ HEADERS += \
     PdfExporter.h \
     Preferences.h \
     PreferencesDialog.h \
+    Printer.h \
     SearchReplace.h \
     Speech.h \
     TextEdit.h \
     TreeWidget.h \
+    Words.h \
     entity.h \
     html2md-main/include/html2md.h \
     html2md-main/include/table.h
@@ -83,6 +85,7 @@ QMAKE_EXTRA_TARGETS += Installer
 DISTFILES += \
     .clangd \
     Background.png \
+    CMakeLists.txt \
     Center.ico \
     Center.png \
     Closed.png \

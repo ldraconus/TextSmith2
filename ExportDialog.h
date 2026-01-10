@@ -20,6 +20,7 @@ public:
     ~ExportDialog();
 
     QString chapterTag() const;
+    QString coverTag() const;
     QString filename() const;
     QString sceneTag() const;
 

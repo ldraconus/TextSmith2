@@ -21,6 +21,7 @@ public:
     // Serialization: internal images only
     void           addInternalImage(const QUrl& url, const QImage& image, bool add = true);
     void           clearInternalImages();
+    void           registerInternalImages();
     void           removeInternalImage(const QUrl& url);
     QJsonArray     serializeExternalImagesToJson();
     QJsonArray     serializeInternalImagesToJson();

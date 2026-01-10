@@ -15,6 +15,7 @@
 
 constexpr auto ChapterTag       { "ChapterTag" };
 constexpr auto Company          { "SoftwareOnHand" };
+constexpr auto CoverTag         { "CoverTag" };
 constexpr auto Program          { "TextSmith" };
 constexpr auto AutoSave         { "AutoSave" };
 constexpr auto AutoSaveInterval { "AutoSave Interval" };
@@ -30,6 +31,7 @@ constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
 constexpr auto DefaultChapterTag { "chapter" };
+constexpr auto DefaultCoverTag   { "cover" };
 constexpr auto DefaultFont       { "Segoe UI" };
 constexpr auto DefaultFontSize   { 9 };
 constexpr auto DefaultInterval   { 5 * 60 };
@@ -47,6 +49,7 @@ bool Preferences::load() {
     mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
     mChapterTag =       settings.value(ChapterTag,       DefaultChapterTag).toString();
+    mCoverTag =         settings.value(CoverTag ,        DefaultCoverTag).toString();
     mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
     mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
     QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
@@ -115,6 +118,7 @@ bool Preferences::read(Json5Object& obj) {
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
         mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, DefaultInterval);
         mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
+        mCoverTag =         Item::hasStr(obj,  CoverTag,         DefaultCoverTag);
         mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
         mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
         mPosition =         Item::hasNum(obj,  Position,         DefaultPosition);
@@ -151,6 +155,7 @@ bool Preferences::save() {
     settings.setValue(AutoSave,         mAutoSave);
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
     settings.setValue(ChapterTag,       mChapterTag);
+    settings.setValue(CoverTag,         mCoverTag);
     settings.setValue(FontFamily,       mFontFamily);
     settings.setValue(FontSize,         mFontSize);
     QJsonArray arr;
@@ -374,6 +379,7 @@ Json5Object Preferences::write() {
     obj[AutoSave] =         mAutoSave;
     obj[AutoSaveInterval] = mAutoSaveInterval;
     obj[ChapterTag] =       mChapterTag;
+    obj[CoverTag] =         mCoverTag;
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
     obj[MainSplitter] =     mMainSplitter;

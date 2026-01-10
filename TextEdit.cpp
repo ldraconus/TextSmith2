@@ -337,6 +337,16 @@ void TextEdit::clearInternalImages() {
     externalImageUrls().clear();
 }
 
+void TextEdit::registerInternalImages() {
+    auto images = internalImages();
+    auto keys = images.keys();
+    for (auto i = 0; i < keys.size(); ++i) {
+        auto& url = keys[i];
+        auto& image = images[url];
+        document()->addResource(QTextDocument::ImageResource, url, image);
+    }
+}
+
 void TextEdit::removeInternalImage(const QUrl& url) {
     internalImages().remove(url);
 }
