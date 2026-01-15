@@ -29,6 +29,6 @@ private:
     QString                   mDictPath;
     QString                   mDir;
     std::unique_ptr<Hunspell> mEngine;
-    std::atomic<bool>         mReady { false };
+    std::atomic<bool>         mReady;
     StringList                mWords;
  };

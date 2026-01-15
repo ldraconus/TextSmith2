@@ -1,13 +1,17 @@
-[/] Spellcheck
-[ ] - add custom words per novel and global
 [ ] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
-[ ] Add Imports:
-[ ] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
-[ ] - snowflake import?
+[?] Add Imports:
+[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
+[?] - snowflake import?
 [ ] Help
 [ ] Add pause/play handling to speech
 [ ] Integrate 5th into the program for scripting
+[ ] - add 5th.h and 5th.cpp to the codebase.
+[ ] - add words for /every/ action the user can do (menuitem, moving, selecting, and basic string handling).
+[ ] - load scripts
+[ ] - add a way to bind a script to an action, and bind that to a menu or submenu, complete with shortcut while avoiding shortcurt collisions.
 [ ] Add a hollywood script writing display mode
+[X] Spellcheck
+[X] - add custom words per novel
 [X] Fix export issues
 [X] - Rewrite HTMLExporter to do the concat better, and add the covers properly.
 [X]   - go through tthe html manually and make a giant html file myself. After looking at the generated html,

@@ -63,6 +63,13 @@ public:
     };
 
 private:
+    struct WordPos {
+        QString   mWord;
+        qlonglong mAt;
+        qlonglong mNext;
+        bool      mUpperCase;
+    };
+
     enum class StartingFlag { Starting, Continuing };
 
     List<QAction*>        mActions;
@@ -83,20 +90,22 @@ private:
     Message               mMsg;
     Novel                 mNovel;
     qlonglong             mPosition;
-    Printer*              mPrinter { nullptr };
-    std::atomic<bool>     mSaving { false };
-    EasySpelling          mSpelling;
-    Ui_SpellWidget*       mSpellWidget { nullptr };
-    QWidget*              mSpellcheck { nullptr };
-    Map<qlonglong, bool>  mState;
-    bool                  mSpeechAvailable { false };
     Preferences           mPrefs;
     bool                  mPrefsLoaded { false };
+    Printer*              mPrinter { nullptr };
     QTextCursor           mSavedCursor;
+    std::atomic<bool>     mSaving { false };
     SearchCore*           mSearch { nullptr };
     SoundPool             mSoundPool;
     Speech                mSpeech;
+    bool                  mSpeechAvailable { false };
+    EasySpelling          mSpelling;
+    Ui_SpellWidget*       mSpellWidget { nullptr };
+    QWidget*              mSpellcheck { nullptr };
+    WordPos               mSpellcheckWord;
+    Map<qlonglong, bool>  mState;
     QList<qlonglong>      mSpellcheckIds;
+    qlonglong             mSpellcheckPosition { -1 };
     QToolButton*          mStopButton { nullptr };
     QString               mTextToSpeak;
     QTimer                mTimer;
@@ -161,9 +170,13 @@ private:
     void doSave();
     bool doSaveAs();
     void doSpellcheck();
+    void doSpellcheckAddWord(const QString& word);
     void doSpellcheckDone();
+    void doSpellcheckLeft();
     void doSpellcheckNext();
+    void doSpellcheckRight();
     void doStop(bool stopped = false);
+    void doSuggestion(const QString& from, const QString& to);
     void doTextChanged();
     void doUnderline();
     void doUndo();
@@ -171,12 +184,6 @@ private:
     void doWordCount();
 
     static constexpr bool NoUi = true;
-
-    struct WordPos {
-        QString   mWord;
-        qlonglong mAt;
-        qlonglong mNext;
-    };
 
     void      buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     void      buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
@@ -198,6 +205,7 @@ private:
     void      replaceText(QTextCursor cursor, const QString& text);
     void      save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode  saveTree(QTreeWidgetItem* node);
+    QSize     scrollBarSize(QScrollBar* bar);
     void      setHtml(const QString& html);
     void      setIcon(QToolButton* button, bool isChecked);
     void      setMenu(QAction* button, bool isChecked);
@@ -337,5 +345,10 @@ public slots:
     void stop()                                          { doStop(); }
     void stopped()                                       { doStop(true); }
 
-    void spellCheckDone()                                { doSpellcheckDone(); }
+    void scrollSpellcheckLeft()  { doSpellcheckLeft(); }
+    void scrollSpellcheckRight() { doSpellcheckRight(); }
+    void spellcheckAddWord()     { doSpellcheckAddWord(mSpellcheckWord.mWord); }
+    void spellcheckDone()        { doSpellcheckDone(); }
+    void spellcheckNext()        { doSpellcheckNext(); }
+    void suggestionAction()      { doSuggestion(mSpellcheckWord.mWord, dynamic_cast<QPushButton*>(sender())->text()); }
 };

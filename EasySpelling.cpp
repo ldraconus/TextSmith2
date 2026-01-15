@@ -10,7 +10,8 @@
 #include <hunspell.hxx>
 
 EasySpelling::EasySpelling() {
-    std::thread([this] {
+    mReady.store(false, std::memory_order_acquire);
+    QThread *t = QThread::create([this]{
         QDir tempDir(QDir::temp().filePath("TextSmith2_dict"));
         tempDir.mkpath(".");
         mDir = tempDir.absolutePath();
@@ -24,7 +25,8 @@ EasySpelling::EasySpelling() {
         mEngine = std::make_unique<Hunspell>(this->mAffPath.toStdString().c_str(), this->mDictPath.toStdString().c_str());
 
         mReady.store(true, std::memory_order_release);
-    }).detach();
+    });
+    t->start();
 }
 
 EasySpelling::~EasySpelling() {
@@ -35,10 +37,11 @@ EasySpelling::~EasySpelling() {
 
 StringList EasySpelling::check(const QString& word) {
     StringList suggestions;
-    if (mWords.contains(word)) return suggestions;
+    QString work = word.toLower();
+    if (mWords.contains(work)) return suggestions;
 
     std::vector<std::string> fromEngine;
-    auto spellWord = word.toUtf8().constData();
+    auto spellWord = work.toUtf8().constData();
     fromEngine = mEngine->suggest(spellWord);
     for (auto& s: fromEngine) suggestions << QString::fromUtf8(s.c_str());
     return suggestions;

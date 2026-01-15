@@ -31,6 +31,7 @@
 #include <QShortcut>
 #include <QShowEvent>
 #include <QStandardPaths>
+#include <QScrollBar>
 #include <QStyleFactory>
 #include <QTextBlock>
 #include <QTextBlockFormat>
@@ -453,7 +454,7 @@ void Main::doFindDone() {
 
 void Main::doFindNext() {
     if (mSpellcheck->isVisible()) {
-        doSpellCheckNext();
+        doSpellcheckNext();
     } else if (mSearch && !mSearch->text().isEmpty() && !mUi->treeWidget->hasFocus()) {
         NovelPosition pos = mSearch->findNext();
         if (pos.isValid()) {
@@ -691,6 +692,7 @@ void Main::doNew() {
     }
 
     mNovel.clear();
+    mSpelling.clearWords();
     mPosition = 0;
     mState.clear();
     mCurrentNode = mNovel.root();
@@ -733,6 +735,7 @@ void Main::doOpen() {
     mDocDir = info.absolutePath();
 
     busy();
+    mSpelling.clearWords();
     mNovel.clear();
     mPosition = 0;
     mState.clear();
@@ -771,6 +774,11 @@ void Main::doOpen() {
             if (img.isNull()) continue;
             mImageStore[url] = img;
             mUi->textEdit->addInternalImage(url, img, false);
+        }
+        Json5Array words = Item::hasArr(obj, "Dictionary");
+        for (auto i = 0; i < words.size(); ++i) {
+            QString word = Item::hasStr(words, i, "");
+            if (!word.isEmpty()) mSpelling.addWord(word);
         }
     } else if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -1092,8 +1100,14 @@ void Main::doSpellcheck() {
     mFindLine->hide();
     mSpellcheck->show();
 
-    Map<QString, QList<qlonglong>> words;
     mSpellcheckIds = vectorOfIds(mUi->treeWidget->currentItem(), { });
+    mSpellcheckPosition = 0;
+    doSpellcheckNext();
+}
+
+void Main::doSpellcheckAddWord(const QString& word) {
+    mSpelling.addWord(word);
+    changed();
     doSpellcheckNext();
 }
 
@@ -1103,23 +1117,81 @@ void Main::doSpellcheckDone() {
     mSpellcheckIds.clear();
 }
 
+void Main::doSpellcheckLeft() {
+    auto* scrollArea = mSpellWidget->scrollArea;
+    auto* scrollBar = scrollArea->horizontalScrollBar();
+    auto* leftMost = dynamic_cast<QPushButton*>(mSpellWidget->scrollAreaWidgetContents->children().first());
+    int newPos = scrollBar->value() - leftMost->geometry().width() + 4;
+    if (newPos < 0) newPos = 0;
+    scrollBar->setValue(newPos);
+    mSpellWidget->leftPushButton->setEnabled(scrollBar->value() > 0);
+    mSpellWidget->rightPushButton->setEnabled(true);
+}
+
 void Main::doSpellcheckNext() {
     while (!mSpellcheckIds.isEmpty()) {
-        auto id = mSpellcheckIds.takeFirst();
+        auto id = mSpellcheckIds.first();
         Item& item = mNovel.findItem(id);
         TextEdit work;
         work.setHtml(item.html());
         QString text = work.toPlainText();
-        for (WordPos word = nextWord(text); word.mNext != word.mAt; word = nextWord(text, word.mNext)) {
-            auto suggestions = mSpelling.check(word.mWord);
+        for (mSpellcheckWord = nextWord(text, mSpellcheckPosition); mSpellcheckWord.mNext != mSpellcheckWord.mAt; mSpellcheckWord = nextWord(text, mSpellcheckWord.mNext)) {
+            auto suggestions = mSpelling.check(mSpellcheckWord.mWord);
             if (suggestions.isEmpty()) continue;
-            // find the node in the tree and make it the current node
-            // move to the words position
-            // create a button in the spellcheck bar for each suggeestion and connect it to doSpellcheckReplace(QString via lamda capturing button name.
+            auto* branch = findItem(mUi->treeWidget->topLevelItem(0), id);
+            mUi->treeWidget->setCurrentItem(branch);
+            setPosition(mSpellcheckWord.mAt);
+            mUi->textEdit->ensureCursorVisible();
+            cursorPositionChanged();
+            auto* area = mSpellWidget->scrollAreaWidgetContents;
+            auto* layout = dynamic_cast<QGridLayout*>(area->layout());
+            if (layout == nullptr) {
+                layout = new QGridLayout(area);
+                area->setLayout(layout);
+            }
+            while (QLayoutItem* btn = layout->takeAt(0)) {
+                if (QWidget* w = btn->widget()) w->deleteLater();
+                delete btn;
+            }
+            QPushButton* button;
+            for (auto [i, suggestion]: enumerate(suggestions)) {
+                auto* contents = mSpellWidget->scrollAreaWidgetContents;
+                auto* button = new QPushButton(suggestion, contents);
+                button->setObjectName(mSpellcheckWord.mWord);
+                QRect geom = button->geometry();
+                int x = (geom.width() + 4) * i;
+                geom.setX(x);
+                geom.setY(0);
+                geom.setHeight(area->height());
+                button->setGeometry(geom);
+                connect(button, &QPushButton::clicked, this, &Main::suggestionAction);
+                button->setEnabled(true);
+                button->setVisible(true);
+                layout->addWidget(button);
+                contents->adjustSize();
+            }
+            repaint();
+            mSpellWidget->leftPushButton->setDisabled(true);
+            auto geom = button->geometry();
+            auto* scrollBar = dynamic_cast<QScrollBar*>(mSpellWidget->scrollArea->horizontalScrollBar());
+            mSpellWidget->rightPushButton->setEnabled(scrollBar->value() < scrollBar->maximum());
             return;
         }
+        mSpellcheckIds.takeFirst();
+        mSpellcheckPosition = 0;
     }
     doSpellcheckDone();
+}
+
+void Main::doSpellcheckRight() {
+    auto* scrollArea = mSpellWidget->scrollArea;
+    auto* scrollBar = scrollArea->horizontalScrollBar();
+    auto* rightMost = dynamic_cast<QPushButton*>(mSpellWidget->scrollAreaWidgetContents->children().last());
+    int newPos = scrollBar->value() + rightMost->geometry().width() + 4;
+    if (newPos >= scrollBar->maximum()) newPos = scrollBar->maximum();
+    scrollBar->setValue(newPos);
+    mSpellWidget->rightPushButton->setEnabled(scrollBar->value() < scrollBar->maximum());
+    mSpellWidget->leftPushButton->setEnabled(true);
 }
 
 void Main::doStop(bool stopped) {
@@ -1132,6 +1204,17 @@ void Main::doStop(bool stopped) {
     } else setPosition(mSavedCursor.position());
     mStopButton->setVisible(false);
     if (!stopped) mSpeech.stop();
+}
+
+void Main::doSuggestion(const QString& from, const QString& to) {
+    QString toStr = to.toHtmlEscaped();
+    QString fromStr = from.toHtmlEscaped();
+    Item& item = mNovel.findItem(mCurrentNode);
+    QString html = item.html().replace(fromStr, toStr);
+    item.setHtml(html);
+    mSpellcheckPosition = mSpellcheckWord.mAt;
+    changed();
+    doSpellcheckNext();
 }
 
 void Main::doTextChanged() {
@@ -1454,11 +1537,13 @@ void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     for (int i = 0; i < item->childCount(); ++i) mapTree(byId, item->child(i));
 }
 
-Main::WordPos Main::nextWord(const QString& str, qlonglong pos = 0) {
+Main::WordPos Main::nextWord(const QString& str, qlonglong pos) {
     pos = skipSpaces(str, pos);
     qlonglong start = pos;
     while (pos < str.size() && !str[pos].isSpace()) ++pos;
-    return { str.mid(pos, pos - start), start, pos };
+    bool uppercase = false;
+    if (start != pos) uppercase = str.mid(pos, pos - start)[0].isUpper();
+    return { str.mid(pos, pos - start), start, pos, uppercase };
 }
 
 bool Main::nothingAbove() {
@@ -1751,6 +1836,10 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
         arr.append(obj);
     }
     extra["Images"] = arr;
+    StringList dictionary = mSpelling.words();
+    Json5Array words;
+    for (const auto& word: dictionary) words.append(word);
+    extra["Dictionary"] = words;
     mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
@@ -1763,6 +1852,24 @@ TreeNode Main::saveTree(QTreeWidgetItem* node) {
     TreeNode part(node->data(0, Qt::UserRole).toLongLong());
     for (auto i = 0; i < node->childCount(); ++i) part.addBranch(saveTree(node->child(i)));
     return part;
+}
+
+QSize Main::scrollBarSize(QScrollBar* bar) {
+    QStyleOptionSlider opt;
+    opt.initFrom(bar);
+    opt.orientation = bar->orientation();
+    opt.minimum = bar->minimum();
+    opt.maximum = bar->maximum();
+    opt.sliderPosition = bar->sliderPosition();
+    opt.sliderValue = bar->value();
+    opt.pageStep = bar->pageStep();
+    opt.singleStep = bar->singleStep();
+    opt.upsideDown = false;
+    if (bar->orientation() == Qt::Horizontal) opt.state |= QStyle::State_Horizontal;
+
+    QRect handleRect = bar->style()->subControlRect(QStyle::CC_ScrollBar, &opt, QStyle::SC_ScrollBarSlider, bar);
+
+    return { handleRect.width(), handleRect.height() };
 }
 
 void Main::setHtml(const QString& html) {
@@ -2224,25 +2331,30 @@ void Main::setupConnections() {
     buttonGroup->addButton(mFindWidget->thisItemAndChildItemsRadioButton);
     connect(buttonGroup, &QButtonGroup::buttonClicked, this, &Main::findReplace);
 
-    connect(mFindWidget->replaceLineEdit, &QLineEdit::textEdited, this, &Main::replaceChanged);
-    QShortcut* replaceShortcut = new QShortcut(QKeySequence("Ctrl+R"), this);
-    connect(replaceShortcut,                &QShortcut::activated, this, &Main::replace);
-    connect(mFindWidget->replacePushButton, &QPushButton::toggled, this, &Main::replace);
+    QShortcut* replaceShortcut =    new QShortcut(QKeySequence("Ctrl+R"), this);
     QShortcut* replaceAllShortcut = new QShortcut(QKeySequence("Ctrl+Shift+R"), this);
-    connect(replaceAllShortcut,                &QShortcut::activated, this, &Main::replaceAll);
-    connect(mFindWidget->replaceAllPushButton, &QPushButton::toggled, this, &Main::replaceAll);
-    QShortcut* findDoneShortcut = new QShortcut(QKeySequence("Esc"), this);
-    connect(findDoneShortcut, &QShortcut::activated, this, &Main::barDone);
+    QShortcut* findDoneShortcut =   new QShortcut(QKeySequence("Esc"), this);
+    connect(mFindWidget->replaceLineEdit,      &QLineEdit::textEdited, this, &Main::replaceChanged);
+    connect(replaceShortcut,                   &QShortcut::activated,  this, &Main::replace);
+    connect(mFindWidget->replacePushButton,    &QPushButton::toggled,  this, &Main::replace);
+    connect(replaceAllShortcut,                &QShortcut::activated,  this, &Main::replaceAll);
+    connect(mFindWidget->replaceAllPushButton, &QPushButton::toggled,  this, &Main::replaceAll);
+    connect(findDoneShortcut,                  &QShortcut::activated,  this, &Main::barDone);
 
     mSpellcheck = new QWidget();
     mSpellWidget = new Ui_SpellWidget();
     mSpellWidget->setupUi(mSpellcheck);
+    auto* area = mSpellWidget->scrollAreaWidgetContents;
+    auto *layout = new QGridLayout(area);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
     mSpellcheck->hide();
     statusBar()->addPermanentWidget(mSpellcheck);
-    connect(mSpellWidget->stopPushButton, &QPushButton::toggled, this, &Main::spellCheckDone);
 
-    // make connections
-    connect(mSpellWidget->stopPushButton, &QPushButton::toggled, this, &Main::spellCheckDone);
+    connect(mSpellWidget->stopPushButton,  &QPushButton::clicked, this, &Main::spellcheckDone);
+    connect(mSpellWidget->nextPushButton,  &QPushButton::clicked, this, &Main::spellcheckNext);
+    connect(mSpellWidget->leftPushButton,  &QPushButton::clicked, this, &Main::scrollSpellcheckLeft);
+    connect(mSpellWidget->rightPushButton, &QPushButton::clicked, this, &Main::scrollSpellcheckRight);
 
     QLineEdit *commandLine = new QLineEdit;
     commandLine->setPlaceholderText("Type a command...");

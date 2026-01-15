@@ -102,6 +102,7 @@ qt_add_executable(TextSmith2
     RtfExporter.h RtfExporter.cpp
     EasySpelling.h EasySpelling.cpp
     SpellCheckDialog.ui
+    dict.cpp 5th.cpp 5th.h
 
 )
 
