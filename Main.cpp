@@ -2399,6 +2399,52 @@ void Main::setupConnections() {
             });
 }
 
+void Main::setupFifth() {
+    mVm = new fifth::vm;
+    if (!mVm) return;
+
+    mVm->addBuiltin("exit",   [this](fifth::vm*) { doExit(); });
+    mVm->addBuiltin("new",    [this](fifth::vm*) { doNew(); });
+    mVm->addBuiltin("open",   [this](fifth::vm*) { doSave(); });
+    mVm->addBuiltin("print",  [this](fifth::vm*) { doPrint(); });
+    mVm->addBuiltin("save",   [this](fifth::vm*) { doSave(); });
+    mVm->addBuiltin("saveAs", [this](fifth::vm*) { doSaveAs(); });
+
+    mVm->addBuiltin("bold",         [this](fifth::vm*) { doBold(); });
+    mVm->addBuiltin("center",       [this](fifth::vm*) { doCenterJustify(); });
+    mVm->addBuiltin("copy",         [this](fifth::vm*) { doCopy(); });
+    mVm->addBuiltin("cut",          [this](fifth::vm*) { doCut(); });
+    mVm->addBuiltin("findnext",     [this](fifth::vm*) { doFindNext(); });
+    mVm->addBuiltin("findreplace",  [this](fifth::vm*) { doFindReplace(); });
+    mVm->addBuiltin("fulljustify",  [this](fifth::vm*) { doFullJustify(); });
+    mVm->addBuiltin("indent",       [this](fifth::vm*) { doIndent(); });
+    mVm->addBuiltin("italic",       [this](fifth::vm*) { doItalic(); });
+    mVm->addBuiltin("leftjustify",  [this](fifth::vm*) { doLeftJustify(); });
+    mVm->addBuiltin("lowercase",    [this](fifth::vm*) { doLowercase(); });
+    mVm->addBuiltin("outdent",      [this](fifth::vm*) { doOutdent(); });
+    mVm->addBuiltin("paste",        [this](fifth::vm*) { doPaste(); });
+    mVm->addBuiltin("preferences",  [this](fifth::vm*) { doPreferences(); });
+    mVm->addBuiltin("redo",         [this](fifth::vm*) { doRedo(); });
+    mVm->addBuiltin("rightjustify", [this](fifth::vm*) { doRightJustify(); });
+    mVm->addBuiltin("underline",    [this](fifth::vm*) { doUnderline(); });
+    mVm->addBuiltin("undo",         [this](fifth::vm*) { doUndo(); });
+    mVm->addBuiltin("uppercase",    [this](fifth::vm*) { doUppercase(); });
+
+    mVm->addBuiltin("additem",   [this](fifth::vm*) { doAddItem(); });
+    mVm->addBuiltin("claseall",  [this](fifth::vm*) { doCloseAll(); });
+    mVm->addBuiltin("edititem",  [this](fifth::vm*) { doEditItem(); });
+    mVm->addBuiltin("movedown",  [this](fifth::vm*) { doMoveDown(); });
+    mVm->addBuiltin("moveout",   [this](fifth::vm*) { doMoveOut(); });
+    mVm->addBuiltin("moveup",    [this](fifth::vm*) { doMoveUp(); });
+    mVm->addBuiltin("openall",   [this](fifth::vm*) { doOpenAll(); });
+    mVm->addBuiltin("removeall", [this](fifth::vm*) { doRemoveItem(); });
+
+    mVm->addBuiltin("fullscreen", [this](fifth::vm*) { doFullScreen(); });
+    mVm->addBuiltin("readtome",   [this](fifth::vm*) { doReadToMe(); });
+    mVm->addBuiltin("spellcheck", [this](fifth::vm*) { doSpellcheck(); });
+    mVm->addBuiltin("wordcount",  [this](fifth::vm*) { doWordCount(); });
+}
+
 void Main::setupIcons() {
     mIcons["newItemToolButton"] =        ":/icon/newItem.ico";
     mIcons["deleteItemToolButton"] =     ":/icon/deleteItem.ico";

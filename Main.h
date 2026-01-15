@@ -12,6 +12,7 @@
 #include <Message.h>
 #include <StringList.h>
 
+#include "5th.h"
 #include "EasySpelling.h"
 #include "Novel.h"
 #include "Preferences.h"
@@ -38,6 +39,9 @@ class QTextDocument;
 class QTreeWidgetItem;
 class Ui_SpellWidget;
 class Ui_Widget;
+namespace fifth {
+class vm;
+}
 
 class Main: public QMainWindow {
     Q_OBJECT
@@ -110,13 +114,15 @@ private:
     QString               mTextToSpeak;
     QTimer                mTimer;
     Ui::Main*             mUi { nullptr };
+    fifth::vm*            mVm { nullptr };
     WordCounts            mWordCount;
 
     static Main* sMain;
 
-    void changed()      { mNovel.change(); }
-    void clearChanged() { mNovel.noChanges(); }
-    void doNothing()    { }
+    void       changed()      { mNovel.change(); }
+    void       clearChanged() { mNovel.noChanges(); }
+    void       doNothing()    { }
+    fifth::vm* vm()           { return mVm; }
 
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -212,6 +218,7 @@ private:
     void      setPosition(qlonglong pos);
     void      setupActions();
     void      setupConnections();
+    void      setupFifth();
     void      setupIcons();
     void      setupTabOrder();
     qlonglong skipSpaces(const QString& str, qlonglong pos);;

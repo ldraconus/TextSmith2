@@ -12,8 +12,6 @@
 #include <QDebug>
 #include <QString>
 
-#include <gsl/gsl>
-
 // Choose one or the other if you want debugging
 // #define DBG_FILE
 #define DBG_OUTPUT
@@ -446,7 +444,7 @@ class vm {
 #ifdef QT_DEBUG
 #ifdef DBG_FILE
 inline void DBG_VAR(const QString& n, const QString& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s: %s\n", n.toStdString().c_str(), x.toStdString().c_str()); // NOLINT
     fclose(fp);                                                                // NOLINT
@@ -454,21 +452,21 @@ inline void DBG_VAR(const QString& n, const QString& x) {
 
 template <typename T>
 void DBG_VAR(const QString& n, const T& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp,"%s: %s\n", n.toStdString().c_str(), std::to_string(x).c_str()); // NOLINT
     fclose(fp);                                                                 // NOLINT
 }
 
 inline void DBG_MSG(const char* x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s\n", x);  // NOLINT
     fclose(fp);              // NOLINT
 }
 
 inline void DBG_MSG(const QString& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s\n", x.toStdString().c_str()); // NOLINT
     fclose(fp);                                   // NOLINT
@@ -476,14 +474,14 @@ inline void DBG_MSG(const QString& x) {
 
 template <typename T>
 void DBG_MSG(const T& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s\n", std::to_string(x).c_str()); // NOLINT
     fclose(fp);                                     // NOLINT
 }
 
 inline void DBG_VAL(const QString& n, const QString& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s: %s\n", n.toStdString().c_str(), x.toStdString().c_str());  // NOLINT
     fclose(fp);                                                                 // NOLINT
@@ -491,7 +489,7 @@ inline void DBG_VAL(const QString& n, const QString& x) {
 
 template <typename T>
 void DBG_VAL(const QString& n, const T& x) {
-    gsl::owner<FILE*> fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
+    FILE* fp = fopen("C:\\Users\\chris\\dbg.txt", "a");
     if (fp == nullptr) return;
     fprintf(fp, "%s: %s\n", n.toStdString().c_str(), x.asString().toStdString().c_str()); // NOLINT
     fclose(fp);                                                                           // NOLINT
