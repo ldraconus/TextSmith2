@@ -1,13 +1,5 @@
-[ ] Fix export issues
-[ ] - Rewrite PdfExporter to used a Vanilla.PDF
-[ ] - Rewrite HTMLExporter to do the concat better, and add the covers properly.
-[ ]   - go through tthe thml manually and make a giant html file myself. After looking at the generated html,
-        it should be simply a matter of looking for the '<p' tags in the lines of the store html.
-[ ]   - this should auto-fix the markdown and text exporters as well.
-[ ] Typewriter sounds
-[ ] Spellcheck
+[/] Spellcheck
 [ ] - add custom words per novel and global
-[ ] Port my code from SpellBook for parsing HTML and modify it to work with Qt HTML, use it in Print and PDF Export
 [ ] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
 [ ] Add Imports:
 [ ] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
@@ -16,6 +8,12 @@
 [ ] Add pause/play handling to speech
 [ ] Integrate 5th into the program for scripting
 [ ] Add a hollywood script writing display mode
+[X] Fix export issues
+[X] - Rewrite HTMLExporter to do the concat better, and add the covers properly.
+[X]   - go through tthe html manually and make a giant html file myself. After looking at the generated html,
+        it should be simply a matter of looking for the '<p' tags in the lines of the store html.
+[X]   - this should auto-fix the markdown and text exporters as well.
+[X] Typewriter sounds
 [X] Convert .pro to cmakefile
 [X] Rewrite print to work with just my way
 [X] Print
@@ -54,6 +52,10 @@
 [X] Implement tree moving (tool/menu)
 [X] prepare menus to disable actions that can't be performed, make sure the do's follow this.
 [X] Fix fullscreen to better follow the preferences but still look like a page of paper
+
+
+rogelio.sanchez@nymanturkish.com
+Need last date worked, exactly.
 
 
 Custom Print Dialog:
@@ -105,227 +107,6 @@ private:
 
 CustomPrintPreviewDialog dlg(&printer);
 dlg.exec();
-
-
-Typewriter sounds:
-
-🎹 The core idea: preload + polyphony + fire‑and‑forget
-To get instant, typewriter‑like feedback, you need three things:
-1. Preload all sounds into memory
-Never load from disk on keypress.
-Never recreate a sound object on keypress.
-2. Use multiple sound channels (polyphony)
-A single  cannot play overlapping sounds.
-If you hit keys fast, the sound will cut off.
-Solution: a pool of sound players.
-3. Trigger sounds on the keypress event, not textChanged
- fires after layout, undo stack, formatting, etc.
-That’s too late.
-Use .
-
-🔥 The correct Qt class: QMediaPlayer + QAudioOutput (NOT QSoundEffect)
- is simple but has two fatal flaws for your use case:
-• 	It has a built‑in ~20–40ms latency on some platforms
-• 	It cannot play the same sound twice simultaneously
- with a preloaded buffer is far more responsive and supports polyphony.
-
-🧠 Architecture that will never lag
-1. Create a SoundPool class
-• 	Preload each sound into memory
-• 	Create N players per sound (e.g., 4–8)
-• 	Round‑robin through them on each trigger
-• 	No allocations, no disk I/O, no blocking
-2. Hook into your full‑screen editor’s keyPressEvent
-• 	Detect normal keys → “whack”
-• 	Detect space → “thunk”
-• 	Detect return → “roll + clunk”
-• 	Detect margin wrap → “ding + roll + clunk”
-Margin wrap detection is easy because you already have your custom layout engine.
-
-🎯 Timing the “ding” on margin wrap
-You want the classic typewriter behavior:
-• 	As the carriage reaches the right margin → ding
-• 	On return → roll + clunk
-You already know the cursor position and the line width from your layout engine, so:
-
-Then in Return:
-
-You can even stagger them by a few milliseconds if you want realism.
-
-🧩 Handling fast typists (the real challenge)
-A fast typist might generate:
-• 	10–15 keypresses per second
-• 	overlapping sounds
-• 	repeated sounds of the same type
-Your sound pool solves this:
-• 	Each sound has multiple players
-• 	If one is busy, the next one fires instantly
-• 	No waiting, no cutting off
-This is exactly how games handle gunshots, footsteps, etc.
-
-🎧 Optional: add a tiny random pitch variation
-This is how you avoid “machine‑gun sameness”:
-• 	±3% pitch variation per keypress
-• 	Makes it feel organic
-• 	Writers love it
-Qt doesn’t expose pitch directly, but you can cheat by:
-• 	Pre‑rendering 3–5 variants of each sound
-• 	Randomly selecting one from the pool
-
-🛠 Putting it all together
-Here’s the flow inside your full‑screen editor:
-*keyPressEvent(QKeyEvent e)
-• 	If  is a printable character →
-• 	If space →
-• 	If return →
-•
-•
-• 	After inserting text, check if cursor wrapped →
-Everything is instant because:
-• 	All sounds are preloaded
-• 	All players are pre‑allocated
-• 	No blocking
-• 	No disk access
-• 	No UI thread stalls
-
-🎉 The result
-You get:
-• 	Zero‑lag key sounds
-• 	Overlapping audio
-• 	Authentic typewriter behavior
-• 	Margin ding
-• 	Return clunk
-• 	Space thunk
-• 	A writing environment that feels tactile and alive
-And because it’s optional, writers who want silence can keep silence.
-
-[SoundPool.h]
-#pragma once
-#include <QObject>
-#include <QMediaPlayer>
-#include <QAudioOutput>
-#include <QVector>
-#include <QUrl>
-#include <memory>
-
-class SoundPool : public QObject
-{
-    Q_OBJECT
-public:
-    explicit SoundPool(QObject* parent = nullptr);
-
-    enum class Sound {
-        KeyWhack,
-        SpaceThunk,
-        ReturnRoll,
-        ReturnClunk,
-        MarginDing
-    };
-
-    // Preload all sounds
-    void load(Sound sound, const QUrl& url, int voices = 4);
-
-    // Play instantly (no lag, no waiting)
-    void play(Sound sound);
-
-private:
-    struct Voice {
-        std::unique_ptr<QMediaPlayer> player;
-        std::unique_ptr<QAudioOutput> output;
-    };
-
-    struct Bank {
-        QVector<Voice> voices;
-        int index = 0; // round-robin
-    };
-
-    QHash<Sound, Bank> m_banks;
-};
-
-[SoundPool.cpp]
-#include "SoundPool.h"
-
-SoundPool::SoundPool(QObject* parent)
-    : QObject(parent)
-{
-}
-
-void SoundPool::load(Sound sound, const QUrl& url, int voices)
-{
-    Bank bank;
-
-    for (int i = 0; i < voices; ++i) {
-        Voice v;
-        v.output = std::make_unique<QAudioOutput>();
-        v.player = std::make_unique<QMediaPlayer>();
-
-        v.player->setAudioOutput(v.output.get());
-        v.player->setSource(url);
-
-        // Pre-buffer the audio
-        v.player->setLoops(1);
-        v.output->setVolume(1.0);
-
-        bank.voices.push_back(std::move(v));
-    }
-
-    m_banks.insert(sound, std::move(bank));
-}
-
-void SoundPool::play(Sound sound)
-{
-    if (!m_banks.contains(sound))
-        return;
-
-    Bank& bank = m_banks[sound];
-
-    Voice& v = bank.voices[bank.index];
-    bank.index = (bank.index + 1) % bank.voices.size();
-
-    // Restart from beginning
-    v.player->stop();
-    v.player->setPosition(0);
-    v.player->play();
-}
-
-[in main]
-soundPool = new SoundPool(this);
-
-soundPool->load(SoundPool::Sound::KeyWhack,    QUrl("qrc:/sounds/whack.wav"));
-soundPool->load(SoundPool::Sound::SpaceThunk,  QUrl("qrc:/sounds/thunk.wav"));
-soundPool->load(SoundPool::Sound::ReturnRoll,  QUrl("qrc:/sounds/roll.wav"));
-soundPool->load(SoundPool::Sound::ReturnClunk, QUrl("qrc:/sounds/clunk.wav"));
-soundPool->load(SoundPool::Sound::MarginDing,  QUrl("qrc:/sounds/ding.wav"));
-
-[on FullScreenEditor keypress]
-void FullScreenEditor::keyPressEvent(QKeyEvent* e)
-{
-    switch (e->key()) {
-    case Qt::Key_Space:
-        soundPool->play(SoundPool::Sound::SpaceThunk);
-        break;
-
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-        soundPool->play(SoundPool::Sound::ReturnRoll);
-
-        QTimer::singleShot(80, this, [this]() {
-            soundPool->play(SoundPool::Sound::ReturnClunk);
-        });
-        break;
-
-    default:
-        if (!e->text().isEmpty() && !e->text().at(0).isSpace())
-            soundPool->play(SoundPool::Sound::KeyWhack);
-        break;
-    }
-
-    QTextEdit::keyPressEvent(e);
-
-    // Margin wrap detection
-    if (cursorRect().right() >= wrapMarginPx)
-        soundPool->play(SoundPool::Sound::MarginDing);
-}
 
 
 Scripting ideas:

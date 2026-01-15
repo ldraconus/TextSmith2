@@ -7,11 +7,12 @@
 #include "Novel.h"
 
 struct ExportMetadataField {
-    QString key;          // "title", "author", "language"
-    QString label;        // "Book Title", "Author Name"
-    QString defaultValue; // optional
-    bool    required = false;
-    QString value { "" };
+    QString                     key;          // "title", "author", "language"
+    QString                     label;        // "Book Title", "Author Name"
+    QString                     defaultValue; // optional
+    bool                        required   { false };
+    std::function<StringList()> getChoices { nullptr };
+    QString                     value      { "" };
 };
 
 class ExporterBase {

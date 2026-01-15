@@ -12,6 +12,7 @@
 #include <Message.h>
 #include <StringList.h>
 
+#include "EasySpelling.h"
 #include "Novel.h"
 #include "Preferences.h"
 #include "Printer.h"
@@ -31,9 +32,11 @@ namespace Ui {
 QT_END_NAMESPACE
 
 class QCompleter;
+class QPdfWriter;
 class QPrinter;
 class QTextDocument;
 class QTreeWidgetItem;
+class Ui_SpellWidget;
 class Ui_Widget;
 
 class Main: public QMainWindow {
@@ -82,13 +85,18 @@ private:
     qlonglong             mPosition;
     Printer*              mPrinter { nullptr };
     std::atomic<bool>     mSaving { false };
+    EasySpelling          mSpelling;
+    Ui_SpellWidget*       mSpellWidget { nullptr };
+    QWidget*              mSpellcheck { nullptr };
     Map<qlonglong, bool>  mState;
     bool                  mSpeechAvailable { false };
     Preferences           mPrefs;
     bool                  mPrefsLoaded { false };
     QTextCursor           mSavedCursor;
     SearchCore*           mSearch { nullptr };
+    SoundPool             mSoundPool;
     Speech                mSpeech;
+    QList<qlonglong>      mSpellcheckIds;
     QToolButton*          mStopButton { nullptr };
     QString               mTextToSpeak;
     QTimer                mTimer;
@@ -97,9 +105,9 @@ private:
 
     static Main* sMain;
 
-    void    changed()      { mNovel.change(); }
-    void    clearChanged() { mNovel.noChanges(); }
-    void    doNothing()    { }
+    void changed()      { mNovel.change(); }
+    void clearChanged() { mNovel.noChanges(); }
+    void doNothing()    { }
 
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -152,6 +160,9 @@ private:
     void doRightJustify();
     void doSave();
     bool doSaveAs();
+    void doSpellcheck();
+    void doSpellcheckDone();
+    void doSpellcheckNext();
     void doStop(bool stopped = false);
     void doTextChanged();
     void doUnderline();
@@ -161,51 +172,53 @@ private:
 
     static constexpr bool NoUi = true;
 
-    void               buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
-    void               buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
-    bool               canPasteMimeData(const QMimeData* mimeData);
-    QString            checked(const QString& path);
-    void               copyTreeItem();
-    StringList         createParagraphs(Item& item);
-    void               cutTreeItem();
-    QString            findKey(QString& used, const QString& name, bool secondPass = false);
-    void               fitWindow();
-    int                handleCover(Item& item,
-                                   int pageNo,
-                                   bool startingPage,
-                                   QSizeF& pageSize,
-                                   QSizeF& inch,
-                                   QPainter& painter,
-                                   QPrinter* printer);
-    void               justifyButtons();
-    void               mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
-    bool               nothingAbove();
-    bool               nothingBelow();
-    QList<Words::Word> paragraphWords(const QString& paragrapth);
-    bool               parentIsRoot();
-    void               pasteTreeItem();
-    bool               receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
-    void               registerImages(const QString& html, QTextDocument* doc);
-    void               replaceText(QTextCursor cursor, const QString& text);
-    void               save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
-    TreeNode           saveTree(QTreeWidgetItem* node);
-    void               setHtml(const QString& html);
-    void               setIcon(QToolButton* button, bool isChecked);
-    void               setMenu(QAction* button, bool isChecked);
-    void               setPosition(qlonglong pos);
-    void               setupActions();
-    void               setupConnections();
-    void               setupIcons();
-    void               setupTabOrder();
-    void               update();
-    void               updateFromPrefs();
-    void               updateHtml();
-    void               workTree(QTreeWidgetItem* item, bool expand);
+    struct WordPos {
+        QString   mWord;
+        qlonglong mAt;
+        qlonglong mNext;
+    };
+
+    void      buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
+    void      buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
+    bool      canPasteMimeData(const QMimeData* mimeData);
+    QString   checked(const QString& path);
+    void      copyTreeItem();
+    void      cutTreeItem();
+    QString   findKey(QString& used, const QString& name, bool secondPass = false);
+    void      fitWindow();
+    void      justifyButtons();
+    void      mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
+    WordPos   nextWord(const QString& str, qlonglong pos = 0);
+    bool      nothingAbove();
+    bool      nothingBelow();
+    bool      parentIsRoot();
+    void      pasteTreeItem();
+    bool      receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
+    void      registerImages(const QString& html, QTextDocument* doc);
+    void      replaceText(QTextCursor cursor, const QString& text);
+    void      save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
+    TreeNode  saveTree(QTreeWidgetItem* node);
+    void      setHtml(const QString& html);
+    void      setIcon(QToolButton* button, bool isChecked);
+    void      setMenu(QAction* button, bool isChecked);
+    void      setPosition(qlonglong pos);
+    void      setupActions();
+    void      setupConnections();
+    void      setupIcons();
+    void      setupTabOrder();
+    qlonglong skipSpaces(const QString& str, qlonglong pos);;
+    void      update();
+    void      updateFromPrefs();
+    void      updateHtml();
+    void      workTree(QTreeWidgetItem* item, bool expand);
 
 
 public:
     Main(QApplication* app, QWidget* parent = nullptr);
     ~Main();
+
+    static constexpr bool WithAlignment =    true;
+    static constexpr bool WithoutAlignment = false;
 
     void         busy()                           { QApplication::setOverrideCursor(Qt::WaitCursor); }
     qlonglong    currentNode()                    { return mCurrentNode; }
@@ -219,17 +232,38 @@ public:
     Ui::Main*    ui()                             { return mUi; }
     WordCounts&  wordCount()                      { return mWordCount; }
 
-    void             buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
-    QTreeWidgetItem* buildTreeFromJson(Json5Object& obj);
-    void             changeNovelFont(const QFont& font);
-    QTreeWidgetItem* findItem(QTreeWidgetItem* tree, qlonglong node);
-    void             newPage(QPainter& painter, QPrinter* printer);
-    void             removeEmptyFirstBlock(TextEdit* text);
-    void             setupHtml(TextEdit& text);
-    Json5Object      treeOfItems(QTreeWidgetItem* branch);
-    QList<Item*>     vectorOfItems(QTreeWidgetItem* branch);
-    QList<qlonglong> vectorOfIds(QTreeWidgetItem* branch, const StringList& tags, StartingFlag starting = StartingFlag::Starting);
-    void             wordCounts();
+    void               buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
+    QTreeWidgetItem*   buildTreeFromJson(Json5Object& obj);
+    void               changeNovelFont(const QFont& font);
+    StringList         createParagraphs(Item& item, bool align = WithoutAlignment);
+    QTreeWidgetItem*   findItem(QTreeWidgetItem* tree, qlonglong node);
+    int                handleCover(Item& item,
+                                   int pageNo,
+                                   bool startingPage,
+                                   QSizeF& pageSize,
+                                   QMarginsF& margins,
+                                   QPainter& painter,
+                                   std::function<void()> printer);
+    void               loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
+    void               loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
+    void               newPage(QPainter& painter, std::function<void()> printer);
+    QList<Words::Word> paragraphWords(const QString& paragrapth);
+    void               outputNovel(QList<qlonglong> ids,
+                                   const QString& chapterTag,
+                                   const QString& sceneTag,
+                                   const QString& coverTag,
+                                   QPainter& painter,
+                                   QSizeF pageSize,
+                                   QMarginsF margins,
+                                   std::function<void()> pager);
+    void               removeEmptyFirstBlock(TextEdit* text);
+    void               setupHtml(TextEdit& text);
+    Json5Object        treeOfItems(QTreeWidgetItem* branch);
+    QList<Item*>       vectorOfItems(QTreeWidgetItem* branch);
+    QList<qlonglong>   vectorOfIds(QTreeWidgetItem* branch,
+                                   const StringList& tags,
+                                   StartingFlag starting = StartingFlag::Starting);
+    void               wordCounts();
 
     static Main* ptr() { return sMain; }
     static Main& ref() { return *ptr(); }
@@ -275,6 +309,7 @@ public slots:
 
     void fullScreenAction() { doFullScreen(); }
     void readToMeAction()   { doReadToMe(); }
+    void spellCheck()       { doSpellcheck(); }
     void wordCountAction()  { doWordCount(); }
 
     void aboutToShowFileMenuAction()  { doAboutToShowFileMenu(); }
@@ -294,11 +329,13 @@ public slots:
     void textChangedAction()     { doTextChanged(); }
 
     void findChanged()                                   { doFindChanged(); }
-    void findDone()                                      { doFindDone(); }
+    void barDone()                                       { doFindDone(); doSpellcheckDone(); }
     void highlight(const QString& text, qlonglong start) { doHighlight(text, start); }
     void replace()                                       { doReplace(); }
     void replaceAll()                                    { doReplaceAll(); }
     void replaceChanged()                                { doReplaceChanged(); }
     void stop()                                          { doStop(); }
     void stopped()                                       { doStop(true); }
+
+    void spellCheckDone()                                { doSpellcheckDone(); }
 };

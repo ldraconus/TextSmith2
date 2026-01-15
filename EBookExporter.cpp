@@ -64,14 +64,14 @@ bool EBookExporter::convert() {
     for (auto i = 0; i < urlList.size(); ++i) {
         auto url = urlList[i];
         QByteArray imgData;
-        loadImageBytesFromUrl(url, [&](QByteArray data){ QImage img(data); images[url] = img; });
+        Main::ref().loadImageBytesFromUrl(url, [&](QByteArray data){ QImage img(data); images[url] = img; });
     }
     auto keys = images.keys();
     QByteArray imgData;
     for (auto i = keys.begin(); i != keys.end(); ++i) {
         QImage image = images[*i];
         QString name = i->fileName();
-        loadImageBytes(image, [&](QByteArray data) { imgData = data; });
+        Main::ref().loadImageBytes(image, [&](QByteArray data) { imgData = data; });
         StringList fileParts { name.split(".") };
         fileParts.takeLast();
         name = fileParts.join(".") + ".jpg";
@@ -161,34 +161,6 @@ QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qH
         html = replace(html, "\"" + key, "\"", jpgs[key]);
     }
     return html;
-}
-
-void EBookExporter::loadImageBytes(const QImage& img, std::function<void(QByteArray)> callback) {
-    QByteArray data;
-    QBuffer buffer(&data);
-    buffer.open(QIODevice::WriteOnly);
-    img.save(&buffer, "JPG");
-    callback(data);
-}
-
-void EBookExporter::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback) {
-    if (url.isLocalFile() || url.scheme() == "qrc" || url.scheme().isEmpty()) {
-        // Local file or resource
-        QImage img(url.toLocalFile());
-        loadImageBytes(img, callback);
-        return;
-    }
-
-    // Remote URL
-    auto* nam = new QNetworkAccessManager();
-    QNetworkReply* reply = nam->get(QNetworkRequest(url));
-
-    QObject::connect(reply, &QNetworkReply::finished, [this, reply, callback]() {
-        QByteArray data = reply->readAll();
-        reply->deleteLater();
-        QImage img(data);
-        loadImageBytes(img, callback);
-    });
 }
 
 QString EBookExporter::navPoints() {
@@ -294,7 +266,7 @@ bool EBookExporter::writeContainerXml() {
 bool EBookExporter::writeCover() {
     if (!mCover.isEmpty()) {
         QByteArray data;
-        loadImageBytesFromUrl({ mCover }, [&](QByteArray qBA) { data = qBA; });
+        Main::ref().loadImageBytesFromUrl({ mCover }, [&](QByteArray qBA) { data = qBA; });
         return addEntry("OEBPS/images/Cover.jpg", data) &&
                addEntry("OEBPS/Cover.xhtml", QString("") +
                         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"

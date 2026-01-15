@@ -6,28 +6,34 @@
 #include <QUrl>
 
 #include "Main.h"
-#include "ui_Main.h"
+
+void HtmlExporter::extracted(QString& str, const QString& dir, QMap<QUrl, QImage>& images) {
+    auto keys = images.keys();
+    for (auto i = 0; i < keys.size(); ++i) {
+        const auto& key = keys[i];
+        const auto& image = images[key];
+        QString name = key.fileName();
+        QString newPath = dir + "/internal_" + name + ".png";
+        image.save(newPath, "PNG");
+        QString oldUrl = key.toString();
+        str = str.replace(oldUrl, newPath);
+    }
+}
 
 bool HtmlExporter::convert() {
-    if (mFilename.isEmpty()) return false;
+    if (mFilename.isEmpty())
+        return false;
 
-    TextEdit* doc = Main::ref().ui()->textEdit;
-    QString preHtml = doc->toHtml();
-    QTextDocument* preDoc = doc->document();
-    QTextDocument* tempDoc = new QTextDocument();
-    tempDoc->setParent(nullptr);
-    doc->setDocument(tempDoc);
-    doc->registerInternalImages();
     const auto& defaults = collectMetadataDefaults();
     QString cover = fetchValue(1, defaults, "cover");
-    bool result = convert(mNovel, mItemIds, cover, *doc, { mChapterTag, mSceneTag, mCoverTag });
-
+    QList<QString> tags = { mChapterTag, mSceneTag, (cover.isEmpty()) ? mCoverTag : "" };
+    QString html = convert(mNovel, mItemIds, cover, tags);
     QString title = fetchValue(0, defaults, "title");
-
-    QString html = doc->toHtml();
     if (!title.isEmpty()) {
-        if (html.contains("<head>")) html.replace("<head>", QString("<head><title>%1</title>").arg(title.toHtmlEscaped()));
-        else html.prepend(QString("<title>%1</title>").arg(title.toHtmlEscaped()));
+        if (html.contains("<head>"))
+            html.replace("<head>", QString("<head><title>%1</title>").arg(title.toHtmlEscaped()));
+        else
+            html.prepend(QString("<title>%1</title>").arg(title.toHtmlEscaped()));
     }
 
     // create the <path>/<basename>
@@ -35,142 +41,84 @@ bool HtmlExporter::convert() {
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
-    QString ext =  "." + info.completeSuffix();
+    QString ext = "." + info.completeSuffix();
     Main::ref().setDocDir(path);
 
     QString dir = path + "/" + base;
     QDir work;
     work.mkpath(dir);
 
-    // save all of the internal files as <path>/<basename>/internal_<url_filename>.png and re-write html
-    auto keys = mImages.keys();
-    for (auto i = 0; i < keys.size(); ++i) {
-        const auto& key = keys[i];
-        const auto& image = mImages[key];
-        QString name = key.fileName();
-        QString newPath = dir + "/internal_" + name + ".png";
-        image.save(newPath, "PNG");
-        QString oldUrl = key.toString();
-        html = html.replace(oldUrl, newPath);
-    }
-    doc->setDocument(preDoc);
-    doc->setHtml(preHtml);
+    // save all of the internal files as
+    // <path>/<basename>/internal_<url_filename>.png and re-write html
+    extracted(html, dir, mImages);
 
     QFile file(dir + "/index" + ext);
-    if (!file.open(QIODeviceBase::WriteOnly)) return false;
-    return result && (file.write(html.toUtf8()) != -1);
+    if (!file.open(QIODeviceBase::WriteOnly))
+        return false;
+    return file.write(html.toUtf8()) != -1;
 }
 
-void HtmlExporter::pageBreak(QTextDocument* doc, const QString& html) {
-    QTextCursor cursor(doc);
-    cursor.movePosition(QTextCursor::End);
-
-    int startPos = cursor.position();
-
-    // Insert the HTML
-    cursor.insertHtml(html);
-
-    // Find the first block that belongs to the inserted HTML
-    QTextBlock block = doc->findBlock(startPos);
-    if (!block.isValid())
-        return; // nothing inserted, bail
-
-    // In many cases, the HTML starts in this block;
-    // in others, it may be the next one. You can adjust if needed.
-    QTextCursor blockCursor(block);
-    QTextBlockFormat fmt = blockCursor.blockFormat();
-    fmt.setPageBreakPolicy(QTextFormat::PageBreak_AlwaysBefore);
-    blockCursor.setBlockFormat(fmt);
-}
-
-bool HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, TextEdit& edit,
-                           const QList<QString>& tag) {
-    if (!cover.isEmpty()) {
-        auto cursor = edit.textCursor();
-        cursor.movePosition(QTextCursor::End);
-        cursor.insertHtml(generateCoverHtml(cover));
+QString HtmlExporter::addParagraphs(const QString& html) {
+    QString work = html;
+    auto pos = work.indexOf("<p ");
+    work = work.mid(pos);
+    QString paragraphs;
+    while ((pos = work.indexOf("<p ")) != -1) {
+        auto end = work.indexOf("</p>");
+        auto paragraph = work.mid(pos, end - pos + 4);
+        if (!paragraph.startsWith("<p style=\"-qt-paragraph-type:empty")) {
+            if (!paragraphs.isEmpty()) paragraphs += "\n";
+            paragraphs += paragraph;
+        }
+        work = work.mid(end + 4);
     }
+    return paragraphs;
+}
+
+static constexpr int Chapter = 0;
+static constexpr int Cover   = 2;
+static constexpr int Scene   = 1;
+
+QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, const QList<QString>& tag) {
+    QString html = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+                   "<html>\n"
+                   "    <head>\n"
+                   "        <meta name=\"qrichtext\" content=\"1\" />\n"
+                   "        <meta charset=\"utf-8\" />\n"
+                   "        <style type=\"text/css\">\n"
+                   "            p, li { white-space: pre-wrap; }\n"
+                   "            hr { height: 1px; border-width: 0; }\n"
+                   "            li.unchecked::marker { content: \"\\2610\"; }\n"
+                   "            li.checked::marker { content: \"\\2612\"; }\n"
+                   "            img {\n"
+                   "                margin: 0;\n"
+                   "                padding: 0;\n"
+                   "                background: #000;\n"
+                   "                align-items: center;\n"
+                   "                justify-content: center;\n"
+                   "                max-width: 100%;\n"
+                   "                max-height: 100%;\n"
+                   "                width: auto;\n"
+                   "                height: auto;\n"
+                   "                object-fit: contain;\n"
+                   "                display: block;\n"
+                   "            }\n"
+                   "        </style>\n"
+                   "    </head>\n"
+                   "    <body style=\" font-family:'Segoe UI'; font-size:14pt; font-weight:400; font-style:normal;\">\n";
+    QString final = "    </body>\n"
+                    "</html>";
+    if (!cover.isEmpty()) html += generateImageHtml(cover);
     for (auto& id: ids) {
         Item& item = novel.findItem(id);
-        if (item.hasTag(tag[0])) {
-            pageBreak(edit.document(), item.html());
+        if (item.hasTag(tag[Chapter]) || item.hasTag(tag[Scene]) || item.hasTag(tag[Cover])) {
+            html += "\n" + addParagraphs(item.html());
             continue;
-        } else if (item.hasTag(tag[2])) {
-            QString html = item.html();
-            StringList imgParts { html.split("<img src=\"") };
-            for (auto i = 1; i < imgParts.count(); ++i) {
-                StringList name { imgParts[i].split("\"")};
-                if (name.count() >= 2) {
-                    auto cursor = edit.textCursor();
-                    cursor.movePosition(QTextCursor::End);
-                    cursor.insertHtml(generateCoverHtml(name[0]));
-                    continue;
-                }
-            }
-            if (imgParts.count() > 1) continue;
-        } else if (!item.hasTag(tag[1])) continue;
-        auto cursor = edit.textCursor();
-        cursor.movePosition(QTextCursor::End);
-        cursor.insertHtml(item.html());
+        }
     }
-    return true;
+    return html + final;
 }
 
-bool HtmlExporter::convert(Novel& novel,
-                           QList<qlonglong>& ids,
-                           const QString& cover, QTextDocument& doc,
-                           const QList<QString>& tag) {
-    QTextCursor cursor(&doc);
-    if (!cover.isEmpty()) {
-        cursor.insertHtml(generateCoverHtml(cover));
-        cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor, 0);
-    }
-    for (auto& id: ids) {
-        Item& item = novel.findItem(id);
-        if (item.hasTag(tag[0])) {
-            pageBreak(&doc, item.html());
-            continue;
-        } else if (item.hasTag(tag[2])) {
-            QString html = item.html();
-            StringList imgParts { html.split("<img src=\"") };
-            for (auto i = 1; i < imgParts.count(); ++i) {
-                StringList name { imgParts[i].split("\">")};
-                if (name.count() >= 2) {
-                    cursor.insertHtml(generateCoverHtml(name[0]));
-                    cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor, 0);
-                }
-            }
-            if (imgParts.count() > 1) continue;
-        } else if (!item.hasTag(tag[1])) continue;
-        cursor.insertHtml(item.html());
-        cursor.movePosition(QTextCursor::End, QTextCursor::MoveAnchor, 0);
-    }
-    return true;
-}
-
-QString HtmlExporter::generateCoverHtml(const QString& cover) {
-    return "<!DOCTYPE html>\n"
-           "<html lang=\"en\">\n"
-           "    <head>\n"
-           "        <meta charset=\"utf-8\">\n"
-           "        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-           "        <style>\n"
-           "             html, body {\n"
-           "                 height: 100%;\n"
-           "                 display: flex;\n"
-           "             }\n"
-           "             img {\n"
-           "                 max-width: 100%;\n"
-           "                 max-height: 100%;\n"
-           "                 width: auto;\n"
-           "                 height: auto;\n"
-           "                 object-fit: contain;\n"
-           "                 display: block;\n"
-           "            }\n"
-           "        </style>\n"
-           "    </head>\n"
-           "    <body>\n"
-           "        <img src=\"" + cover + "\" alt=\"Cover\">\n"
-           "    </body>\n"
-           "</html>\n";
+QString HtmlExporter::generateImageHtml(const QString& url) {
+    return "<p><img src=\"" + url + "\" alt=\"Picture\"></p>\n";
 }

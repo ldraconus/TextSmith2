@@ -1,48 +1,36 @@
 #include "MarkdownExporter.h"
 #include "HtmlExporter.h"
-#include "html2md-main/include/html2md.h"
 
 #include <QDir>
 #include <QFileInfo>
 
 #include "Main.h"
-#include "ui_Main.h"
 
-class SwapDoc {
-private:
-    QTextDocument* mDoc;
-    QTextEdit*     mEdit;
-    QTextDocument* mOrigDoc;
-    QString        mOrigHtml;
-
-public:
-    SwapDoc(QTextEdit* edit)
-        : mEdit(edit)
-        , mOrigDoc(edit->document())
-        , mOrigHtml(edit->toHtml()) {
-        mDoc = new QTextDocument();
-        mDoc->setParent(nullptr);
-        edit->setDocument(mDoc);
+QString MarkdownExporter::addParagraphs(const QString& html) {
+    QString work = html;
+    auto pos = work.indexOf("<p ");
+    work = work.mid(pos);
+    QString paragraphs;
+    while ((pos = work.indexOf("<p ")) != -1) {
+        auto end = work.indexOf("</p>");
+        auto paragraph = work.mid(pos + 3, end - pos - 3);
+        if (paragraph.startsWith("style=\"-qt-paragraph-type:empty")) continue;
+        end = paragraph.indexOf(">");
+        if (end == -1) continue;
+        paragraph = paragraph.mid(end + 1);
+        if (!paragraphs.isEmpty()) paragraphs += "\n\n";
+        paragraphs += paragraph;
+        work = work.mid(end + 4);
     }
-    ~SwapDoc() {
-        mEdit->setDocument(mOrigDoc);
-        mEdit->setHtml(mOrigHtml);
-        delete mDoc;
-    }
-
-    QTextDocument* document() { return mDoc; }
-};
+    return paragraphs;
+}
 
 bool MarkdownExporter::convert() {
     if (mFilename.isEmpty()) return false;
 
-    TextEdit* edit = Main::ref().ui()->textEdit;
-    SwapDoc save(edit);
-    edit->registerInternalImages();
     const auto& defaults = collectMetadataDefaults();
     QString cover = fetchValue(0, defaults, "cover");
-    bool result = HtmlExporter::convert(mNovel, mItemIds, cover, *edit, { mChapterTag, mSceneTag, mCoverTag });
-    QString html = edit->toHtml();
+    QString html = HtmlExporter::convert(mNovel, mItemIds, cover, { mChapterTag, mSceneTag, mCoverTag });
 
     // create the <path>/<basename>
     //            <path>/<basename>/index.html
@@ -56,28 +44,91 @@ bool MarkdownExporter::convert() {
     QDir work;
     work.mkpath(dir);
 
-    // save all of the internal files as <path>/<basename>/internal_<url_filename>.png and re-write html
-    auto keys = mImages.keys();
-    for (auto i = 0; i < keys.size(); ++i) {
-        const auto& key = keys[i];
-        const auto& image = mImages[key];
-        QString name = key.fileName();
-        QString newPath = dir + "/internal_" + name + ".png";
-        image.save(newPath, "PNG");
-        QString oldUrl = key.toString();
-        html = html.replace(oldUrl, newPath);
-    }
+    QString md = htmlToMarkdown(html, dir);
+    HtmlExporter::extracted(md, dir, mImages);
 
-    QString md = htmlToMarkdown(html);
     QFile file(dir + "/" + base + ext);
-    if (!file.open(QIODeviceBase::WriteOnly)) return false;
-    return result && (file.write(md.toUtf8()) != -1);
+    if (file.open(QIODeviceBase::WriteOnly)) return file.write(md.toUtf8()) != -1;
+    return false;
 }
 
-QString MarkdownExporter::htmlToMarkdown(const QString& html) {
-    QString md = QString::fromStdString(html2md::Convert(html.toStdString()));
+void MarkdownExporter::convertHex(QString& paragraphs) {
+    qlonglong pos = 0;
+    while ((pos = paragraphs.indexOf("&#x")) != -1) {
+        auto end = paragraphs.indexOf(";", pos);
+        if (end == -1) continue;
+        QString hexStr = paragraphs.mid(pos + 3, end - pos - 3);
+        QString search = paragraphs.mid(pos, end - pos);
+        bool ok = true;
+        int hex = hexStr.toInt(&ok, 16);
+        if (ok) paragraphs.replace(search, QChar(hex));
+    }
+}
+
+void MarkdownExporter::convertDecimal(QString paragraphs)
+{
+    qlonglong pos;
+    while ((pos = paragraphs.indexOf("&#")) != -1) {
+        auto end = paragraphs.indexOf(";", pos);
+        if (end == -1) continue;
+        QString numStr = paragraphs.mid(pos + 2, end - pos - 2);
+        QString search = paragraphs.mid(pos, end - pos);
+        bool ok = true;
+        int num = numStr.toInt(&ok);
+        if (ok) paragraphs.replace(search, QChar(num));
+    }
+}
+
+QString MarkdownExporter::htmlToMarkdown(const QString& html, const QString& dir) {
+    static std::unordered_map<QString, QString> conversions {
+        { "<b>",       { "**", } },
+        { "</b>",      { "**", } },
+        { "<i>",       { "*",  } },
+        { "</i>",      { "*",  } },
+        { "<img src=", { "![](", } },
+        { "\">",       { ")", } },
+        { "&quot;",    { "\"" } },
+        { "&apos;",    { "'" } },
+        { "&nbsp;",    { " " } },
+        { "&emsp;",    { " " } },
+        { "&ensp;",    { " " } },
+        { "&thinsp;",  { " " } },
+        { "&ndash;",   { "-" } },
+        { "&mdash;",   { "-" } },
+        { "&lsquo;",   { "‘" } },
+        { "&rsquo;",   { "’" } },
+        { "&ldquo;",   { "“" } },
+        { "&rdquo;",   { "”" } },
+        { "&hellip;",  { "…" } },
+        { "&copy;",    { "©" } },
+        { "&reg;",     { "®" } },
+        { "&trade;",   { "™" } },
+        { "&euro;",    { "€" } },
+        { "&pound;",   { "£" } },
+        { "&yen;",     { "¥" } },
+        { "&rarr;",    { "→" } },
+        { "&larr;",    { "←" } },
+        { "&uarr;",    { "↑" } },
+        { "&darr;",    { "↓" } },
+    };
+
     const auto& defaults = collectMetadataDefaults();
     QString title = fetchValue(0, defaults, "title");
-    if (!title.isEmpty()) md = "# " + title + "\n" + md;
-    return md;
+    QString paragraphs = addParagraphs(html);
+    if (!title.isEmpty()) paragraphs = "# " + title + "\n" + paragraphs;
+    for (const auto& conversion: conversions) paragraphs.replace(conversion.first, conversion.second, Qt::CaseInsensitive);
+
+    convertHex(paragraphs);
+    convertDecimal(paragraphs);
+
+    paragraphs.replace("&lt;", "<", Qt::CaseInsensitive);
+    paragraphs.replace("&gt;", ">", Qt::CaseInsensitive);
+
+    QString prev;
+    while (paragraphs != prev) {
+        prev = paragraphs;
+        paragraphs.replace("&amp;", "&");
+    }
+
+    return paragraphs;
 }

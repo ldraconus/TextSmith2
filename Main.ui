@@ -726,6 +726,7 @@ QSplitter::handle:hover {
     <addaction name="actionDistraction_Free"/>
     <addaction name="actionRead_To_Me"/>
     <addaction name="actionWord_Count"/>
+    <addaction name="actionSpell_checking"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1129,6 +1130,14 @@ QSplitter::handle:hover {
   <action name="actionExport">
    <property name="text">
     <string>Export</string>
+   </property>
+  </action>
+  <action name="actionSpell_checking">
+   <property name="text">
+    <string>Spell checking</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+V, Alt+S</string>
    </property>
   </action>
  </widget>

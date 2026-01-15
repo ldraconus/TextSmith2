@@ -1,30 +1,35 @@
 #pragma once
-#include <QTextDocument>
-#include <QTextEdit>
+#include <QBuffer>
 #include <QImage>
 #include <QImageReader>
-#include <QBuffer>
-#include <QMimeData>
-#include <QTimer>
 #include <QJsonArray>
-#include <QJsonObject>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QMimeData>
+#include <QTextDocument>
+#include <QTextEdit>
+#include <QTimer>
 
-class TextEdit : public QTextEdit {
+#include "SoundPool.h"
+
+class TextEdit: public QTextEdit {
     Q_OBJECT
+
 public:
     explicit TextEdit(QWidget* parent = nullptr);
 
-    QMap<QUrl, QImage>& internalImages()    { return mOriginals; }
-    QSet<QUrl>&         externalImageUrls() { return mExternalUrls; }
+    QMap<QUrl, QImage>& internalImages()           { return mOriginals; }
+    QSet<QUrl>&         externalImageUrls()        { return mExternalUrls; }
+    void                setSoundPool(SoundPool* s) { mSoundPool = s; }
 
     // Serialization: internal images only
-    void           addInternalImage(const QUrl& url, const QImage& image, bool add = true);
-    void           clearInternalImages();
-    void           registerInternalImages();
-    void           removeInternalImage(const QUrl& url);
-    QJsonArray     serializeExternalImagesToJson();
-    QJsonArray     serializeInternalImagesToJson();
+    void       addInternalImage(const QUrl& url, const QImage& image, bool add = true);
+    void       clearInternalImages();
+    void       registerInternalImages();
+    void       removeInternalImage(const QUrl& url);
+    QJsonArray serializeExternalImagesToJson();
+    QJsonArray serializeInternalImagesToJson();
+    void       setWrapMargin();
 
 protected:
     bool       canInsertFromMimeData(const QMimeData *source) const override;
@@ -32,30 +37,27 @@ protected:
     void       dragEnterEvent(QDragEnterEvent* event) override;
     void       dropEvent(QDropEvent* event) override;
     void       insertFromMimeData(const QMimeData* source) override;
+    void       keyPressEvent(QKeyEvent* key) override;
     void       resizeEvent(QResizeEvent* event) override;
 
 private:
-    QSet<QUrl>         mExternalUrls; // Track external URLs (http/https)
-    QMap<QUrl, QImage> mOriginals;    // Originals for internal images (crisp source of truth)
+    QSet<QUrl>         mExternalUrls;
+    quint64            mIdBase =            0;
+    bool               mInserting =         false;
+    int                mLastViewportWidth = -1;
+    QMap<QUrl, QImage> mOriginals;
+    int                mReentry =           0;
+    bool               mResizing =          false;
+    SoundPool*         mSoundPool =         nullptr;
+    int                mWrapMarginPx =      0;
 
-    // Insertion
+    int  contentMaxWidth() const;
     void insertExternalUrlImage(const QUrl& url);
     void insertInternalImage(const QImage& image);
     void insertLocalImage(const QString& localFilePath);
-
-    // Resizing
-    int  contentMaxWidth() const;
+    QUrl makeInternalUrl();
     void resizeImagesToFit();
     void scheduleResize();
 
-    // Helpers
     static QByteArray imageToPngBytes(const QImage& img);
-    QUrl              makeInternalUrl();
-
-    // Guards and state
-    quint64 mIdBase =            0;
-    bool    mInserting =         false;
-    int     mLastViewportWidth = -1;
-    int     mReentry =           0;
-    bool    mResizing =          false;
 };

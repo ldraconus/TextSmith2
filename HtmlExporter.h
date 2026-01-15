@@ -4,7 +4,6 @@
 
 #include "Exporter.h"
 #include "Novel.h"
-#include "TextEdit.h"
 
 class HtmlExporter: public Exporter<HtmlExporter> {
 private:
@@ -24,10 +23,8 @@ public:
     static QString Extension() { return "html"; }
     static QString Name()      { return "Html"; }
 
-    static bool    convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, TextEdit& doc,
-                        const QList<QString>& tag);
-    static bool    convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, QTextDocument& doc,
-                        const QList<QString>& tag);
-    static QString generateCoverHtml(const QString& cover);
-    static void    pageBreak(QTextDocument* doc, const QString& html);
+    static QString convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, const QList<QString>& tag);
+    static void    extracted(QString& html, const QString& dir, QMap<QUrl, QImage>& images);
+    static QString generateImageHtml(const QString& url);
+    static QString addParagraphs(const QString& html);
 };

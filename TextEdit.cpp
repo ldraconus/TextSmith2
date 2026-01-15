@@ -71,6 +71,78 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
     QTextEdit::insertFromMimeData(source); // non-image content
 }
 
+void TextEdit::keyPressEvent(QKeyEvent* key) {
+    if (mSoundPool) {
+        switch (key->key()) {
+        case Qt::Key_Escape:
+        case Qt::Key_F1:
+        case Qt::Key_F2:
+        case Qt::Key_F3:
+        case Qt::Key_F4:
+        case Qt::Key_F5:
+        case Qt::Key_F6:
+        case Qt::Key_F7:
+        case Qt::Key_F8:
+        case Qt::Key_F9:
+        case Qt::Key_F10:
+        case Qt::Key_F11:
+        case Qt::Key_F12:
+        case Qt::Key_Insert:
+        case Qt::Key_Print:
+        case Qt::Key_ScrollLock:
+        case Qt::Key_Pause:
+            break;
+
+        case Qt::Key_Space:
+        case Qt::Key_Backspace:
+        case Qt::Key_Delete:
+        case Qt::Key_Right:
+        case Qt::Key_Left:
+        case Qt::Key_Tab:
+            mSoundPool->play(SoundPool::Sound::SpaceThunk);
+            break;
+
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+        case Qt::Key_PageDown:
+        case Qt::Key_PageUp:
+            mSoundPool->play(SoundPool::Sound::ReturnRoll);
+            {
+                QRect r = cursorRect();
+                if (r.left() > r.size().width()) mSoundPool->playDelayed(SoundPool::Sound::ReturnClunk, 80);
+            }
+            break;
+
+        case Qt::Key_Home:
+        case Qt::Key_CapsLock:
+            mSoundPool->playDelayed(SoundPool::Sound::ReturnClunk, 80);
+            break;
+
+        case Qt::Key_End:
+            mSoundPool->play(SoundPool::Sound::SpaceThunk);
+            break;
+
+        default:
+            if (!key->text().isEmpty() && !key->text().at(0).isSpace() &&
+                !(key->modifiers() & (Qt::AltModifier |
+                                      Qt::ControlModifier))) mSoundPool->play(SoundPool::Sound::KeyWhack);
+            break;
+        }
+    }
+
+    // Let QTextEdit do its normal behavior
+    QTextEdit::keyPressEvent(key);
+
+    // Margin wrap detection
+    if (mSoundPool) {
+        QRect r = cursorRect();
+        if (r.right() >= mWrapMarginPx) mSoundPool->play(SoundPool::Sound::MarginDing);
+    }
+
+}
+
 void TextEdit::insertLocalImage(const QString& localFilePath) {
     QImageReader reader(localFilePath);
     QImage img = reader.read();
@@ -206,6 +278,8 @@ void TextEdit::resizeImagesToFit() {
         return;
     }
 
+    setWrapMargin();
+
     // Phase 1: collect using block iteration (cursor-free scan)
     struct ImgFrag { int s, e; QUrl url; QSize orig; };
     QVector<ImgFrag> frags;
@@ -322,6 +396,11 @@ QJsonArray TextEdit::serializeInternalImagesToJson() {
         arr.push_back(obj);
     }
     return arr;
+}
+
+void TextEdit::setWrapMargin() {
+    QFontMetrics metrics(document()->defaultFont());
+    mWrapMarginPx = contentMaxWidth() - metrics.averageCharWidth() * 8;
 }
 
 void TextEdit::addInternalImage(const QUrl& url, const QImage& image, bool add) {

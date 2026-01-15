@@ -2,6 +2,7 @@
 #include "ui_ExportDialog.h"
 
 #include <QFileDialog>
+#include <QComboBox>
 
 #include "Main.h"
 #include "Preferences.h"
@@ -64,19 +65,38 @@ QString ExportDialog::getString(QLineEdit* field) const {
 void ExportDialog::loadFields() {
     const auto& defaults = mExporter->collectMetadataDefaults();
     const auto& metaData = mExporter->metadataFields();
-    bool create = mLine.isEmpty();
+    bool create = mWidget.isEmpty();
     QLineEdit* lineEdit;
+    QComboBox* comboBox;
     for (auto [i, meta]: enumerate(metaData)) {
         if (create) {
             auto* label = new QLabel(this);
             label->setText(meta.label);
-            lineEdit = new QLineEdit(this);
-            lineEdit->setObjectName(meta.key);
-            mUi->formLayout->addRow(label, lineEdit);
-            mLine.append(lineEdit);
-        } else lineEdit = mLine[i];
-        lineEdit->setPlaceholderText(defaults[meta.key]);
-        if (!meta.value.isEmpty()) lineEdit->setText(meta.value);
+            if (meta.getChoices != nullptr) {
+                comboBox = new QComboBox(this);
+                comboBox->setObjectName(meta.key);
+                StringList choices = meta.getChoices();
+                choices.insertAt(0, "");
+                comboBox->addItems(choices.toQStringList());
+                mUi->formLayout->addRow(label, comboBox);
+                mWidget.append(comboBox);
+            } else {
+                lineEdit = new QLineEdit(this);
+                lineEdit->setObjectName(meta.key);
+                mUi->formLayout->addRow(label, lineEdit);
+                mWidget.append(lineEdit);
+            }
+        } else {
+            if (meta.getChoices != nullptr) comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
+            else lineEdit = dynamic_cast<QLineEdit*>(mWidget[i]);
+        }
+        if (meta.getChoices != nullptr) {
+            comboBox->setPlaceholderText(defaults[meta.key]);
+            if (!meta.value.isEmpty()) comboBox->setCurrentText(meta.value);
+        } else {
+            lineEdit->setPlaceholderText(defaults[meta.key]);
+            if (!meta.value.isEmpty()) lineEdit->setText(meta.value);
+        }
     }
 }
 
@@ -91,7 +111,13 @@ void ExportDialog::apply() {
     auto& metaData = mExporter->metadataFields();
     int i = 0;
     for (auto& meta: metaData) {
-        if (!mLine[i]->text().isEmpty()) meta.value = mLine[i]->text();
+        if (meta.getChoices != nullptr) {
+            QComboBox* comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
+            if (!comboBox->currentText().isEmpty()) meta.value = comboBox->currentText();
+        } else {
+            QLineEdit* lineEdit = dynamic_cast<QLineEdit*>(mWidget[i]);
+            if (!lineEdit->text().isEmpty()) meta.value = lineEdit->text();
+        }
     }
     loadFields();
 }

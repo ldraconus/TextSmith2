@@ -26,7 +26,7 @@ public:
 
 private:
     ExporterBase*     mExporter;
-    List<QLineEdit*>  mLine;
+    List<QWidget*>    mWidget;
     QPushButton*      mOk;
     Ui::ExportDialog* mUi;
 

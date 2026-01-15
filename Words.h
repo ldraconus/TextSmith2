@@ -5,12 +5,13 @@
 namespace Words {
 
     enum class Tags {
-        None =      0,
-        Bold =      1 << 0,
-        Italic =    1 << 1,
-        Underline = 1 << 2,
-        Partial =   1 << 3,
-        All =       Bold + Italic + Underline + Partial
+        None =       0,
+        Bold =       1 << 0,
+        Italic =     1 << 1,
+        Underline =  1 << 2,
+        Partial =    1 << 3,
+        AllFormats = Bold + Italic + Underline,
+        All = AllFormats + Partial
     };
 
     inline Tags operator|(const Tags a, const Tags b) {
@@ -32,7 +33,7 @@ namespace Words {
     }
 
     inline Tags operator~(const Tags a) {
-        return static_cast<Tags>(~static_cast<uint32_t>(a));
+        return static_cast<Tags>(~static_cast<uint32_t>(a) & static_cast<uint32_t>(Tags::All));
     }
 
     class Word {

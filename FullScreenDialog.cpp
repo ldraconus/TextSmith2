@@ -55,28 +55,20 @@ void FullScreenDialog::setFont(const QFont &font) {
 }
 
 void FullScreenDialog::setHtml(const QString &html) {
-    mUi->textEdit->setHtml(html);
-    imageFix();
-
-    mUi->textEdit->document()->setTextWidth(mUi->textEdit->viewport()->width());
-    mUi->textEdit->document()->documentLayout()->update();
-    mUi->textEdit->update();
-
-    QTextCursor c = mUi->textEdit->textCursor();
-    QTextCharFormat fmt;
-
-    switch (mPrefs->theme()) {
-    case 0: fmt.setForeground(QBrush(Qt::black)); break;
-    case 1: fmt.setForeground(QBrush(Qt::white)); break;
-    case 2:
-        if (mPrefs->isDark()) fmt.setForeground(QBrush(Qt::white));
-        else                  fmt.setForeground(QBrush(Qt::black));
-        break;
-    }
-
-    fmt.setFontPointSize(mUi->textEdit->font().pointSizeF());
-    c.setCharFormat(fmt);
-    mUi->textEdit->setTextCursor(c);
+    TextEdit* text = mUi->textEdit;
+    Preferences& prefs = Main::ref().prefs();
+    QFont font(prefs.fontFamily(), prefs.fontSize());
+    QFontMetrics metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 2 * lineHeight;
+    QTextBlockFormat format;
+    format.setTextIndent(indent);
+    format.setBottomMargin(lineHeight);
+    QTextCursor cursor(text->document());
+    cursor.select(QTextCursor::Document);
+    cursor.mergeBlockFormat(format);
+    text->setTextCursor(cursor);
+    text->document()->setDefaultFont(font);
 }
 
 void FullScreenDialog::setOther(Json5Array& other) {
@@ -90,6 +82,10 @@ void FullScreenDialog::setPosition(qlonglong pos) {
     cursor.setPosition(pos);
     mUi->textEdit->setTextCursor(cursor);
     mUi->textEdit->ensureCursorVisible();
+}
+
+void FullScreenDialog::setSoundPool(SoundPool* soundPool) {
+    mUi->textEdit->setSoundPool(soundPool);
 }
 
 void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {

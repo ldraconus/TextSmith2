@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 project(TextSmith2 LANGUAGES CXX)
 
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
+
 # C++23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,13 +25,13 @@ find_package(Qt6 REQUIRED COMPONENTS
 # Include directories
 include_directories(
     E:/QtSource/include
-    E:/QtSource/libzip/lib
     E:/QtSource/libzip/build
+    E:/QtSource/libzip/lib
+    E:/QtSource/Spelling/hunspell
+    E:/QtSource/Spelling/parsers
+    E:/QtSource/Spelling/tools
     ${CMAKE_SOURCE_DIR}
 )
-
-# libzip
-link_directories(E:/QtSource/libzip/build/lib)
 
 # Sources
 set(SOURCES
@@ -43,12 +47,11 @@ set(SOURCES
     Preferences.cpp
     PreferencesDialog.cpp
     SearchReplace.cpp
+    SoundPool.cpp
     Speech.cpp
     Start.cpp
     TextEdit.cpp
-    entity.c
-    html2md-main/src/html2md.cpp
-    html2md-main/src/table.cpp
+
 )
 
 # Headers
@@ -68,12 +71,11 @@ set(HEADERS
     Printer.h
     SearchReplace.h
     Speech.h
+    SoundPool.h
     TextEdit.h
     TreeWidget.h
     Words.h
-    entity.h
-    html2md-main/include/html2md.h
-    html2md-main/include/table.h
+
 )
 
 # UI files
@@ -97,7 +99,14 @@ qt_add_executable(TextSmith2
     ${RESOURCES}
     appicon.rc
     TODO.txt
+    RtfExporter.h RtfExporter.cpp
+    EasySpelling.h EasySpelling.cpp
+    SpellCheckDialog.ui
+
 )
+
+# Tell the linker where to find libzip.dll.a
+#link_directories("E:/QtSource/libzip/build/lib")
 
 # Link Qt + libzip
 target_link_libraries(TextSmith2 PRIVATE
@@ -106,13 +115,15 @@ target_link_libraries(TextSmith2 PRIVATE
     Qt6::Widgets
     Qt6::PrintSupport
     Qt6::TextToSpeech
-    zip
-    z
+    E:/QtSource/libzip/build/lib/libzip.dll.a
+    E:/QtSource/zlib-1.3.1/build/libzlib.dll.a
+    E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a
 )
 
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE
     QT_DISABLE_DEPRECATED_BEFORE=0x060000
+    HUNSPELL_STATIC
 )
 
 # Installer target (optional)

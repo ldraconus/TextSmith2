@@ -14,8 +14,12 @@ public:
         { "cover", "Book Cover (cover:)", "" }
     };
 
+    QString addParagraphs(const QString& html);
     bool    convert() override;
-    QString htmlToMarkdown(const QString& html);
+    void    convertHex(QString& paragraphs);
+    void    convertDecimal(QString paragraphs);
+    void    extracted(QString& paragraphs);
+    QString htmlToMarkdown(const QString& html, const QString& dir);
 
     QList<ExportMetadataField>& metadataFields() override { return mMetadata; }
 

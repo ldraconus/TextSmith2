@@ -50,4 +50,15 @@
         <file>DarkClosed.png</file>
         <file>DarkOpen.png</file>
     </qresource>
+    <qresource prefix="/Sound">
+        <file>MarginDing.mp3</file>
+        <file>ReturnRoll.mp3</file>
+        <file>SpaceThunk.mp3</file>
+        <file>KeyWhack.wav</file>
+        <file>ReturnClunk.mp3</file>
+    </qresource>
+    <qresource prefix="/dict">
+        <file>index.aff</file>
+        <file>index.dic</file>
+    </qresource>
 </RCC>

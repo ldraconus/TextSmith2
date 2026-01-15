@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Preferences.h"
+#include "SoundPool.h"
 
 #include <QDialog>
 #include <QFont>
@@ -25,6 +26,7 @@ public:
     void       setHtml(const QString& html);
     void       setOther(Json5Array& other);
     void       setPosition(qlonglong pos);
+    void       setSoundPool(SoundPool* soundPool);
 
 protected:
     void keyPressEvent(QKeyEvent* evt) override;

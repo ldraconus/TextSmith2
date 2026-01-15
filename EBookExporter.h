@@ -42,8 +42,6 @@ private:
     int     chapterNumWidth();
     QString convertHTML(const QString& qHtml);
     QString fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
-    void    loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
-    void    loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
     QString navPoints();
     void    novelToBook();
     QString replace(const QString& qHtml, const QString& front, const QString& back, const QString& with);

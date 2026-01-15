@@ -7,6 +7,12 @@
 #undef Ui_Dialog
 #undef QDialog
 
+#define QDialog QWidget
+#define Ui_spellDialog Ui_SpellWidget
+#include "ui_SpellCheckDialog.h"
+#undef Ui_spellDialog
+#undef QDialog
+
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCloseEvent>
@@ -18,6 +24,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLineEdit>
+#include <QPdfWriter>
 #include <QPrinter>
 #include <QPrintPreviewDialog>
 #include <QScreen>
@@ -55,6 +62,8 @@ template class Exporter<MarkdownExporter>;
 template class Exporter<PdfExporter>;
 #include "EBookExporter.h"
 template class Exporter<EBookExporter>;
+#include "RtfExporter.h"
+template class Exporter<RtfExporter>;
 
 constexpr qlonglong second = 1000;
 
@@ -267,6 +276,7 @@ void Main::doAboutToShowNovelMenu() {
 
 void Main::doAboutToShowViewMenu() {
     mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
+    mUi->actionSpell_checking->setEnabled(mSpelling.ready());
 }
 
 void Main::doAboutToShowHelpMenu() {
@@ -442,7 +452,9 @@ void Main::doFindDone() {
 }
 
 void Main::doFindNext() {
-    if (mSearch && !mSearch->text().isEmpty() && !mUi->treeWidget->hasFocus()) {
+    if (mSpellcheck->isVisible()) {
+        doSpellCheckNext();
+    } else if (mSearch && !mSearch->text().isEmpty() && !mUi->treeWidget->hasFocus()) {
         NovelPosition pos = mSearch->findNext();
         if (pos.isValid()) {
             QTreeWidgetItem* branch = findItem(mUi->treeWidget->topLevelItem(0), pos.id());
@@ -465,6 +477,7 @@ void Main::doFindNext() {
 }
 
 void Main::doFindReplace() {
+    mSpellcheck->hide();
     mFindLine->show();
     mFindLine->setFocus();
     delete mSearch;
@@ -521,6 +534,7 @@ void Main::doFullScreen() {
     dlg.setHtml(mUi->textEdit->toHtml());
     dlg.setFont(mUi->textEdit->document()->defaultFont());
     dlg.setPosition(mUi->textEdit->textCursor().position());
+    if (mPrefs.typingSounds()) dlg.setSoundPool(&mSoundPool);
     Json5Array arr = mPrefs.otherSplitter();
     if (arr.size() >= 2) dlg.setOther(arr);
     dlg.showFullScreen();
@@ -814,6 +828,92 @@ void Main::doPreferences() {
     updateFromPrefs();
 }
 
+void Main::outputNovel(QList<qlonglong> ids,
+                       const QString& chapterTag,
+                       const QString& sceneTag,
+                       const QString& coverTag,
+                       QPainter& painter,
+                       QSizeF pageSize,
+                       QMarginsF margins,
+                       std::function<void()> pager) {
+    QFont font = Main::ref().ui()->textEdit->font();
+    QFontMetricsF metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 4 * metrics.boundingRect("M").width();
+    int baseline = metrics.ascent();
+    int space = metrics.boundingRect(" ").width();
+    qreal at = margins.top() + baseline;
+    int pageNo = 1;
+    bool startingPage = true;
+    for (const auto& id: ids) {
+        Item& item = mNovel.findItem(id);
+        if (!item.hasTag(chapterTag) &&
+            !item.hasTag(sceneTag) &&
+            !item.hasTag(coverTag)) continue;
+        if (item.hasTag(coverTag)) {
+            pageNo = handleCover(item, pageNo, startingPage, pageSize, margins, painter, pager);
+            newPage(painter, pager);
+            ++pageNo;
+            at = margins.top() + baseline;
+            startingPage = true;
+            continue;
+        } else if (item.hasTag(chapterTag)) {
+            if (pageNo != 1) {
+                Main::ref().newPage(painter, pager);
+                ++pageNo;
+                at = margins.top() + baseline;
+                startingPage = true;
+            }
+        }
+        StringList paragraphs = createParagraphs(item);
+        Tags current = Tags::None;
+        for (const auto& paragraph: paragraphs) {
+            QList<Word> words = paragraphWords(paragraph);
+            bool first = true;
+            while (!words.isEmpty()) {
+                int width = 0;
+                if (first) width = indent;
+                QList<Word> line;
+                while (width < pageSize.width()) {
+                    Word word = words.first();
+                    if (line.size() != 0 && (current & Tags::Partial) != Tags::None) width += space;
+                    if (metrics.boundingRect(words.first().str()).width() + width < pageSize.width()) {
+                        auto word = words.takeFirst();
+                        line.append(word);
+                        width += metrics.boundingRect(word.str()).width();
+                    }
+                }
+                if (at + lineHeight - margins.top() > pageSize.height()) {
+                    Main::ref().newPage(painter, pager);
+                    ++pageNo;
+                    at = margins.top() + baseline;
+                    startingPage = true;
+                }
+                qreal fill = 0.0;
+                if (!words.empty() /* && FullJustify */) {
+                    if (line.count() > 1) fill = width / (line.count() - 1);
+                }
+                qreal x = margins.left() + (first ? indent : 0.0);
+                first = false;
+                for (auto i = 0; i < line.count(); ++i) {
+                    Word word = line[i];
+                    current = (current & word.tags()) | word.tags();
+                    QFont wFont = font;
+                    if ((current & Tags::Bold) != Tags::None)      wFont.setWeight(QFont::Bold);
+                    if ((current & Tags::Italic) != Tags::None)    wFont.setItalic(true);
+                    if ((current & Tags::Underline) != Tags::None) wFont.setUnderline(true);
+                    painter.setFont(wFont);
+                    painter.drawText(QPoint(x + 0.5, at + 0.5), word.str());
+                    x += fill;
+                    if (!word.isPartial()) x += space;
+                }
+                at += lineHeight;
+            }
+        }
+    }
+    if (!startingPage) Main::ref().newPage(painter, pager);
+}
+
 void Main::doPrint() {
     if (mPrinter == nullptr) mPrinter = new Printer(QPrinter::HighResolution);
     if (mPrinter == nullptr || mPrinter->qprinter() == nullptr) {
@@ -844,84 +944,8 @@ void Main::doPrintNovel(QPrinter*) {
     QSizeF inch(72 * pointSize.width(), 72 * pointSize.height());
     QSizeF pageSize(paperRect.right() - 2 * inch.width(), paperRect.bottom() - 2 * inch.height());
     QPainter painter(printer);
-    // go 1" margins all around, but modulate if the page-rect doesn't allow it.
-    QRectF usingRect(QPointF(inch.width(), inch.height()), pageSize);
-    QFont font = mUi->textEdit->font();
-    QFontMetricsF metrics(font, printer);
-    int lineHeight = metrics.height();
-    int indent = 4 * metrics.boundingRect("M").width();
-    int baseline = metrics.ascent();
-    int space = metrics.boundingRect(" ").width();
-    const auto& ids = mPrinter->ids();
-    qreal at = inch.height() + baseline;
-    int pageNo = 1;
-    bool startingPage = true;
-    for (const auto& id: ids) {
-        Item& item = mNovel.findItem(id);
-        if (!item.hasTag(mPrefs.chapterTag()) &&
-            !item.hasTag(mPrefs.sceneTag()) &&
-            !item.hasTag(mPrefs.coverTag())) continue;
-        if (item.hasTag(mPrefs.coverTag())) {
-            pageNo = handleCover(item, pageNo, startingPage, pageSize, inch, painter, printer);
-            newPage(painter, printer);
-            ++pageNo;
-            at = inch.height() + baseline;
-            startingPage = true;
-            continue;
-        } else if (item.hasTag(mPrefs.chapterTag())) {
-            if (pageNo != 1) {
-                newPage(painter, printer);
-                ++pageNo;
-                at = inch.height() + baseline;
-                startingPage = true;
-            }
-        }
-        StringList paragraphs = createParagraphs(item);
-        Tags current = Tags::None;
-        for (const auto& paragraph: paragraphs) {
-            QList<Word> words = paragraphWords(paragraph);
-            bool first = true;
-            while (!words.isEmpty()) {
-                int width = 0;
-                if (first) width = indent;
-                QList<Word> line;
-                while (width < pageSize.width()) {
-                    Word word = words.first();
-                    if (line.size() != 0 && (current & Tags::Partial) != Tags::None) width += space;
-                    if (metrics.boundingRect(words.first().str()).width() + width < pageSize.width()) {
-                        auto word = words.takeFirst();
-                        line.append(word);
-                        width += metrics.boundingRect(word.str()).width();
-                    }
-                }
-                if (at + lineHeight - inch.width() > pageSize.height()) {
-                    newPage(painter, printer);
-                    ++pageNo;
-                    at = inch.height() + baseline;
-                    startingPage = true;
-                }
-                qreal fill = 0.0;
-                if (!words.empty() /* && FullJustify */) {
-                    if (line.count() > 1) fill = width / (line.count() - 1);
-                }
-                qreal x = inch.width() + (first ? indent : 0.0);
-                first = false;
-                for (auto i = 0; i < line.count(); ++i) {
-                    Word word = line[i];
-                    current = (current & word.tags()) | word.tags();
-                    QFont wFont = font;
-                    if ((current & Tags::Bold) != Tags::None)      wFont.setWeight(QFont::Bold);
-                    if ((current & Tags::Italic) != Tags::None)    wFont.setItalic(true);
-                    if ((current & Tags::Underline) != Tags::None) wFont.setUnderline(true);
-                    painter.setFont(wFont);
-                    painter.drawText(QPoint(x + 0.5, at + 0.5), word.str());
-                    x += fill;
-                    if (!word.isPartial()) x += space;
-                }
-                at += lineHeight;
-            }
-        }
-    }
+    outputNovel(mPrinter->ids(), mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag(), painter, pageSize,
+                { 1.0, 1.0, 1.0, 1.0 }, [&printer]() { printer->newPage(); });
 }
 
 void Main::doReadToMe() {
@@ -1062,6 +1086,42 @@ bool Main::doSaveAs() {
     return true;
 }
 
+void Main::doSpellcheck() {
+    if (!mSpelling.ready()) return;
+    if (mUi->treeWidget->hasFocus()) return;
+    mFindLine->hide();
+    mSpellcheck->show();
+
+    Map<QString, QList<qlonglong>> words;
+    mSpellcheckIds = vectorOfIds(mUi->treeWidget->currentItem(), { });
+    doSpellcheckNext();
+}
+
+void Main::doSpellcheckDone() {
+    mSpellcheck->hide();
+    mUi->textEdit->setFocus();
+    mSpellcheckIds.clear();
+}
+
+void Main::doSpellcheckNext() {
+    while (!mSpellcheckIds.isEmpty()) {
+        auto id = mSpellcheckIds.takeFirst();
+        Item& item = mNovel.findItem(id);
+        TextEdit work;
+        work.setHtml(item.html());
+        QString text = work.toPlainText();
+        for (WordPos word = nextWord(text); word.mNext != word.mAt; word = nextWord(text, word.mNext)) {
+            auto suggestions = mSpelling.check(word.mWord);
+            if (suggestions.isEmpty()) continue;
+            // find the node in the tree and make it the current node
+            // move to the words position
+            // create a button in the spellcheck bar for each suggeestion and connect it to doSpellcheckReplace(QString via lamda capturing button name.
+            return;
+        }
+    }
+    doSpellcheckDone();
+}
+
 void Main::doStop(bool stopped) {
     QTextCursor cursor(mUi->textEdit->document());
     if (mSavedCursor.hasSelection()) {
@@ -1180,7 +1240,7 @@ QString Main::checked(const QString& path) {
     return parts.join(".");
 }
 
-StringList Main::createParagraphs(Item& item) {
+StringList Main::createParagraphs(Item& item, bool align) {
     StringList paragraphs;
     QTextDocument doc;
     doc.setHtml(item.html());
@@ -1188,8 +1248,16 @@ StringList Main::createParagraphs(Item& item) {
         QTextCursor cursor(block);
         cursor.select(QTextCursor::BlockUnderCursor);
         QString html = cursor.selection().toHtml();
-        if (!html.isEmpty())
+        if (!html.isEmpty()) {
             paragraphs.append(html);
+            if (align) {
+                auto format = cursor.blockFormat();
+                if (format.alignment() == Qt::AlignLeft)         html = "L" + html;
+                else if (format.alignment() == Qt::AlignRight)   html = "R" + html;
+                else if (format.alignment() == Qt::AlignCenter)  html = "C" + html;
+                else if (format.alignment() == Qt::AlignJustify) html = "F" + html;
+            }
+        }
     }
 
     return paragraphs;
@@ -1206,9 +1274,8 @@ QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
     return nullptr;
 }
 
-void Main::newPage(QPainter& /*painter*/, QPrinter* printer) {
-    if (printer) printer->newPage();
-    // draw header, footer, page-blocking
+void Main::newPage(QPainter& /*painter*/, std::function<void()> printer) {
+    printer();
 }
 
 void Main::fitWindow() {
@@ -1254,10 +1321,10 @@ int Main::handleCover(Item& item,
                       int pageNo,
                       bool startingPage,
                       QSizeF& pageSize,
-                      QSizeF& inch,
+                      QMarginsF& margins,
                       QPainter& painter,
-                      QPrinter* printer) {
-    QPointF at = QPointF(inch.width(), inch.height());
+                      std::function<void()> printer) {
+    QPointF at = QPointF(margins.top(), margins.left());
     if (pageNo != 1) {
         if (!startingPage) {
             newPage(painter, printer);
@@ -1282,10 +1349,10 @@ int Main::handleCover(Item& item,
             if (scaledImage.height() > pageSize.height()) {
                 scaledImage = image.scaledToHeight(pageSize.height(), Qt::SmoothTransformation);
             }
-            if (at.y() + scaledImage.height() > pageSize.height() + inch.height()) {
+            if (at.y() + scaledImage.height() > pageSize.height() + margins.bottom()) {
                 newPage(painter, printer);
                 ++pageNo;
-                at = QPointF(inch.width(), inch.height());
+                at = QPointF(margins.left(), margins.top());
             }
             QRectF imageRect(at, scaledImage.size());
             painter.drawImage(imageRect, scaledImage);
@@ -1293,6 +1360,34 @@ int Main::handleCover(Item& item,
         }
     }
     return pageNo;
+}
+
+void Main::loadImageBytes(const QImage& img, std::function<void(QByteArray)> callback) {
+    QByteArray data;
+    QBuffer buffer(&data);
+    buffer.open(QIODevice::WriteOnly);
+    img.save(&buffer, "JPG");
+    callback(data);
+}
+
+void Main::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback) {
+    if (url.isLocalFile() || url.scheme() == "qrc" || url.scheme().isEmpty()) {
+        // Local file or resource
+        QImage img(url.toLocalFile());
+        loadImageBytes(img, callback);
+        return;
+    }
+
+    // Remote URL
+    auto* nam = new QNetworkAccessManager();
+    QNetworkReply* reply = nam->get(QNetworkRequest(url));
+
+    QObject::connect(reply, &QNetworkReply::finished, [this, reply, callback]() {
+        QByteArray data = reply->readAll();
+        reply->deleteLater();
+        QImage img(data);
+        loadImageBytes(img, callback);
+    });
 }
 
 void Main::justifyButtons() {
@@ -1357,6 +1452,13 @@ void Main::mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item) {
     bool open = item->isExpanded();
     byId[id] = open;
     for (int i = 0; i < item->childCount(); ++i) mapTree(byId, item->child(i));
+}
+
+Main::WordPos Main::nextWord(const QString& str, qlonglong pos = 0) {
+    pos = skipSpaces(str, pos);
+    qlonglong start = pos;
+    while (pos < str.size() && !str[pos].isSpace()) ++pos;
+    return { str.mid(pos, pos - start), start, pos };
 }
 
 bool Main::nothingAbove() {
@@ -1796,6 +1898,12 @@ Main::Main(QApplication* app, QWidget* parent)
 
     mUi->textEdit->setAcceptDrops(true);
 
+    mSoundPool.load(SoundPool::Sound::KeyWhack,    QUrl("qrc:/Sound/KeyWhack.wav"),    8);
+    mSoundPool.load(SoundPool::Sound::SpaceThunk,  QUrl("qrc:/Sound/SpaceThunk.mp3"),  8);
+    mSoundPool.load(SoundPool::Sound::ReturnRoll,  QUrl("qrc:/Sound/ReturnRoll.mp3"),  8);
+    mSoundPool.load(SoundPool::Sound::ReturnClunk, QUrl("qrc:/Sound/ReturnClunk.mp3"), 8);
+    mSoundPool.load(SoundPool::Sound::MarginDing,  QUrl("qrc:/Sound/MarginDing.mp3"),  8);
+
     QTextToSpeech* speech = new QTextToSpeech();
     mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
     delete speech;
@@ -1925,7 +2033,7 @@ QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& ta
     QList<qlonglong> ids;
     auto id = branch->data(0, Qt::UserRole).toLongLong();
     Item& item = mNovel.findItem(id);
-    if (item.hasTag(tags) || starting == StartingFlag::Starting) ids.append(id);
+    if (tags.isEmpty() || item.hasTag(tags) || starting == StartingFlag::Starting) ids.append(id);
     for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
         auto childItems = vectorOfIds(branch->child(childNum), tags, StartingFlag::Continuing);
         ids.append(childItems);
@@ -2054,6 +2162,7 @@ void Main::setupConnections() {
     connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
     connect(mUi->actionRead_To_Me,       &QAction::triggered, this, &Main::readToMeAction);
     connect(mUi->actionWord_Count,       &QAction::triggered, this, &Main::doWordCount);
+    connect(mUi->actionSpell_checking,   &QAction::triggered, this, &Main::spellCheck);
 
     connect(mUi->newItemToolButton,    &QToolButton::clicked, this, &Main::addItemAction);
     connect(mUi->deleteItemToolButton, &QToolButton::clicked, this, &Main::removeItemAction);
@@ -2123,7 +2232,17 @@ void Main::setupConnections() {
     connect(replaceAllShortcut,                &QShortcut::activated, this, &Main::replaceAll);
     connect(mFindWidget->replaceAllPushButton, &QPushButton::toggled, this, &Main::replaceAll);
     QShortcut* findDoneShortcut = new QShortcut(QKeySequence("Esc"), this);
-    connect(findDoneShortcut, &QShortcut::activated, this, &Main::findDone);
+    connect(findDoneShortcut, &QShortcut::activated, this, &Main::barDone);
+
+    mSpellcheck = new QWidget();
+    mSpellWidget = new Ui_SpellWidget();
+    mSpellWidget->setupUi(mSpellcheck);
+    mSpellcheck->hide();
+    statusBar()->addPermanentWidget(mSpellcheck);
+    connect(mSpellWidget->stopPushButton, &QPushButton::toggled, this, &Main::spellCheckDone);
+
+    // make connections
+    connect(mSpellWidget->stopPushButton, &QPushButton::toggled, this, &Main::spellCheckDone);
 
     QLineEdit *commandLine = new QLineEdit;
     commandLine->setPlaceholderText("Type a command...");
@@ -2204,6 +2323,11 @@ void Main::setupTabOrder() {
     QWidget::setTabOrder(mUi->textEdit,                 mUi->newItemToolButton);
 }
 
+qlonglong Main::skipSpaces(const QString& str, qlonglong pos) {
+    while (pos < str.size() && str[pos].isSpace()) ++pos;
+    return pos;
+}
+
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
     QTextCursor cursor(doc);
 
@@ -2241,4 +2365,6 @@ void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
         fmt.setFontPointSize(font.pointSize());
         cursor.mergeCharFormat(fmt);
     }
+
+    Main::ref().ui()->textEdit->setWrapMargin();
 }
