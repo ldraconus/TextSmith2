@@ -1473,6 +1473,19 @@ void Main::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)
     });
 }
 
+StringList Main::mergeWordFragments(QList<Words::Word>& words) {
+    StringList wordList;
+    QString w;
+    for (const auto& word: words) {
+        w += word.str();
+        if (!word.isPartial()) {
+            wordList += w;
+            w.clear();
+        }
+    }
+    return wordList;
+}
+
 void Main::justifyButtons() {
     auto cursor = mUi->textEdit->textCursor();
     auto block = cursor.blockFormat();
@@ -2441,12 +2454,52 @@ void Main::setupScripting() {
     // - add script to menu
 
     // String words (more)
-    // - paragraphs
-    // - sentences
-    // - words
-    // - split
-    // - join
+    mVm->addBuiltin("html2para", [this](fifth::vm* vm) { // id -u-> para[n] ... para[1] n
+        auto& user = vm->user();
+        Item& item = fifthItem(user);
+        StringList paragraphs = createParagraphs(item);
+        for (auto i = paragraphs.count(); i != 0; --i) user.push(paragraphs[i - 1]);
+        user.push(paragraphs.count());
+    });
+    mVm->addBuiltin("para2words", [this](fifth::vm* vm) { // para -u-> word[n] ... word[1] n
+        auto& user = vm->user();
+        auto s = user.pop();
+        auto paragraph = s.asString().str();
+        auto words = paragraphWords(paragraph);
+        auto wordList = mergeWordFragments(words);
+        for (auto i = wordList.count(); i != 0; --i) user.push(wordList[i - 1]);
+        user.push(wordList.count());
+    });
+    mVm->addBuiltin("split", [this](fifth::vm* vm) { // string splitBy -u-> part[n] ... part[1] n
+        auto& user = vm->user();
+        auto s2 = user.pop();
+        auto s1 = user.pop();
+        QString string = s1.asString().str();
+        QString splitBy = s2.asString().str();
+        StringList parts;
+        if (splitBy.isEmpty()) user.push(string);
+        else {
+            parts = { string.split(splitBy) };
+            for (auto i = parts.count(); i != 0; i--) user.push(parts[i - 1]);
+        }
+        user.push(parts.count());
+    });
+    mVm->addBuiltin("join", [this](fifth::vm* vm) { // part[n] ... part[1] n joinWith -u-> string
+        auto& user = vm->user();
+        auto j = user.pop();
+        auto n = user.pop();
+        QString joinWith = j.asString().str();
+        auto num = n.asNumber();
+        QString string;
+        for (auto i = 0; i < num; ++i) {
+            auto p = user.pop();
+            if (i != 0) string += joinWith;
+            string += p.asString().str();
+        }
+        user.push(string);
+    });
     // - find
+    // - replace
 
     mNovel.setupScripting(mVm);
 
@@ -2509,3 +2562,4 @@ void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
     doc->setHtml(html);
     Main::ref().ui()->textEdit->setWrapMargin();
 }
+

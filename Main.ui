@@ -105,7 +105,7 @@ QSplitter::handle:hover {
               <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
              </property>
              <property name="toolTip">
-              <string>Add Item (Alt+N)</string>
+              <string>Add Branch (Alt+N)</string>
              </property>
              <property name="text">
               <string/>
@@ -128,7 +128,7 @@ QSplitter::handle:hover {
               <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
              </property>
              <property name="toolTip">
-              <string>Delete Item (Alt-Del)</string>
+              <string>Delete Branch (Alt-Del)</string>
              </property>
              <property name="text">
               <string/>
@@ -164,7 +164,7 @@ QSplitter::handle:hover {
               <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
              </property>
              <property name="toolTip">
-              <string>Move Item Up (Alt-Up)</string>
+              <string>Move Branch Up (Alt-Up)</string>
              </property>
              <property name="text">
               <string/>
@@ -187,7 +187,7 @@ QSplitter::handle:hover {
               <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
              </property>
              <property name="toolTip">
-              <string>Move Item Down (Alt-Down)</string>
+              <string>Move Branch Down (Alt-Down)</string>
              </property>
              <property name="text">
               <string/>
@@ -210,7 +210,7 @@ QSplitter::handle:hover {
               <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
              </property>
              <property name="toolTip">
-              <string>Move Item Out (Alt-Left)</string>
+              <string>Move Branch Out (Alt-Left)</string>
              </property>
              <property name="text">
               <string/>
@@ -963,7 +963,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionAdd_Item">
    <property name="text">
-    <string>Add Item</string>
+    <string>Add Branch</string>
    </property>
    <property name="shortcut">
     <string>Alt+N</string>
@@ -971,7 +971,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionRemove_Item">
    <property name="text">
-    <string>Remove Item</string>
+    <string>Remove Branch</string>
    </property>
    <property name="shortcut">
     <string>Alt+Del</string>
@@ -979,7 +979,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_an_Item_Up">
    <property name="text">
-    <string>Move Current  Item Up</string>
+    <string>Move Current  Branch Up</string>
    </property>
    <property name="shortcut">
     <string>Alt+Up</string>
@@ -987,7 +987,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_Current_Item_Down">
    <property name="text">
-    <string>Move Current Item Down</string>
+    <string>Move Current Branch Down</string>
    </property>
    <property name="shortcut">
     <string>Alt+Down</string>
@@ -995,7 +995,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_Current_Item_Out">
    <property name="text">
-    <string>Move Current Item Out</string>
+    <string>Move Current Branch Out</string>
    </property>
    <property name="shortcut">
     <string>Alt+Left</string>
@@ -1019,7 +1019,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionOpen_Current_Item">
    <property name="text">
-    <string>Open/Close Current Item</string>
+    <string>Open/Close Current Brnach</string>
    </property>
    <property name="shortcut">
     <string>Alt+O</string>
@@ -1105,7 +1105,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionEdit_Item">
    <property name="text">
-    <string>Edit Item</string>
+    <string>Edit Branch</string>
    </property>
    <property name="shortcut">
     <string>Alt+E</string>

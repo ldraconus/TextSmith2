@@ -238,6 +238,7 @@ public:
     void         busy()                           { QApplication::setOverrideCursor(Qt::WaitCursor); }
     qlonglong    currentNode()                    { return mCurrentNode; }
     QString      docDir()                         { return mDocDir; }
+    Item&        fifthItem(fifth::stack& user)    { return mNovel.fifthItem(user); }
     QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
     Novel&       novel()                          { return mNovel; }
     Preferences& prefs()                          { return mPrefs; }

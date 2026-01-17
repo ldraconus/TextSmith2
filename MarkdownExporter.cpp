@@ -6,7 +6,7 @@
 
 #include "Main.h"
 
-QString MarkdownExporter::addParagraphs(const QString& html) {
+QString MarkdownExporter::paragraphs(const QString& html) {
     QString work = html;
     auto pos = work.indexOf("<p ");
     work = work.mid(pos);
@@ -114,21 +114,21 @@ QString MarkdownExporter::htmlToMarkdown(const QString& html, const QString& dir
 
     const auto& defaults = collectMetadataDefaults();
     QString title = fetchValue(0, defaults, "title");
-    QString paragraphs = addParagraphs(html);
-    if (!title.isEmpty()) paragraphs = "# " + title + "\n" + paragraphs;
-    for (const auto& conversion: conversions) paragraphs.replace(conversion.first, conversion.second, Qt::CaseInsensitive);
+    QString paras = paragraphs(html);
+    if (!title.isEmpty()) paras = "# " + title + "\n" + paras;
+    for (const auto& conversion: conversions) paras.replace(conversion.first, conversion.second, Qt::CaseInsensitive);
 
-    convertHex(paragraphs);
-    convertDecimal(paragraphs);
+    convertHex(paras);
+    convertDecimal(paras);
 
-    paragraphs.replace("&lt;", "<", Qt::CaseInsensitive);
-    paragraphs.replace("&gt;", ">", Qt::CaseInsensitive);
+    paras.replace("&lt;", "<", Qt::CaseInsensitive);
+    paras.replace("&gt;", ">", Qt::CaseInsensitive);
 
     QString prev;
-    while (paragraphs != prev) {
-        prev = paragraphs;
-        paragraphs.replace("&amp;", "&");
+    while (paras != prev) {
+        prev = paras;
+        paras.replace("&amp;", "&");
     }
 
-    return paragraphs;
+    return paras;
 }

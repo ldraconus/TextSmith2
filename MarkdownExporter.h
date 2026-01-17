@@ -14,7 +14,6 @@ public:
         { "cover", "Book Cover (cover:)", "" }
     };
 
-    QString addParagraphs(const QString& html);
     bool    convert() override;
     void    convertHex(QString& paragraphs);
     void    convertDecimal(QString paragraphs);
@@ -25,4 +24,6 @@ public:
 
     static QString Extension() { return "md"; }
     static QString Name()      { return "Markdown"; }
+
+    static QString paragraphs(const QString& html);
 };

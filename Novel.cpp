@@ -6,8 +6,6 @@
 #include <QTextCursor>
 #include <QTextEdit>
 
-#include "5th.h"
-
 qsizetype Item::sNextID = 0;
 
 Item::Item(bool noId)
@@ -356,101 +354,76 @@ void Novel::setHtml(qlonglong node, const QString& html) {
     item.setHtml(html);
 }
 
+Item& Novel::fifthItem(fifth::stack& user) {
+    static Item nil;
+    auto i = user.pop();
+    if (i.isNum()) {
+        auto id = i.asNumber();
+        if (id < 0) return nil;
+        return findItem(id);
+    }
+    return nil;
+}
+
 void Novel::setupScripting(fifth::vm* vm) {
     vm->addBuiltin("html", [this](fifth::vm* vm) { // id -u-> html
         auto& user = vm->user();
-        auto i = user.pop();
-        auto id = i.asNumber();
-
-        if (id < 0) user.push("");
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push("");
-            else user.push(item.html());
-        }
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push("");
+        else user.push(item.html());
     });
     vm->addBuiltin("<html", [this](fifth::vm* vm) {   // id html -u-> id
         auto& user = vm->user();
         auto h = user.pop();
-        auto i = user.top();
-        auto id = i.asNumber();
+        auto i = user.pop();
+        Item& item = fifthItem(user);
         auto html = h.asString().str();
 
-        if (id < 0 || html.isEmpty()) return;
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push(id);
-            else item.setHtml(html);
-        }
+        if (!item.isNull() && !html.isEmpty()) item.setHtml(html);
+        user.push(i);
     });
     vm->addBuiltin("html>", [this](fifth::vm* vm) {   // html id -u-> html
         auto& user = vm->user();
-        auto i = user.pop();
+        Item& item = fifthItem(user);
         auto h = user.top();
-        auto id = i.asNumber();
         auto html = h.asString().str();
 
-        if (id < 0 || html.isEmpty()) return;
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) return;
-            else item.setHtml(html);
-        }
+        if (item.isNull() || html.isEmpty()) return;
+        else item.setHtml(html);
     });
     vm->addBuiltin("name", [this](fifth::vm* vm) { // id -u-> name
         auto& user = vm->user();
-        auto i = user.pop();
-        auto id = i.asNumber();
-
-        if (id < 0) user.push("");
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push("");
-            else user.push(item.name());
-        }
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push("");
+        else user.push(item.name());
     });
     vm->addBuiltin("<name", [this](fifth::vm* vm) {   // id name -u-> id
         auto& user = vm->user();
         auto n = user.pop();
         auto i = user.top();
-        auto id = i.asNumber();
+        Item& item = fifthItem(user);
         auto name = n.asString().str();
 
-        if (id < 0 || name.isEmpty()) return;
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push(id);
-            else item.setName(name);
-        }
+        if (!item.isNull()) item.setName(name);
+        user.push(i);
     });
     vm->addBuiltin("name>", [this](fifth::vm* vm) {   // name id -u-> name
         auto& user = vm->user();
-        auto i = user.pop();
+        Item& item = fifthItem(user);
         auto n = user.top();
-        auto id = i.asNumber();
         auto name = n.asString().str();
 
-        if (id < 0 || name.isEmpty()) return;
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) return;
-            else item.setName(name);
-        }
+        if (item.isNull() || name.isEmpty()) return;
+        item.setName(name);
     });
     vm->addBuiltin("tags", [this](fifth::vm* vm) {   // id -u-> tag(n) ... tag(1) n
         auto& user = vm->user();
-        auto i = user.pop();
-        auto id = i.asNumber();
-
-        if (id < 0) user.push(0);
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push(0);
         else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push(0);
-            else {
-                StringList tags = item.tags();
-                for (const auto& tag: tags) user.push(tag);
-                user.push(tags.count());
-            }
+            StringList tags = item.tags();
+            for (const auto& tag: tags) user.push(tag);
+            user.push(tags.count());
         }
     });
     vm->addBuiltin("+tag", [this](fifth::vm* vm) { // id tag -u-> id
@@ -458,34 +431,33 @@ void Novel::setupScripting(fifth::vm* vm) {
         auto t = user.pop();
         auto i = user.pop();
         if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
-        if (!i.isNum()) user.push(i);
-        else {
+        if (i.isNum() && t.isStr()) {
             auto id = i.asNumber();
             auto tag = t.asString().str();
             Item& item = findItem(id);
             if (!item.isNull()) item.addTag(tag);
-            user.push(id);
         }
+        user.push(i);
     });
     vm->addBuiltin("-tag", [this](fifth::vm* vm) { // id tag -u-> id
         auto& user = vm->user();                   // tag id -u-> id
         auto t = user.pop();
         auto i = user.pop();
         if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
-        if (i.isNum()) {
+        if (i.isNum() && t.isStr()) {
             auto id = i.asNumber();
             auto tag = t.asString().str();
             Item& item = findItem(id);
             item.removeTag(tag);
-            user.push(id);
-        } else user.push(i);
+        }
+        user.push(i);
     });
     vm->addBuiltin("?tag", [this](fifth::vm* vm) { // id tag -u-> t/f
         auto& user = vm->user();                   // tag id -u-> t/f
         auto t = user.pop();
         auto i = user.pop();
         if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
-        if (!i.isNum()) user.push(false);
+        if (!i.isNum() || !t.isStr()) user.push(false);
         else {
             auto id = i.asNumber();
             auto tag = t.asString().str();
@@ -501,43 +473,28 @@ void Novel::setupScripting(fifth::vm* vm) {
     });
     vm->addBuiltin("position", [this](fifth::vm* vm) { // id -u-> position
         auto& user = vm->user();
-        auto i = user.pop();
-        auto id = i.asNumber();
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push(0);
+        else user.push(item.position());
+    });
+    vm->addBuiltin("<position", [this](fifth::vm* vm) {   // id position -u-> id
+        auto& user = vm->user();
+        auto i = user.top();
+        Item& item = fifthItem(user);
+        auto p = user.pop();
+        auto pos = p.asNumber();
 
-        if (id < 0) user.push(0);
-        else {
-            Item& item = findItem(id);
-            if (item.isNull()) user.push(0);
-            else user.push(item.position());
-        }
-        vm->addBuiltin("<position", [this](fifth::vm* vm) {   // id position -u-> id
-            auto& user = vm->user();
-            auto p = user.pop();
-            auto i = user.top();
-            auto id = i.asNumber();
-            auto pos = p.asNumber();
+        if (!item.isNull() && pos >= 0) item.setPosition(pos);
+        user.push(i);
+    });
+    vm->addBuiltin("position>", [this](fifth::vm* vm) {   // position id -u-> position
+        auto& user = vm->user();
+        Item& item = fifthItem(user);
+        auto p = user.top();
+        auto pos = p.asNumber();
 
-            if (id < 0 || pos < 0) return;
-            else {
-                Item& item = findItem(id);
-                if (item.isNull()) user.push(id);
-                else item.setPosition(pos);
-            }
-        });
-        vm->addBuiltin("position>", [this](fifth::vm* vm) {   // position id -u-> position
-            auto& user = vm->user();
-            auto i = user.pop();
-            auto p = user.top();
-            auto id = i.asNumber();
-            auto pos = p.asNumber();
-
-            if (id < 0 || pos < 0) return;
-            else {
-                Item& item = findItem(id);
-                if (item.isNull()) return;
-                else item.setPosition(pos);
-            }
-        });
+        if (item.isNull() || pos < 0) return;
+        else item.setPosition(pos);
     });
 }
 

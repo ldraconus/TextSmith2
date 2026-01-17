@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include "5th.h"
+
 #include <Json5.h>
 #include <List.h>
 #include <Map.h>
@@ -110,9 +112,6 @@ private:
     static qsizetype sNextID;
 };
 
-namespace fifth {
-class vm;
-}
 class Novel {
 public:
     Novel();
@@ -159,6 +158,7 @@ public:
     void      changeFont(const QFont& font);
     qlonglong countAll();
     void      deleteItem(qlonglong id);
+    Item&     fifthItem(fifth::stack& user);
     Item&     findItem(qlonglong id);
     void      init();
     bool      open();
