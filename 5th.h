@@ -243,6 +243,8 @@ namespace fifth {
       std::variant<str, num, exe> mValue;
   };
 
+  template <class T> void swap(T& a, T& b) { T t = a; a = b; b = t; }
+
   inline bool operator<(const str& s, const value& b) { return value(s) < b; }
   inline bool operator<(const num s, const value& b) { return value(s) < b; }
   inline bool operator==(const str& s, const value& b) { return value(s) == b; }

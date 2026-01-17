@@ -1,16 +1,16 @@
 [/] Integrate 5th into the program for scripting
-[X] - add 5th.h and 5th.cpp to the codebase.
-[/] - add words for /every/ action the user can do (menuitem, moving, selecting, and basic string handling).
+    - add 5th.h and 5th.cpp to the codebase.
+[/] - add words for /every/ action the user can do ([X] menuitem, [ ] moving, [ ] selecting, and [ ] more basic string handling).
 [ ] - load scripts
 [ ] - add a way to bind a script to an action, and bind that to a menu or submenu, complete with shortcut while avoiding shortcurt collisions.
 [ ] UI font selection
 [ ] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
-[?] Add Imports:
-[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
-[?] - snowflake import?
 [ ] Help
 [ ] Add pause/play handling to speech
 [ ] Add a hollywood script writing display mode
+[?] Add Imports:
+[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
+[?] - snowflake import?
 [X] Spellcheck
 [X] - add custom words per novel
 [X] Fix export issues
@@ -69,8 +69,7 @@ class CustomPrintPreviewDialog : public QDialog {
     Q_OBJECT
 public:
     CustomPrintPreviewDialog(QPrinter* printer, QWidget* parent = nullptr)
-        : QDialog(parent), m_printer(printer)
-    {
+        : QDialog(parent), m_printer(printer) {
         auto* layout = new QVBoxLayout(this);
 
         // Add your custom fields
@@ -81,6 +80,8 @@ public:
         optionsLayout->addWidget(m_headerField);
         optionsLayout->addWidget(new QLabel("Footer:"));
         optionsLayout->addWidget(m_footerField);
+
+        // add margins
 
         layout->addLayout(optionsLayout);
 

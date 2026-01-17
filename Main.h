@@ -218,7 +218,7 @@ private:
     void      setPosition(qlonglong pos);
     void      setupActions();
     void      setupConnections();
-    void      setupFifth();
+    void      setupScripting();
     void      setupIcons();
     void      setupTabOrder();
     qlonglong skipSpaces(const QString& str, qlonglong pos);;

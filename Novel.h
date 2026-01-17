@@ -54,19 +54,11 @@ public:
     auto position() const   { return mPosition; }
     void setId(qlonglong i) { mID = i++; if (i > sNextID) sNextID = i; }
 
-    void addTag(const QString& tag)       {
-        if (!hasTag(tag)) {
-            mTags.append(tag);
-        }
-    }
-    bool hasTag(const QString& tag) const {
-        bool temp = mTags.contains(tag, Qt::CaseInsensitive);
-        return temp;
-    }
-    void setTags(const StringList& tags)  {
-        mTags = tags;
-    }
-    StringList tags() const                     { return mTags; }
+    void addTag(const QString& tag)       { if (!hasTag(tag)) { mTags.append(tag); } }
+    void removeTag(const QString& tag)    { if (hasTag(tag)) { mTags.removeAll(tag, Qt::CaseInsensitive); } }
+    bool hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
+    void setTags(const StringList& tags)  { mTags = tags; }
+    StringList tags() const               { return mTags; }
 
     bool isNull() const  { return mName.isEmpty() && mHtml.isEmpty(); }
 
@@ -81,10 +73,13 @@ public:
     bool      fromObject(Json5Object& obj);
     void      fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     bool      hasTag(const StringList& tags) const;
-    void      newHtml();
+    void      newHtml(const QFont& font);
     QString   toPlainText();
 
     virtual Json5Object toObject();
+
+    static QString changeFont(const QString& html, const QFont& font);
+    static QString setupHtml(const QFont& font);
 
     static auto getNextID()                  { return sNextID; }
     static void resetLastID(qlonglong i = 0) { sNextID = i; }
@@ -115,6 +110,9 @@ private:
     static qsizetype sNextID;
 };
 
+namespace fifth {
+class vm;
+}
 class Novel {
 public:
     Novel();
@@ -166,6 +164,7 @@ public:
     bool      open();
     bool      save();
     void      setHtml(qlonglong node, const QString& html);
+    void      setupScripting(fifth::vm* vm);
 
     static Novel* ptr() { return sNovel; }
     static Novel& ref() { return *ptr(); }

@@ -285,7 +285,7 @@ void Main::doAboutToShowHelpMenu() {
 
 void Main::doAddItem() {
     Item item;
-    item.newHtml();
+    item.newHtml(mUi->textEdit->document()->defaultFont());
     item.setName("");
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
@@ -2098,17 +2098,9 @@ void Main::changeNovelFont(const QFont& font) {
 void Main::setupHtml(TextEdit& text) {
     Preferences& prefs = Main::ref().prefs();
     QFont font(prefs.fontFamily(), prefs.fontSize());
-    QFontMetrics metrics(font);
-    int lineHeight = metrics.height();
-    int indent = 2 * lineHeight;
-    QTextBlockFormat format;
-    format.setTextIndent(indent);
-    format.setBottomMargin(lineHeight);
-    QTextCursor cursor(text.document());
-    cursor.select(QTextCursor::Document);
-    cursor.mergeBlockFormat(format);
-    text.setTextCursor(cursor);
+    QString html = Item::setupHtml(font);
     text.document()->setDefaultFont(font);
+    text.document()->setHtml(html);
 }
 
 Json5Object Main::treeOfItems(QTreeWidgetItem* branch) {
@@ -2399,7 +2391,7 @@ void Main::setupConnections() {
             });
 }
 
-void Main::setupFifth() {
+void Main::setupScripting() {
     mVm = new fifth::vm;
     if (!mVm) return;
 
@@ -2430,7 +2422,7 @@ void Main::setupFifth() {
     mVm->addBuiltin("undo",         [this](fifth::vm*) { doUndo(); });
     mVm->addBuiltin("uppercase",    [this](fifth::vm*) { doUppercase(); });
 
-    mVm->addBuiltin("additem",   [this](fifth::vm*) { doAddItem(); });
+    mVm->addBuiltin("addbranch", [this](fifth::vm*) { doAddItem(); });
     mVm->addBuiltin("claseall",  [this](fifth::vm*) { doCloseAll(); });
     mVm->addBuiltin("edititem",  [this](fifth::vm*) { doEditItem(); });
     mVm->addBuiltin("movedown",  [this](fifth::vm*) { doMoveDown(); });
@@ -2443,6 +2435,31 @@ void Main::setupFifth() {
     mVm->addBuiltin("readtome",   [this](fifth::vm*) { doReadToMe(); });
     mVm->addBuiltin("spellcheck", [this](fifth::vm*) { doSpellcheck(); });
     mVm->addBuiltin("wordcount",  [this](fifth::vm*) { doWordCount(); });
+
+    // TextSmith2 words
+    // - match script to shortcut
+    // - add script to menu
+
+    // String words (more)
+    // - paragraphs
+    // - sentences
+    // - words
+    // - split
+    // - join
+    // - find
+
+    mNovel.setupScripting(mVm);
+
+    // Edit words
+    // - set selection
+    // - get selected tect
+    // - replace selected text
+    // - get text
+
+    // Tree words
+    // - get current id
+    // - set current id
+    // - get children
 }
 
 void Main::setupIcons() {
@@ -2487,42 +2504,8 @@ qlonglong Main::skipSpaces(const QString& str, qlonglong pos) {
 }
 
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
-    QTextCursor cursor(doc);
-
-    struct Range {
-        int pos;
-        int len;
-    };
-    QVector<Range> ranges;
-
-    QFontMetrics metrics(font);
-    int lineHeight = metrics.height();
-    int indent = 2 * lineHeight;
-    QTextBlockFormat toIndent;
-    toIndent.setTextIndent(indent);
-    toIndent.setBottomMargin(lineHeight);
-
-    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
-        for (QTextBlock::Iterator it = block.begin(); it != block.end(); ++it) {
-            if (!it.fragment().isValid()) continue;
-            const QTextFragment frag = it.fragment();
-            ranges.append({ frag.position(), frag.length() });
-        }
-
-        cursor.setPosition(block.position());
-        cursor.select(QTextCursor::BlockUnderCursor);
-        cursor.mergeBlockFormat(toIndent);
-    }
-
-    for (const auto& range: ranges) {
-        cursor.setPosition(range.pos);
-        cursor.setPosition(range.pos + range.len, QTextCursor::KeepAnchor);
-
-        QTextCharFormat fmt;
-        fmt.setFontFamilies({ font.family() });
-        fmt.setFontPointSize(font.pointSize());
-        cursor.mergeCharFormat(fmt);
-    }
-
+    QString html = doc->toHtml();
+    html = Item::changeFont(html, font);
+    doc->setHtml(html);
     Main::ref().ui()->textEdit->setWrapMargin();
 }

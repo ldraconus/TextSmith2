@@ -1,10 +1,12 @@
 #include "Novel.h"
-#include "Main.h"
-#include "ui_Main.h"
 
 #include <QFontMetrics>
+#include <QRegularExpression>
+#include <QTextBlock>
 #include <QTextCursor>
 #include <QTextEdit>
+
+#include "5th.h"
 
 qsizetype Item::sNextID = 0;
 
@@ -19,10 +21,66 @@ Item::Item(Json5Object& obj)
 }
 
 void Item::changeFont(const QFont& font) {
+    mHtml = changeFont(mHtml, font);
+}
+
+QString Item::changeFont(const QString& html, const QFont& font) {
     QTextEdit text;
-    text.setHtml(mHtml);
-    Main::changeDocumentFont(text.document(), font);
-    mHtml = text.toHtml();
+    text.setHtml(html);
+    QTextDocument* doc = text.document();
+    QTextCursor cursor(doc);
+
+    struct Range {
+        int pos;
+        int len;
+    };
+    QVector<Range> ranges;
+
+    QFontMetrics metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 2 * lineHeight;
+    QTextBlockFormat toIndent;
+    toIndent.setTextIndent(indent);
+    toIndent.setBottomMargin(lineHeight);
+
+    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
+        for (QTextBlock::Iterator it = block.begin(); it != block.end(); ++it) {
+            if (!it.fragment().isValid()) continue;
+            const QTextFragment frag = it.fragment();
+            ranges.append({ frag.position(), frag.length() });
+        }
+
+        cursor.setPosition(block.position());
+        cursor.select(QTextCursor::BlockUnderCursor);
+        cursor.mergeBlockFormat(toIndent);
+    }
+
+    for (const auto& range: ranges) {
+        cursor.setPosition(range.pos);
+        cursor.setPosition(range.pos + range.len, QTextCursor::KeepAnchor);
+
+        QTextCharFormat fmt;
+        fmt.setFontFamilies({ font.family() });
+        fmt.setFontPointSize(font.pointSize());
+        cursor.mergeCharFormat(fmt);
+    }
+
+    return text.toHtml();
+}
+
+QString Item::setupHtml(const QFont& font) {
+    QTextEdit text;
+    QFontMetrics metrics(font);
+    int lineHeight = metrics.height();
+    int indent = 4 * metrics.averageCharWidth();
+    QTextBlockFormat format;
+    format.setTextIndent(indent);
+    format.setBottomMargin(lineHeight);
+    QTextCursor cursor(text.document());
+    cursor.select(QTextCursor::Document);
+    cursor.mergeBlockFormat(format);
+    text.setTextCursor(cursor);
+    return text.document()->toHtml();
 }
 
 void Item::clear() {
@@ -35,7 +93,8 @@ void Item::clear() {
 }
 
 void Item::init() {
-    newHtml();
+    QTextEdit text;
+    mHtml = text.toHtml();
 }
 
 void Item::buildTree(Json5Object& obj, TreeNode& current) {
@@ -183,10 +242,10 @@ void Item::move(Item&& i) {
     i.mTags.clear();
 }
 
-void Item::newHtml() {
-    TextEdit text(nullptr);
+void Item::newHtml(const QFont& font) {
+    QTextEdit text(nullptr);
     text.setText("");
-    if (Main::ptr() && Main::ref().prefsLoaded()) Main::ref().setupHtml(text);
+    setupHtml(font);
 
     mHtml = text.toHtml();
     mCount = 0;
@@ -293,7 +352,193 @@ bool Novel::save() {
 
 void Novel::setHtml(qlonglong node, const QString& html) {
     Item& item = findItem(node);
+    if (item.isNull()) return;
     item.setHtml(html);
+}
+
+void Novel::setupScripting(fifth::vm* vm) {
+    vm->addBuiltin("html", [this](fifth::vm* vm) { // id -u-> html
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto id = i.asNumber();
+
+        if (id < 0) user.push("");
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push("");
+            else user.push(item.html());
+        }
+    });
+    vm->addBuiltin("<html", [this](fifth::vm* vm) {   // id html -u-> id
+        auto& user = vm->user();
+        auto h = user.pop();
+        auto i = user.top();
+        auto id = i.asNumber();
+        auto html = h.asString().str();
+
+        if (id < 0 || html.isEmpty()) return;
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push(id);
+            else item.setHtml(html);
+        }
+    });
+    vm->addBuiltin("html>", [this](fifth::vm* vm) {   // html id -u-> html
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto h = user.top();
+        auto id = i.asNumber();
+        auto html = h.asString().str();
+
+        if (id < 0 || html.isEmpty()) return;
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) return;
+            else item.setHtml(html);
+        }
+    });
+    vm->addBuiltin("name", [this](fifth::vm* vm) { // id -u-> name
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto id = i.asNumber();
+
+        if (id < 0) user.push("");
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push("");
+            else user.push(item.name());
+        }
+    });
+    vm->addBuiltin("<name", [this](fifth::vm* vm) {   // id name -u-> id
+        auto& user = vm->user();
+        auto n = user.pop();
+        auto i = user.top();
+        auto id = i.asNumber();
+        auto name = n.asString().str();
+
+        if (id < 0 || name.isEmpty()) return;
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push(id);
+            else item.setName(name);
+        }
+    });
+    vm->addBuiltin("name>", [this](fifth::vm* vm) {   // name id -u-> name
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto n = user.top();
+        auto id = i.asNumber();
+        auto name = n.asString().str();
+
+        if (id < 0 || name.isEmpty()) return;
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) return;
+            else item.setName(name);
+        }
+    });
+    vm->addBuiltin("tags", [this](fifth::vm* vm) {   // id -u-> tag(n) ... tag(1) n
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto id = i.asNumber();
+
+        if (id < 0) user.push(0);
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push(0);
+            else {
+                StringList tags = item.tags();
+                for (const auto& tag: tags) user.push(tag);
+                user.push(tags.count());
+            }
+        }
+    });
+    vm->addBuiltin("+tag", [this](fifth::vm* vm) { // id tag -u-> id
+        auto& user = vm->user();                   // tag id -u-> id
+        auto t = user.pop();
+        auto i = user.pop();
+        if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
+        if (!i.isNum()) user.push(i);
+        else {
+            auto id = i.asNumber();
+            auto tag = t.asString().str();
+            Item& item = findItem(id);
+            if (!item.isNull()) item.addTag(tag);
+            user.push(id);
+        }
+    });
+    vm->addBuiltin("-tag", [this](fifth::vm* vm) { // id tag -u-> id
+        auto& user = vm->user();                   // tag id -u-> id
+        auto t = user.pop();
+        auto i = user.pop();
+        if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
+        if (i.isNum()) {
+            auto id = i.asNumber();
+            auto tag = t.asString().str();
+            Item& item = findItem(id);
+            item.removeTag(tag);
+            user.push(id);
+        } else user.push(i);
+    });
+    vm->addBuiltin("?tag", [this](fifth::vm* vm) { // id tag -u-> t/f
+        auto& user = vm->user();                   // tag id -u-> t/f
+        auto t = user.pop();
+        auto i = user.pop();
+        if (i.isStr() && t.isNum()) swap<fifth::value>(t, i);
+        if (!i.isNum()) user.push(false);
+        else {
+            auto id = i.asNumber();
+            auto tag = t.asString().str();
+            Item& item = findItem(id);
+            user.push(item.hasTag(tag));
+        }
+    });
+    vm->addBuiltin("ids", [this](fifth::vm* vm) { // -u-> id(n) ... id(1) n;)
+        auto& user = vm->user();
+        auto keys = mItems.keys();
+        for (auto i = keys.size(); i != 0; --i) user.push(keys[i - 1]);
+        user.push(keys.size());
+    });
+    vm->addBuiltin("position", [this](fifth::vm* vm) { // id -u-> position
+        auto& user = vm->user();
+        auto i = user.pop();
+        auto id = i.asNumber();
+
+        if (id < 0) user.push(0);
+        else {
+            Item& item = findItem(id);
+            if (item.isNull()) user.push(0);
+            else user.push(item.position());
+        }
+        vm->addBuiltin("<position", [this](fifth::vm* vm) {   // id position -u-> id
+            auto& user = vm->user();
+            auto p = user.pop();
+            auto i = user.top();
+            auto id = i.asNumber();
+            auto pos = p.asNumber();
+
+            if (id < 0 || pos < 0) return;
+            else {
+                Item& item = findItem(id);
+                if (item.isNull()) user.push(id);
+                else item.setPosition(pos);
+            }
+        });
+        vm->addBuiltin("position>", [this](fifth::vm* vm) {   // position id -u-> position
+            auto& user = vm->user();
+            auto i = user.pop();
+            auto p = user.top();
+            auto id = i.asNumber();
+            auto pos = p.asNumber();
+
+            if (id < 0 || pos < 0) return;
+            else {
+                Item& item = findItem(id);
+                if (item.isNull()) return;
+                else item.setPosition(pos);
+            }
+        });
+    });
 }
 
 bool Novel::fromObject(Json5Object& obj) {
