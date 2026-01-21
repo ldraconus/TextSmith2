@@ -90,7 +90,9 @@ public:
     static bool        hasBool(Json5Object& obj, const QString&  str, bool               def = false);
     static bool        hasBool(Json5Array& obj,  const qsizetype idx, bool               def = false);
     static qsizetype   hasNum(Json5Object& obj,  const QString&  str, const qsizetype    def = 0);
+    static double      hasNum(Json5Object& obj,  const QString& str,  const double       def = 0.0);
     static qsizetype   hasNum(Json5Array& arr,   const qsizetype idx, const qsizetype    def = 0);
+    static double      hasNum(Json5Array& arr,   const qsizetype idx, const double       def = 0.0);
     static Json5Object hasObj(Json5Object& obj,  const QString&  str, const Json5Object& def = { });
     static QString     hasStr(Json5Object& obj,  const QString&  str, const QString&     def = "");
     static QString     hasStr(Json5Array& arr,   const qsizetype idx, const QString&     def = "");

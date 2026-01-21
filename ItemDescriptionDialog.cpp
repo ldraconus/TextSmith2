@@ -1,5 +1,6 @@
 #include "ItemDescriptionDialog.h"
 #include "ui_ItemDescriptionDialog.h"
+#include "Main.h"
 
 #include <QKeyEvent>
 #include <QPushButton>
@@ -20,6 +21,11 @@ ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget* parent)
 
     noDefault(mUi->buttonBox->button(QDialogButtonBox::Ok));
     noDefault(mUi->buttonBox->button(QDialogButtonBox::Cancel));
+
+    QFont font(Main::ref().prefs().uiFontFamily(), Main::ref().prefs().uiFontSize());
+    Main::ref().prefs().applyFontToTree(this, font);
+    updateGeometry();
+    repaint();
 }
 
 ItemDescriptionDialog::~ItemDescriptionDialog() {

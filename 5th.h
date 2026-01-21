@@ -88,16 +88,16 @@ public:
     auto begin() { return mStr.begin(); }
     auto end()   { return mStr.end(); }
 
-    bool        empty() const                                      { return mStr.isEmpty(); }
-    long long   indexOf(const FString& s)                          { return mStr.indexOf(s.mStr); }
-    bool        isEmpty() const                                    { return empty(); }
-    FString      left(long long len) const                         { return mStr.left(len); }
-    auto        size() const                                       { return mStr.size(); }
-    QStringList split(const FString& str)                          { return mStr.split(str.mStr); }
-    QString     str() const                                        { return mStr; }
-    FString      substr(long long start, long long len = -1) const { return mStr.mid(start, len); }
-    long long   toLongLong(bool* ok = nullptr) const               { return mStr.toLongLong(ok); }
-    std::string toStdString() const                                { return mStr.toStdString(); }
+    bool        empty() const                                     { return mStr.isEmpty(); }
+    long long   indexOf(const FString& s)                         { return mStr.indexOf(s.mStr); }
+    bool        isEmpty() const                                   { return empty(); }
+    FString     left(long long len) const                         { return mStr.left(len); }
+    auto        size() const                                      { return mStr.size(); }
+    QStringList split(const FString& str)                         { return mStr.split(str.mStr); }
+    QString     str() const                                       { return mStr; }
+    FString     substr(long long start, long long len = -1) const { return mStr.mid(start, len); }
+    long long   toLongLong(bool* ok = nullptr) const              { return mStr.toLongLong(ok); }
+    std::string toStdString() const                               { return mStr.toStdString(); }
 
     static FString number(long long x) { return FString(QString("%1").arg(x)); }
 
@@ -121,7 +121,7 @@ namespace fifth {
   typedef const std::function<void(vm*)> function;
   typedef callable*   exe;
   typedef long long   num;
-  typedef ::FString    str;
+  typedef ::FString   str;
 
   class value {
   public:
@@ -330,7 +330,7 @@ namespace fifth {
       str   disassemble(vm* v);
 
     private:
-      std::vector<instruction>              mCode;
+      std::vector<instruction> mCode;
   };
 
   class stack {

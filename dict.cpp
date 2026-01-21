@@ -1728,7 +1728,7 @@ namespace fifth {
    *
    * Take 'a' and 'b' push 'b' and then 'a'.
    **/
-  void swap(vm* v) {
+  void Swap(vm* v) {
     stack& user = v->user();
     auto b = user.pop();
     auto a = user.pop();
@@ -1922,7 +1922,7 @@ namespace fifth {
 
     // --[ Stack ]------------
     addBuiltin("pop",  pop);   //     a -u->       Discard top
-    addBuiltin("swap", swap);  //   a b -u-> b a   Swap top two
+    addBuiltin("swap", Swap);  //   a b -u-> b a   Swap top two
     addBuiltin("over", over);  //   a b -u-> a b a Copy 2nd
     addBuiltin("dup",  dup);   //     a -u-> a a   Duplicate top
     addBuiltin("rot",  rot);   // a b c -u-> c a b Rotate the top 3

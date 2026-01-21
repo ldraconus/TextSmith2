@@ -24,6 +24,7 @@
 
 class QApplication;
 class QCloseEvent;
+class QShortcut;
 class QShowEvent;
 
 QT_BEGIN_NAMESPACE
@@ -76,46 +77,47 @@ private:
 
     enum class StartingFlag { Starting, Continuing };
 
-    List<QAction*>        mActions;
-    QApplication*         mApp { nullptr };
-    QString               mAppDir;
-    Map<qlonglong, bool>  mById;
-    QCompleter*           mCompleter { nullptr };
-    Novel                 mCopy;
-    qlonglong             mCurrentNode { -1 };
-    QString               mDocDir;
-    int                   mDocMetaType;
-    Ui_Widget*            mFindWidget { nullptr };
-    QWidget*              mFindLine { nullptr };
-    QRect                 mGeom;
-    Map<QString, QString> mIcons;
-    Map<QString, QImage>  mImageStore;
-    QString               mLocalDir;
-    Message               mMsg;
-    Novel                 mNovel;
-    qlonglong             mPosition;
-    Preferences           mPrefs;
-    bool                  mPrefsLoaded { false };
-    Printer*              mPrinter { nullptr };
-    QTextCursor           mSavedCursor;
-    std::atomic<bool>     mSaving { false };
-    SearchCore*           mSearch { nullptr };
-    SoundPool             mSoundPool;
-    Speech                mSpeech;
-    bool                  mSpeechAvailable { false };
-    EasySpelling          mSpelling;
-    Ui_SpellWidget*       mSpellWidget { nullptr };
-    QWidget*              mSpellcheck { nullptr };
-    WordPos               mSpellcheckWord;
-    Map<qlonglong, bool>  mState;
-    QList<qlonglong>      mSpellcheckIds;
-    qlonglong             mSpellcheckPosition { -1 };
-    QToolButton*          mStopButton { nullptr };
-    QString               mTextToSpeak;
-    QTimer                mTimer;
-    Ui::Main*             mUi { nullptr };
-    fifth::vm*            mVm { nullptr };
-    WordCounts            mWordCount;
+    List<QAction*>                mActions;
+    QApplication*                 mApp { nullptr };
+    QString                       mAppDir;
+    Map<qlonglong, bool>          mById;
+    QCompleter*                   mCompleter { nullptr };
+    Novel                         mCopy;
+    qlonglong                     mCurrentNode { -1 };
+    QString                       mDocDir;
+    int                           mDocMetaType;
+    Ui_Widget*                    mFindWidget { nullptr };
+    QWidget*                      mFindLine { nullptr };
+    QRect                         mGeom;
+    Map<QString, QString>         mIcons;
+    Map<QString, QImage>          mImageStore;
+    QString                       mLocalDir;
+    Message                       mMsg;
+    Novel                         mNovel;
+    qlonglong                     mPosition;
+    Preferences                   mPrefs;
+    bool                          mPrefsLoaded { false };
+    Printer*                      mPrinter { nullptr };
+    QTextCursor                   mSavedCursor;
+    std::atomic<bool>             mSaving { false };
+    SearchCore*                   mSearch { nullptr };
+    Map<QShortcut*, fifth::value> mShortcut;
+    SoundPool                     mSoundPool;
+    Speech                        mSpeech;
+    bool                          mSpeechAvailable { false };
+    EasySpelling                  mSpelling;
+    Ui_SpellWidget*               mSpellWidget { nullptr };
+    QWidget*                      mSpellcheck { nullptr };
+    WordPos                       mSpellcheckWord;
+    Map<qlonglong, bool>          mState;
+    QList<qlonglong>              mSpellcheckIds;
+    qlonglong                     mSpellcheckPosition { -1 };
+    QToolButton*                  mStopButton { nullptr };
+    QString                       mTextToSpeak;
+    QTimer                        mTimer;
+    Ui::Main*                     mUi { nullptr };
+    fifth::vm*                    mVm { nullptr };
+    WordCounts                    mWordCount;
 
     static Main* sMain;
 
@@ -162,6 +164,7 @@ private:
     void doOpenAll();
     void doOpen();
     void doOutdent();
+    void doPageSetup();
     void doPaste();
     void doPreferences();
     void doPrint();
@@ -191,6 +194,7 @@ private:
 
     static constexpr bool NoUi = true;
 
+    void      addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path);
     void      buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     void      buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
     bool      canPasteMimeData(const QMimeData* mimeData);
@@ -199,7 +203,10 @@ private:
     void      cutTreeItem();
     QString   findKey(QString& used, const QString& name, bool secondPass = false);
     void      fitWindow();
+    void      footer(QPainter& painter, QPrinter* printer);
+    void      header(QPainter& painter, QPrinter* printer);
     void      justifyButtons();
+    void      loadScripts();
     void      mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     WordPos   nextWord(const QString& str, qlonglong pos = 0);
     bool      nothingAbove();
@@ -239,12 +246,16 @@ public:
     qlonglong    currentNode()                    { return mCurrentNode; }
     QString      docDir()                         { return mDocDir; }
     Item&        fifthItem(fifth::stack& user)    { return mNovel.fifthItem(user); }
+    Message&     msg()                            { return mMsg; }
     QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
     Novel&       novel()                          { return mNovel; }
     Preferences& prefs()                          { return mPrefs; }
     bool         prefsLoaded()                    { return mPrefsLoaded; }
+    void         print(QPrinter* printer)         { return doPrintNovel(printer); }
+    Printer*     printer()                        { return mPrinter; }
     void         ready()                          { QApplication::restoreOverrideCursor(); }
     void         setDocDir(const QString& d)      { mDocDir = d; }
+    void         setPrinter(Printer* p)           { mPrinter = p; }
     Ui::Main*    ui()                             { return mUi; }
     WordCounts&  wordCount()                      { return mWordCount; }
 
@@ -262,8 +273,8 @@ public:
                                    std::function<void()> printer);
     void               loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
     void               loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
+    StringList         mergeWordFragments(QList<Words::Word>& words);
     void               newPage(QPainter& painter, std::function<void()> printer);
-    QList<Words::Word> paragraphWords(const QString& paragrapth);
     void               outputNovel(QList<qlonglong> ids,
                                    const QString& chapterTag,
                                    const QString& sceneTag,
@@ -272,6 +283,7 @@ public:
                                    QSizeF pageSize,
                                    QMarginsF margins,
                                    std::function<void()> pager);
+    QList<Words::Word> paragraphWords(const QString& paragrapth);
     void               removeEmptyFirstBlock(TextEdit* text);
     void               setupHtml(TextEdit& text);
     Json5Object        treeOfItems(QTreeWidgetItem* branch);
@@ -290,6 +302,7 @@ public slots:
     void exitAction()   { doExit(); }
     void newAction()    { doNew(); }
     void openAction()   { doOpen(); }
+    void pageSetup()    { doPageSetup(); }
     void printAction()  { doPrint(); }
     void saveAction()   { doSave(); }
     void saveAsAction() { doSaveAs(); }

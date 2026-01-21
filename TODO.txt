@@ -1,13 +1,13 @@
-[/] Integrate 5th into the program for scripting
-    - add 5th.h and 5th.cpp to the codebase.
-[/] - add words for /every/ action the user can do ([X] menuitem, [ ] moving, [ ] selecting, and [ ] more basic string handling).
-[ ] - load scripts
-[ ] - add a way to bind a script to an action, and bind that to a menu or submenu, complete with shortcut while avoiding shortcurt collisions.
-[ ] UI font selection
 [ ] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
-[ ] Help
 [ ] Add pause/play handling to speech
+[ ] Help
 [ ] Add a hollywood script writing display mode
+[X] UI font selection
+[X] Integrate 5th into the program for scripting
+    - add 5th.h and 5th.cpp to the codebase.
+    - add words for /every/ action the user can do ([X] menuitem, [X] moving, [X] selecting, and [X] more basic string handling).
+    - load scripts
+    - add a way to bind a script to an action, and bind that to a menu or submenu, complete with shortcut while avoiding shortcurt collisions.
 [?] Add Imports:
 [?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
 [?] - snowflake import?

@@ -46,6 +46,9 @@ void PreferencesDialog::saveChanges() {
     auto font = mUi->novelFontPushButton->font();
     mPrefs->setFontFamily(font.family());
     mPrefs->setFontSize(font.pointSize());
+    font = mUi->uiFontPushButton->font();
+    mPrefs->setUiFontFamily(font.family());
+    mPrefs->setUiFontSize(font.pointSize());
     mPrefs->setTheme(mUi->displayThemeComboBox->currentIndex());
     mPrefs->setTypingSounds(mUi->typewriteSoundsCheckBox->isChecked());
     if (mUi->readAloudVoiceComboBox->isEnabled()) mPrefs->setVoice(mUi->readAloudVoiceComboBox->currentIndex());
@@ -69,6 +72,19 @@ void PreferencesDialog::font() {
     mUi->novelFontPushButton->setText(QString("%1:%2").arg(font.family()).arg(font.pointSize()));
 
     setTextEditFont(font);
+    Main::ref().ready();
+}
+
+void PreferencesDialog::uiFont() {
+    bool ok = false;
+    QFont font = QFontDialog::getFont(&ok, mUi->uiFontPushButton->font(), this, "Pick a font to use for the program");
+    if (!ok) return;
+
+    Main::ref().busy();
+    mUi->uiFontPushButton->setFont(font);
+    mUi->uiFontPushButton->setText(QString("%1:%2").arg(font.family()).arg(font.pointSize()));
+
+    setUiFont(font);
     Main::ref().ready();
 }
 
@@ -98,9 +114,14 @@ void PreferencesDialog::setTextEditFont(QFont& font) {
     Main::changeDocumentFont(doc, font);
 }
 
+void PreferencesDialog::setUiFont(QFont& font) {
+    mPrefs->applyFontToTree(this, font);
+}
+
 void PreferencesDialog::setupConnections() {
     connect(this,                      &PreferencesDialog::accepted,    this, &PreferencesDialog::saveChanges);
     connect(mUi->autoSaveCheckBox,     &QCheckBox::checkStateChanged,   this, &PreferencesDialog::autoSaveChanged);
     connect(mUi->novelFontPushButton,  &QPushButton::clicked,           this, &PreferencesDialog::font);
+    connect(mUi->uiFontPushButton,     &QPushButton::clicked,           this, &PreferencesDialog::uiFont);
     connect(mUi->displayThemeComboBox, &QComboBox::currentIndexChanged, this, &PreferencesDialog::theme);
 }

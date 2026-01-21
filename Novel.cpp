@@ -96,7 +96,7 @@ void Item::init() {
 }
 
 void Item::buildTree(Json5Object& obj, TreeNode& current) {
-    qlonglong id = Item::hasNum(obj, Novel::V1Id, -1);
+    qlonglong id = Item::hasNum(obj, Novel::V1Id, qlonglong(-1));
     if (id != -1) current.setId(id);
     Json5Array arr = Item::hasArr(obj, Novel::Children, {});
     for (auto& node: arr) {
@@ -181,10 +181,20 @@ qsizetype Item::hasNum(Json5Object& obj, const QString& str, const qsizetype def
     return def;
 }
 
+double Item::hasNum(Json5Object& obj, const QString& str, const double def) {
+    if (valid(obj, str, Json5::Number)) return obj[str].toReal(def);
+    return def;
+}
+
 qsizetype Item::hasNum(Json5Array& arr, const qsizetype idx, const qsizetype def) {
     if (arr.count() > idx && idx >= 0 && arr[idx].isNumber()) return arr[idx].toInt(def);
     return def;
 
+}
+
+double Item::hasNum(Json5Array& arr, const qsizetype idx, const double def) {
+    if (arr.count() > idx && idx >= 0 && arr[idx].isNumber()) return arr[idx].toReal(def);
+    return def;
 }
 
 Json5Object Item::hasObj(Json5Object& obj, const QString& str, const Json5Object& def) {
@@ -213,8 +223,8 @@ void Item::copy(const Item& i) {
 
 bool Item::fromObject(Json5Object& obj) {
     mHtml =     hasStr(obj, Novel::Html);
-    mPosition = hasNum(obj, Novel::Position);
-    auto id =   hasNum(obj, Novel::Id);
+    mPosition = hasNum(obj, Novel::Position, 0.0);
+    auto id =   hasNum(obj, Novel::Id,       qlonglong(0));
     mName =     hasStr(obj, Novel::Name);
 
     setId(id);
@@ -502,7 +512,7 @@ bool Novel::fromObject(Json5Object& obj) {
     mFilename = Item::hasStr(obj, Filename, "");
     mExtra =    Item::hasObj(obj, Extra, {});
     mItems.clear();
-    mRoot =     Item::hasNum(obj, Root, 0);
+    mRoot =     Item::hasNum(obj, Root, qlonglong(0));
     Json5Object items = Item::hasObj(obj, Items, {});
     for (auto& node: items) {
         if (!node.second.isObject()) continue;
@@ -539,7 +549,7 @@ bool Novel::fromV1Object(Json5Object& obj) {
 }
 
 TreeNode::TreeNode(Json5Object& obj) {
-    mId                 = Item::hasNum(obj, Novel::BranchId, 0);
+    mId                 = Item::hasNum(obj, Novel::BranchId, qlonglong(0));
     Json5Array branches = Item::hasArr(obj, Novel::Branches, {});
     for (auto& node: branches) {
         if (!node.isObject()) continue;

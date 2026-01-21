@@ -30,6 +30,7 @@ public slots:
     void font();
     void saveChanges();
     void theme(int idx);
+    void uiFont();
 
 private:
     Preferences*           mPrefs;
@@ -38,6 +39,7 @@ private:
 
     void loadAvailableVoices();
     void setTextEditFont(QFont& font);
+    void setUiFont(QFont& font);
     void setupConnections();
 
     static PreferencesDialog* sPreferencesDialog;

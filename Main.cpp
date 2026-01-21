@@ -747,14 +747,14 @@ void Main::doOpen() {
     if (obj.contains("Prefs")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
         mPrefs.read(prefs);
-        mCurrentNode = Item::hasNum(obj, "Current", -1);
-        mPosition = Item::hasNum(obj, "Position", 0);
+        mCurrentNode = Item::hasNum(obj, "Current", qlonglong(-1));
+        mPosition = Item::hasNum(obj, "Position", qlonglong(0));
         Json5Array array = Item::hasArr(obj, "State");
         mState.clear();
         for (auto& state: array) {
             if (!state.isArray()) continue;
             auto& item = state.toArray();
-            int id = Item::hasNum(item, 0);
+            int id = Item::hasNum(item, 0, qlonglong(-1));
             bool expanded = Item::hasBool(item, 1);
             mState[id] = expanded;
         }
@@ -807,6 +807,10 @@ void Main::doOutdent() {
     cursor.setBlockFormat(block);
     mUi->textEdit->setTextCursor(cursor);
     changed();
+}
+
+void Main::doPageSetup() {
+
 }
 
 void Main::doPaste() {
@@ -953,7 +957,7 @@ void Main::doPrintNovel(QPrinter*) {
     QSizeF pageSize(paperRect.right() - 2 * inch.width(), paperRect.bottom() - 2 * inch.height());
     QPainter painter(printer);
     outputNovel(mPrinter->ids(), mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag(), painter, pageSize,
-                { 1.0, 1.0, 1.0, 1.0 }, [&printer]() { printer->newPage(); });
+                { 1.0, 1.0, 1.0, 1.0 }, [this, &painter, &printer]() { header(painter, printer); footer(painter, printer); printer->newPage(); });
 }
 
 void Main::doReadToMe() {
@@ -1265,6 +1269,49 @@ void Main::doWordCount() {
     mUi->statusbar->showMessage(report, 30 * 1000);
 }
 
+void Main::addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path) {
+    StringList parts { path.split('\t', Qt::SkipEmptyParts) };
+    if (parts.isEmpty()) return;
+
+    QMenu* currentMenu = nullptr;
+
+    // Step 1: Find or create the top-level menu
+    for (QAction* act: bar->actions()) {
+        if (act->menu() && act->text() == parts[0]) {
+            currentMenu = act->menu();
+            break;
+        }
+    }
+
+    if (!currentMenu) {
+        currentMenu = new QMenu(parts[0], bar);
+        bar->addMenu(currentMenu);
+    }
+
+    // Step 2: Walk down the submenu chain
+    for (int i = 1; i < parts.size(); ++i) {
+        const QString& name = parts[i];
+
+        QMenu* nextMenu = nullptr;
+        for (QAction* act: currentMenu->actions()) {
+            if (act->menu() && act->text() == name) {
+                nextMenu = act->menu();
+                break;
+            }
+        }
+
+        if (!nextMenu) {
+            nextMenu = new QMenu(name, currentMenu);
+            currentMenu->addMenu(nextMenu);
+        }
+
+        currentMenu = nextMenu;
+    }
+
+    // Step 3: Insert the final action
+    currentMenu->addAction(action);
+}
+
 void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<qlonglong, bool>& byId) {
     auto twItem = new QTreeWidgetItem();
     auto& item = mNovel.findItem(branch.id());
@@ -1400,6 +1447,10 @@ void Main::fitWindow() {
     mPrefs.setWindowLocation(geom);
 }
 
+void Main::footer(QPainter& painter, QPrinter* printer) {}
+
+void Main::header(QPainter& painter, QPrinter* printer) {}
+
 int Main::handleCover(Item& item,
                       int pageNo,
                       bool startingPage,
@@ -1497,6 +1548,21 @@ void Main::justifyButtons() {
     setMenu(mUi->actionRight_Justify,      block.alignment() == Qt::AlignRight);
     setIcon(mUi->fullJustifyToolButton,    block.alignment() == Qt::AlignJustify);
     setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
+}
+
+void Main::loadScripts() {
+    QString scriptsPath = mDocDir + "/TextSmith/Scripts";
+    QDir scriptDir(scriptsPath);
+    scriptDir.mkpath(scriptsPath);
+    StringList scripts { scriptDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
+    for (const auto& script: scripts) {
+        QFile file(script);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+        QByteArray data(file.readAll());
+        file.close();
+        QString code(data);
+        mVm->evaluate(code);
+    }
 }
 
 void Main::copyTreeItem() {
@@ -1951,6 +2017,12 @@ void Main::updateFromPrefs() {
     if (mPrefs.autoSave()) mTimer.start(mPrefs.autoSaveIntyerval() * second);
     else mTimer.stop();
 
+    mUi->actionRead_To_Me->setEnabled(mPrefs.voice() >= 0);
+    QFont uiFont(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
+    mPrefs.applyFontToTree(this, uiFont);
+    updateGeometry();
+    repaint();
+
     QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
     mUi->textEdit->setCurrentFont(font);
     mUi->textEdit->document()->setDefaultFont(font);
@@ -1970,8 +2042,6 @@ void Main::updateFromPrefs() {
         for (auto& m: mPrefs.mainSplitter()) arr.append(m.toInt());
         mUi->splitter->setSizes(arr.toQList());
     }
-
-    mUi->actionRead_To_Me->setEnabled(mPrefs.voice() >= 0);
 }
 
 void Main:: updateHtml() { // update, and post-fullscreen
@@ -2047,9 +2117,15 @@ Main::Main(QApplication* app, QWidget* parent)
 
     setupActions();
     setupConnections();
+    setupScripting();
     setupTabOrder();
 
+    loadScripts();
     mPrefsLoaded = mPrefs.load();
+    QFont font(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
+    mPrefs.applyFontToTree(this, font);
+    updateGeometry();
+    repaint();
 
     mUi->treeWidget->setColumnCount(1);
     mUi->textEdit->setTabChangesFocus(true);
@@ -2077,7 +2153,7 @@ QTreeWidgetItem* Main::buildTreeFromJson(Json5Object& obj) {
     Item item;
     item.setHtml(Item::hasStr(obj, "Html"));
     item.setName(Item::hasStr(obj, "Name"));
-    item.setPosition(Item::hasNum(obj, "Position", 0));
+    item.setPosition(Item::hasNum(obj, "Position", qlonglong(0)));
     if (Json5Array arr = Item::hasArr(obj, "Tags", {}); !arr.empty()) {
         for (auto& tag: arr) {
             if (tag.isString()) item.addTag(tag.toString());
@@ -2219,12 +2295,13 @@ void Main::setupConnections() {
     qRegisterMetaType<QTextDocument*>("QTextDocument*");
 
     mUi->actionExit->setShortcut(QKeySequence("Alt+F4"));
-    connect(mUi->actionExit,    &QAction::triggered, this, &Main::exitAction);
-    connect(mUi->actionNew,     &QAction::triggered, this, &Main::newAction);
-    connect(mUi->actionOpen,    &QAction::triggered, this, &Main::openAction);
-    connect(mUi->actionPrint,   &QAction::triggered, this, &Main::printAction);
-    connect(mUi->actionSave,    &QAction::triggered, this, &Main::saveAction);
-    connect(mUi->actionSave_As, &QAction::triggered, this, &Main::saveAsAction);
+    connect(mUi->actionExit,       &QAction::triggered, this, &Main::exitAction);
+    connect(mUi->actionNew,        &QAction::triggered, this, &Main::newAction);
+    connect(mUi->actionOpen,       &QAction::triggered, this, &Main::openAction);
+    connect(mUi->actionPage_Setup, &QAction::triggered, this, &Main::pageSetup);
+    connect(mUi->actionPrint,      &QAction::triggered, this, &Main::printAction);
+    connect(mUi->actionSave,       &QAction::triggered, this, &Main::saveAction);
+    connect(mUi->actionSave_As,    &QAction::triggered, this, &Main::saveAsAction);
     QMenu* exportMenu = new QMenu("Export", this);
     mUi->actionExport->setMenu(exportMenu);
 
@@ -2408,6 +2485,7 @@ void Main::setupScripting() {
     mVm = new fifth::vm;
     if (!mVm) return;
 
+    // Menu words
     mVm->addBuiltin("exit",   [this](fifth::vm*) { doExit(); });
     mVm->addBuiltin("new",    [this](fifth::vm*) { doNew(); });
     mVm->addBuiltin("open",   [this](fifth::vm*) { doSave(); });
@@ -2436,7 +2514,7 @@ void Main::setupScripting() {
     mVm->addBuiltin("uppercase",    [this](fifth::vm*) { doUppercase(); });
 
     mVm->addBuiltin("addbranch", [this](fifth::vm*) { doAddItem(); });
-    mVm->addBuiltin("claseall",  [this](fifth::vm*) { doCloseAll(); });
+    mVm->addBuiltin("closeall",  [this](fifth::vm*) { doCloseAll(); });
     mVm->addBuiltin("edititem",  [this](fifth::vm*) { doEditItem(); });
     mVm->addBuiltin("movedown",  [this](fifth::vm*) { doMoveDown(); });
     mVm->addBuiltin("moveout",   [this](fifth::vm*) { doMoveOut(); });
@@ -2450,9 +2528,124 @@ void Main::setupScripting() {
     mVm->addBuiltin("wordcount",  [this](fifth::vm*) { doWordCount(); });
 
     // TextSmith2 words
-    // - match script to shortcut
-    // - add script to menu
+    mVm->addBuiltin("shortcut", [this](fifth::vm* vm) { //    shortcut -u-> // short cut is expected to be followed by code block { }
+        auto& user = vm->user();
+        QString key = user.pop().asString().str();
+        if (key.isEmpty()) {
+            user.push(0);
+            return;
+        }
+        QShortcut* shortcut = new QShortcut(QKeySequence(key), this);
+        mShortcut[shortcut] = nullptr;
+        user.push(qlonglong(shortcut));
+        connect(shortcut, &QShortcut::activated, this, [this, shortcut]() {
+            auto& user = mVm->user();
+            auto& body = mShortcut[shortcut];
+            if (body.isExe()) {
+                auto call = body.asCallable();
+                if (call) {
+                    auto comp = dynamic_cast<fifth::compiled*>(call);
+                    comp->eval(mVm);
+                }
+            } else if (body.isStr() || body.isNum()) user.push(body);
+            else user.push(0);
+        });
+    });
+    mVm->addBuiltin("action", [this](fifth::vm* vm) {  //  name [shortcut] -u-> action /* compile code between { } if not shortcut */
+        auto& user = vm->user();
+        auto s = user.pop();
+        QString name;
+        QShortcut* shortcut { nullptr };
+        fifth::exe body = s.asCallable();
+        s = user.pop();
+        if (s.isNum()) {
+            QShortcut* ptr = (QShortcut*)(s.asNumber());
+            if (!mShortcut.contains(ptr)) return;
+            mShortcut[ptr] = body;
+            s = user.pop();
+        } else return;
+        name = s.asString().str();
+        if (name.isEmpty()) return;
+        QAction* action = new QAction(name, this);
+        connect(action, &QAction::activate, this, [this, body]() {
+            auto comp = dynamic_cast<fifth::compiled*>(body);
+            comp->eval(mVm);
+        });
+        user.push(qlonglong(action));
+    });
+    mVm->addBuiltin("menu", [this](fifth::vm* vm) { // menu-path action -u->
+        auto& user = vm->user();
+        auto a = user.pop();
+        auto m = user.pop();
+        QAction* action = (QAction*)(a.asNumber());
+        if (action == nullptr) return;
+        QString menuPath = m.asString().str();
+        if (!m.isStr() || menuPath.isEmpty()) return;
+        addActionToMenuPath(mUi->menubar, action, menuPath);
+    });
+    mVm->addBuiltin("getfilename", [this](fifth::vm* vm) { //   -u-> filename
+        QString filename = QFileDialog::getSaveFileName(this, "Filename to write to?", mDocDir, "All Files (*.*)");
+        if (!filename.isEmpty()) {
+            QFileInfo info(filename);
+            if (info.exists()) filename = "";
+            else mDocDir = info.absolutePath();
+        }
+        vm->user().push(filename);
+    });
+    mVm->addBuiltin("writefile", [this](fifth::vm* vm) {
+        auto& user = vm->user();
+        QString filename = user.pop().asString().str();
+        int result = 0;
+        if (!filename.isEmpty()) {
+            QFileInfo info(filename);
+            if (!info.exists()) {
+                QString doc;
+                auto num = user.pop().asNumber();
+                for (auto i = 0; i < num; ++i) doc += user.pop().asString().str() + "\n";
+                QFile file(filename);
+                if (file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+                    QTextStream out(&file);
+                    out << doc;
+                    file.close();
+                    result = 1;
+                }
+            }
+        }
+        user.push(result);
+    });
+    mVm->addBuiltin("message", [this](fifth::vm* vm) { mMsg.Statement(mVm->user().pop().asString().str()); }); // msg -u->
+    mVm->addBuiltin("yesno", [this](fifth::vm* vm) { // question -u-> 1|0
+        auto& user = mVm->user();
+        mMsg.YesNo(user.pop().asString().str(),
+                   [&user]() { user.push(1); },
+                   [&user]() { user.push(0); },
+                   "Yes, or No?");
+    });
+    mVm->addBuiltin("okcancel", [this](fifth::vm* vm) { // question -u-> 1|0
+        auto& user = mVm->user();
+        mMsg.OKCancel(user.pop().asString().str(),
+                     [&user]() { user.push(1); },
+                     [&user]() { user.push(0); },
+                     "Okay, or Cancel?");
+    });
+    mVm->addBuiltin("yesnocancel", [this](fifth::vm* vm) { // question -u-> 1|0|-1
+        auto& user = mVm->user();
+        mMsg.YesNoCancel(user.pop().asString().str(),
+                        [&user]() { user.push(1); },
+                        [&user]() { user.push(0); },
+                        [&user]() { user.push(-1); },
+                        "Yes, No, or Cancel?");
+    });
 
+    // List words (more)
+    mVm->addBuiltin("reverse", [this](fifth::vm* vm) {
+        auto& user = vm->user();
+        QList<fifth::value> contents;
+        auto num = user.pop().asNumber();
+        for (auto i = 0; i < num; ++i) contents.append(user.pop());
+        for (auto i = 0; i < num; ++i) user.push(contents[i]);
+        user.push(num);
+    });
     // String words (more)
     mVm->addBuiltin("html2para", [this](fifth::vm* vm) { // id -u-> para[n] ... para[1] n
         auto& user = vm->user();
@@ -2498,21 +2691,71 @@ void Main::setupScripting() {
         }
         user.push(string);
     });
-    // - find
-    // - replace
+    mVm->addBuiltin("find", [this](fifth::vm* vm) { //  string target -u-> position of target in  string
+        auto& user = vm->user();
+        auto t = user.pop();
+        auto s = user.pop();
+        QString string = s.asString().str();
+        QString target = t.asString().str();
+        user.push(string.indexOf(target));
+    });
+    mVm->addBuiltin("replace", [this](fifth::vm* vm) { //  string target with -u-> new string
+        auto& user = vm->user();
+        auto w = user.pop();
+        auto t = user.pop();
+        auto s = user.pop();
+        QString string = s.asString().str();
+        QString target = t.asString().str();
+        QString with = w.asString().str();
+        user.push(string.replace(target, with));
+    });
 
+    // Novel words
     mNovel.setupScripting(mVm);
 
     // Edit words
-    // - set selection
-    // - get selected tect
-    // - replace selected text
-    // - get text
+    mVm->addBuiltin("selection", [this](fifth::vm* vm) { //   -u-> start end
+        auto& user = vm->user();
+        auto cursor = mUi->textEdit->textCursor();
+        user.push(cursor.selectionStart());
+        user.push(cursor.selectionEnd());
+    });
+    mVm->addBuiltin("setselection", [this](fifth::vm* vm) { // start end -u->
+        auto& user = vm->user();
+        auto e = user.pop();
+        auto s = user.pop();
+        auto cursor = mUi->textEdit->textCursor();
+        cursor.setPosition(s.asNumber());
+        cursor.setPosition(e.asNumber(), QTextCursor::KeepAnchor);
+    });
+    mVm->addBuiltin("replaceselection", [this](fifth::vm* vm) { //  text -u->
+        auto& user = vm->user();
+        QString text = user.pop().asString().str();
+        auto cursor = mUi->textEdit->textCursor();
+        cursor.removeSelectedText();
+        cursor.insertText(text);
+    });
+    mVm->addBuiltin("position", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().position()); }); //   -u-> position
+    mVm->addBuiltin("selectedtext", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().selectedText()); }); //  -u-> text
+    mVm->addBuiltin("setposition", [this](fifth::vm* vm) { mUi->textEdit->textCursor().setPosition(vm->user().pop().asNumber()); }); //  position -u->
+    mVm->addBuiltin("plaintext", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->toPlainText()); }); //   -u-> text
 
-    // Tree words
-    // - get current id
-    // - set current id
-    // - get children
+    // TreeWidget words
+    mVm->addBuiltin("rootid",        [this](fifth::vm* vm) { vm->user().push(mUi->treeWidget->topLevelItem(0)->data(0, Qt::UserRole).toLongLong()); }); //    -u-> id
+    mVm->addBuiltin("currentbranch", [this](fifth::vm* vm) { vm->user().push(mCurrentNode); }); //    -u-> id
+    mVm->addBuiltin("setbranch",     [this](fifth::vm* vm) { mUi->treeWidget->setCurrentItem(findItem(mUi->treeWidget->topLevelItem(0), vm->user().pop().asNumber())); }); // id -u->
+    mVm->addBuiltin("getchildren",   [this](fifth::vm* vm) {  // id -u-> id[n] ... id[1] n
+        auto& user = vm->user();
+        auto i = user.pop();
+        QList<qlonglong> children;
+        auto* branch = findItem(mUi->treeWidget->topLevelItem(0), i.asNumber());
+        if (branch != nullptr) {
+            auto num = branch->childCount();
+            for (auto i = 0; i < num; ++i) children.append(branch->child(i)->data(0, Qt::UserRole).toLongLong());
+        }
+        for (auto i = children.count(); i != 0; --i) user.push(children[i - 1]);
+        user.push(children.count());
+    });
 }
 
 void Main::setupIcons() {

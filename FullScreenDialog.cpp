@@ -22,6 +22,10 @@ FullScreenDialog::FullScreenDialog(Preferences& prefs, QWidget *parent)
     }
 
     mUi->label->setVisible(false);
+    QFont font(mPrefs->uiFontFamily(), mPrefs->uiFontSize());
+    mPrefs->applyFontToTree(this, font);
+    updateGeometry();
+    repaint();
 }
 
 FullScreenDialog::~FullScreenDialog() {

@@ -21,28 +21,44 @@ constexpr auto AutoSave         { "AutoSave" };
 constexpr auto AutoSaveInterval { "AutoSave Interval" };
 constexpr auto FontFamily       { "FontFasmily" };
 constexpr auto FontSize         { "FontSize" };
+constexpr auto Footer           { "Footer" };
+constexpr auto Header           { "Header" };
 constexpr auto MainSplitter     { "MainSplitter" };
+constexpr auto MarginBottom     { "MarginBottom" };
+constexpr auto MarginLeft       { "MarginLeft" };
+constexpr auto MarginRight      { "MarginRight" };
+constexpr auto MarginTop        { "MarginTop" };
 constexpr auto OtherSplitter    { "OtherSplitter" };
 constexpr auto Position         { "Position" };
 constexpr auto SceneTag         { "SceneTag" };
 constexpr auto Theme            { "Theme" };
 constexpr auto TypingSounds     { "TypingSounds" };
+constexpr auto UiFontFamily     { "UiFontFasmily" };
+constexpr auto UiFontSize       { "UiFontSize" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
-constexpr auto DefaultChapterTag { "chapter" };
-constexpr auto DefaultCoverTag   { "cover" };
-constexpr auto DefaultFont       { "Segoe UI" };
-constexpr auto DefaultFontSize   { 9 };
-constexpr auto DefaultInterval   { 5 * 60 };
-const     auto DefaultOther      { QJsonArray() };
-constexpr auto DefaultPosition   { 0 };
-const     auto DefaultSplitter   { QJsonArray() };
-constexpr auto DefaultSave       { false };
-constexpr auto DefaultSceneTag   { "scene" };
-constexpr auto DefaultSounds     { false };
-constexpr auto DefaultTheme      { 2 };
-constexpr auto DefaultVoice      { 0 };
+constexpr auto DefaultChapterTag   { "chapter" };
+constexpr auto DefaultCoverTag     { "cover" };
+constexpr auto DefaultFont         { "Segoe UI" };
+constexpr auto DefaultFontSize     { 9 };
+constexpr auto DefaultFooter       { "" };
+constexpr auto DefaultHeader       { "" };
+constexpr auto DefaultInterval     { 5 * 60 };
+constexpr auto DefaultMarginBottom { 1.0 };
+constexpr auto DefaultMarginLeft   { 1.0 };
+constexpr auto DefaultMarginRight  { 1.0 };
+constexpr auto DefaultMarginTop    { 1.0 };
+const     auto DefaultOther        { QJsonArray() };
+constexpr auto DefaultPosition     { 0 };
+const     auto DefaultSplitter     { QJsonArray() };
+constexpr auto DefaultSave         { false };
+constexpr auto DefaultSceneTag     { "scene" };
+constexpr auto DefaultSounds       { false };
+constexpr auto DefaultUiFont       { "Segoe UI" };
+constexpr auto DefaultUiFontSize   { 9 };
+constexpr auto DefaultTheme        { 2 };
+constexpr auto DefaultVoice        { 0 };
 
 bool Preferences::load() {
     QSettings settings(Company, Program);
@@ -52,9 +68,16 @@ bool Preferences::load() {
     mCoverTag =         settings.value(CoverTag ,        DefaultCoverTag).toString();
     mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
     mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
+    mFooter =           settings.value(Footer,           DefaultFooter).toString();
+    mHeader =           settings.value(Header,           DefaultHeader).toString();
     QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
     mMainSplitter.clear();
     for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
+    mMargins.clear();
+    mMargins.append(    settings.value(MarginBottom,     DefaultMarginBottom).toDouble());
+    mMargins.append(    settings.value(MarginLeft,       DefaultMarginLeft).toDouble());
+    mMargins.append(    settings.value(MarginRight,      DefaultMarginRight).toDouble());
+    mMargins.append(    settings.value(MarginTop,        DefaultMarginTop).toDouble());
     QJsonArray other =  settings.value(OtherSplitter,    DefaultOther).toJsonArray();
     mOtherSplitter.clear();
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
@@ -62,6 +85,8 @@ bool Preferences::load() {
     mSceneTag =         settings.value(SceneTag,         DefaultSceneTag).toString();
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
+    mUiFontFamily =     settings.value(UiFontFamily,     DefaultUiFont).toString();
+    mUiFontSize =       settings.value(UiFontSize,       DefaultUiFontSize).toInt();
     mVoice =            settings.value(Voice,            DefaultVoice).toInt();
     mWindow =           settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
@@ -80,7 +105,7 @@ bool Preferences::read(Json5Object& obj) {
     if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "options", {});
         mAutoSave =         Item::hasBool(prefs, "autoSave",         DefaultSave);
-        mAutoSaveInterval = Item::hasNum(prefs,  "autoSaveInerval",  DefaultInterval);
+        mAutoSaveInterval = Item::hasNum(prefs,  "autoSaveInerval",  qlonglong(DefaultInterval));
         mTypingSounds =     Item::hasBool(prefs, "typewriterSounds", DefaultSounds);
         QString font =      Item::hasStr(prefs,  "textFont",         DefaultFont + (":" + QString::number(DefaultFontSize)));
         StringList parts { font.split(":") };
@@ -93,7 +118,18 @@ bool Preferences::read(Json5Object& obj) {
             mFontFamily = DefaultFont;
             mFontSize   = DefaultFontSize;
         }
-        mVoice =             Item::hasNum(obj,  "voice",           DefaultVoice);
+        font =              Item::hasStr(prefs,  "uIextFont",        DefaultUiFont + (":" + QString::number(DefaultUiFontSize)));
+        parts = { font.split(":") };
+        if (parts.size() == 2) {
+            mUiFontFamily = parts[0];
+            bool ok = true;
+            mUiFontSize   = parts[1].toInt(&ok);
+            if (!ok || mUiFontSize < 1) mUiFontSize = DefaultFontSize;
+        } else {
+            mUiFontFamily = DefaultFont;
+            mUiFontSize   = DefaultFontSize;
+        }
+        mVoice =             Item::hasNum(obj,  "voice",           qlonglong(DefaultVoice));
         mChapterTag = DefaultChapterTag;
         mSceneTag = DefaultSceneTag;
         mTheme = DefaultTheme;
@@ -116,35 +152,44 @@ bool Preferences::read(Json5Object& obj) {
         arr = Item::hasArr(obj, "windoLoc", { });
     } else {
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
-        mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, DefaultInterval);
+        mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, qlonglong(DefaultInterval));
         mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
         mCoverTag =         Item::hasStr(obj,  CoverTag,         DefaultCoverTag);
         mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
-        mFontSize =         Item::hasNum(obj,  FontSize,         DefaultFontSize);
-        mPosition =         Item::hasNum(obj,  Position,         DefaultPosition);
+        mFontSize =         Item::hasNum(obj,  FontSize,         qlonglong(DefaultFontSize));
+        mFooter =           Item::hasStr(obj,  Footer,           DefaultFooter);
+        mHeader =           Item::hasStr(obj,  Header,           DefaultHeader);
+        mPosition =         Item::hasNum(obj,  Position,         qlonglong(DefaultPosition));
         mSceneTag =         Item::hasStr(obj,  SceneTag,         DefaultSceneTag);
-        mTheme =            Item::hasNum(obj,  Theme,            DefaultTheme);
+        mTheme =            Item::hasNum(obj,  Theme,            qlonglong(DefaultTheme));
         mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
+        mUiFontFamily =     Item::hasStr(obj,  UiFontFamily,     DefaultUiFont);
+        mUiFontSize =       Item::hasNum(obj,  UiFontSize,       qlonglong(DefaultUiFontSize));
         mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
-        arr =               Item::hasArr(obj,  WindowLoc,        { });
-        arr = Item::hasArr(obj, MainSplitter, { });
+        arr =               Item::hasArr(obj,  MainSplitter,     { });
         mMainSplitter.clear();
         for (auto& i: arr) {
             if (!i.isNumber()) continue;
             mMainSplitter.append(i.toInt());
         }
         arr = Item::hasArr(obj, OtherSplitter, { });
+        mMargins.clear();
+        mMargins.append(    Item::hasNum(obj, MarginBottom,      DefaultMarginBottom));
+        mMargins.append(    Item::hasNum(obj, MarginLeft,        DefaultMarginLeft));
+        mMargins.append(    Item::hasNum(obj, MarginRight,       DefaultMarginRight));
+        mMargins.append(    Item::hasNum(obj, MarginTop,         DefaultMarginTop));
         mOtherSplitter.clear();
         for (auto& i: arr) {
             if (!i.isNumber()) continue;
             mOtherSplitter.append(i.toInt());
         }
+        arr =               Item::hasArr(obj,  WindowLoc,        { });
     }
     QRect geom;
-    geom.setX(Item::hasNum(arr, 0, 0));
-    geom.setY(Item::hasNum(arr, 1, 0));
-    geom.setWidth(Item::hasNum(arr, 2, -1));
-    geom.setHeight(Item::hasNum(arr, 3, -1));
+    geom.setX(Item::hasNum(arr, 0, qlonglong(0)));
+    geom.setY(Item::hasNum(arr, 1, qlonglong(0)));
+    geom.setWidth(Item::hasNum(arr, 2, qlonglong(-1)));
+    geom.setHeight(Item::hasNum(arr, 3, qlonglong(-1)));
     mWindow = geom;
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
     return true;
@@ -158,9 +203,15 @@ bool Preferences::save() {
     settings.setValue(CoverTag,         mCoverTag);
     settings.setValue(FontFamily,       mFontFamily);
     settings.setValue(FontSize,         mFontSize);
+    settings.setValue(Footer,           mFooter);
+    settings.setValue(Header,           mHeader);
     QJsonArray arr;
     for (auto& a: mMainSplitter) arr.append(a.toInt());
     settings.setValue(MainSplitter,     arr);
+    settings.setValue(MarginBottom,     mMargins[0].toReal());
+    settings.setValue(MarginLeft,       mMargins[1].toReal());
+    settings.setValue(MarginRight,      mMargins[2].toReal());
+    settings.setValue(MarginTop,        mMargins[3].toReal());
     QJsonArray otr;
     for (auto& a: mOtherSplitter) otr.append(a.toInt());
     settings.setValue(OtherSplitter,    otr);
@@ -168,6 +219,8 @@ bool Preferences::save() {
     settings.setValue(SceneTag,         mSceneTag);
     settings.setValue(Theme,            mTheme);
     settings.setValue(TypingSounds,     mTypingSounds);
+    settings.setValue(UiFontFamily,     mUiFontFamily);
+    settings.setValue(UiFontSize,       mUiFontSize);
     settings.setValue(Voice,            mVoice);
     settings.setValue(WindowLoc,        mWindow);
     return true;
@@ -194,6 +247,8 @@ void Preferences::setDarkTheme() {
         Main::ref().ui()->treeWidget->setStyleSheet("QTreeView {\n"
                                                     "    color: white;\n"
                                                     "    background-color: #2A2A2A;\n"
+                                                    "    font-family: " + mUiFontFamily + "\n"
+                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                     "}"
                                                     "QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings  {\n"
@@ -207,30 +262,42 @@ void Preferences::setDarkTheme() {
                                                     "    image: url(:/imgs/DarkOpen.png);\n"
                                                     "}");
         Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
+                                                  "    font-family: " + mUiFontFamily + "\n"
+                                                  "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                   "    color: white;\n"
                                                   "    background-color: black;\n"
                                                   "}");
         Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
                                                  "    color: white;\n"
                                                  "    background-color: #2A2A2A"
+                                                 "    font-family: " + mUiFontFamily + "\n"
+                                                 "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                  "}");
         QString menuStyle {
             "QMenu {\n"
             "    background-color: #2A2A2A;\n"
             "    color: white;\n"
             "    border: 1px solid #444;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "\n"
             "QMenu::item {\n"
             "    padding: 6px 20px;\n"
             "    background: transparent;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "\n"
             "QMenu::item:selected {\n"
             "    background: #444;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "QMenu::item:disabled {\n"
             "    color: #888;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
         };
         Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
@@ -245,6 +312,8 @@ void Preferences::setDarkTheme() {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                                "    color: white;\n"
                                                                "    background-color: black;\n"
+                                                               "    font-family: " + mUiFontFamily + "\n"
+                                                               "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                                "}");
     }
     mIsDark = true;
@@ -275,11 +344,15 @@ void Preferences::setLightTheme() {
                                                     "    background-color: #B4B4B4;\n"
                                                     "    selection-color: black;\n"
                                                     "    selection-background-color: white;\n"
+                                                    "    font-family: " + mUiFontFamily + "\n"
+                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                     "}"
                                                     "QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings {\n"
                                                     "    border-image: none;\n"
                                                     "    image: url(:/imgs/Closed.png);\n"
+                                                    "    font-family: " + mUiFontFamily + "\n"
+                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                     "}\n"
                                                     "\n"
                                                     "QTreeView::branch:open:has-children:!has-siblings,\n"
@@ -290,28 +363,40 @@ void Preferences::setLightTheme() {
         Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                   "    color: black;\n"
                                                   "    background-color: white;\n"
+                                                  "    font-family: " + mUiFontFamily + "\n"
+                                                  "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                   "}");
         Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
                                                  "    color: black;\n"
                                                  "    background-color: #BEBEBE;\n"
+                                                 "    font-family: " + mUiFontFamily + "\n"
+                                                 "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                  "}");
         QString menuStyle {
             "QMenu {\n"
             "    background-color: #BEBEBE;\n"
             "    color: black;\n"
             "    border: 1px solid #999;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "\n"
             "QMenu::item {\n"
             "    padding: 6px 20px;\n"
             "    background: transparent;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "\n"
             "QMenu::item:selected {\n"
             "    background: #999;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
             "QMenu::item:disabled {\n"
             "    color: #888;\n"
+            "    font-family: " + mUiFontFamily + "\n"
+            "    font-size: " + QString::number(mUiFontSize) + "\n"
             "}\n"
         };
         Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
@@ -326,13 +411,34 @@ void Preferences::setLightTheme() {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                                "    color: black;\n"
                                                                "    background-color: white;\n"
+                                                               "    font-family: " + mUiFontFamily + "\n"
+                                                               "    font-size: " + QString::number(mUiFontSize) + "\n"
                                                                "}");
     }
     mIsDark = false;
     resetIcons(false);
 }
 
-QString Preferences::checkPath(const QString& path, bool checked) {
+Preferences::Preferences()
+    : mWasDark(isDark()) {
+    load();
+}
+
+void Preferences::applyFontToTree(QWidget* w, const QFont& f)
+{
+    if (!w) return;
+
+    w->setFont(f);
+
+    const QObjectList& kids = w->children();
+    for (QObject* obj: kids) {
+        QWidget* child = qobject_cast<QWidget*>(obj);
+        if (child) applyFontToTree(child, f);
+    }
+}
+
+QString Preferences::checkPath(const QString& path, bool checked)
+{
     QString work = path;
     if (checked) {
         StringList parts(work.split("."));
@@ -382,7 +488,13 @@ Json5Object Preferences::write() {
     obj[CoverTag] =         mCoverTag;
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
+    obj[Footer] =           mFooter;
+    obj[Header] =           mHeader;
     obj[MainSplitter] =     mMainSplitter;
+    obj[MarginBottom] =     mMargins[0];
+    obj[MarginLeft] =       mMargins[1];
+    obj[MarginRight] =      mMargins[2];
+    obj[MarginTop] =        mMargins[3];
     obj[OtherSplitter] =    mOtherSplitter;
     obj[Position] =         mPosition;
     obj[SceneTag] =         mSceneTag;

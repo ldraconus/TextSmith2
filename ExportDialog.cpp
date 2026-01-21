@@ -22,6 +22,10 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
     mUi->chapterTagLineEdit->setPlaceholderText(prefs.chapterTag());
     mUi->sceneTagLineEdit->setPlaceholderText(prefs.sceneTag());
     mUi->coverTagLineEdit->setPlaceholderText(prefs.coverTag());
+    QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
+    prefs.applyFontToTree(this, font);
+    updateGeometry();
+    repaint();
 
     loadFields();
 
@@ -66,8 +70,8 @@ void ExportDialog::loadFields() {
     const auto& defaults = mExporter->collectMetadataDefaults();
     const auto& metaData = mExporter->metadataFields();
     bool create = mWidget.isEmpty();
-    QLineEdit* lineEdit;
-    QComboBox* comboBox;
+    QLineEdit* lineEdit { nullptr };
+    QComboBox* comboBox { nullptr };
     for (auto [i, meta]: enumerate(metaData)) {
         if (create) {
             auto* label = new QLabel(this);
@@ -91,11 +95,11 @@ void ExportDialog::loadFields() {
             else lineEdit = dynamic_cast<QLineEdit*>(mWidget[i]);
         }
         if (meta.getChoices != nullptr) {
-            comboBox->setPlaceholderText(defaults[meta.key]);
-            if (!meta.value.isEmpty()) comboBox->setCurrentText(meta.value);
+            if (comboBox) comboBox->setPlaceholderText(defaults[meta.key]);
+            if (!meta.value.isEmpty() && comboBox) comboBox->setCurrentText(meta.value);
         } else {
-            lineEdit->setPlaceholderText(defaults[meta.key]);
-            if (!meta.value.isEmpty()) lineEdit->setText(meta.value);
+            if (lineEdit) lineEdit->setPlaceholderText(defaults[meta.key]);
+            if (!meta.value.isEmpty() && lineEdit) lineEdit->setText(meta.value);
         }
     }
 }
