@@ -90,15 +90,19 @@ private:
     QWidget*                      mFindLine { nullptr };
     QRect                         mGeom;
     Map<QString, QString>         mIcons;
+    qlonglong                     mId;
+    List<qlonglong>               mIds;
     Map<QString, QImage>          mImageStore;
     QString                       mLocalDir;
     Message                       mMsg;
     Novel                         mNovel;
+    qlonglong                     mPageNo;
     qlonglong                     mPosition;
     Preferences                   mPrefs;
     bool                          mPrefsLoaded { false };
     Printer*                      mPrinter { nullptr };
     QTextCursor                   mSavedCursor;
+    Map<QString, QString>         mSavedTags;
     std::atomic<bool>             mSaving { false };
     SearchCore*                   mSearch { nullptr };
     Map<QShortcut*, fifth::value> mShortcut;
@@ -194,46 +198,89 @@ private:
 
     static constexpr bool NoUi = true;
 
-    void      addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path);
-    void      buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
-    void      buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
-    bool      canPasteMimeData(const QMimeData* mimeData);
-    QString   checked(const QString& path);
-    void      copyTreeItem();
-    void      cutTreeItem();
-    QString   findKey(QString& used, const QString& name, bool secondPass = false);
-    void      fitWindow();
-    void      footer(QPainter& painter, QPrinter* printer);
-    void      header(QPainter& painter, QPrinter* printer);
-    void      justifyButtons();
-    void      loadScripts();
-    void      mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
-    WordPos   nextWord(const QString& str, qlonglong pos = 0);
-    bool      nothingAbove();
-    bool      nothingBelow();
-    bool      parentIsRoot();
-    void      pasteTreeItem();
-    bool      receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
-    void      registerImages(const QString& html, QTextDocument* doc);
-    void      replaceText(QTextCursor cursor, const QString& text);
-    void      save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
-    TreeNode  saveTree(QTreeWidgetItem* node);
-    QSize     scrollBarSize(QScrollBar* bar);
-    void      setHtml(const QString& html);
-    void      setIcon(QToolButton* button, bool isChecked);
-    void      setMenu(QAction* button, bool isChecked);
-    void      setPosition(qlonglong pos);
-    void      setupActions();
-    void      setupConnections();
-    void      setupScripting();
-    void      setupIcons();
-    void      setupTabOrder();
-    qlonglong skipSpaces(const QString& str, qlonglong pos);;
-    void      update();
-    void      updateFromPrefs();
-    void      updateHtml();
-    void      workTree(QTreeWidgetItem* item, bool expand);
+    class Marginal {
+    public:
+        enum class Justify { Left, Center, Right };
 
+        Marginal() { }
+        Marginal(Justify j, qlonglong l, const QString& t)
+            : mJustify(j)
+            , mLine(l)
+            , mText(t) { }
+        Marginal(const Marginal& m)
+            : mJustify(m.mJustify)
+            , mLine(m.mLine)
+            , mText(m.mText) { }
+        Marginal(Marginal&& m)
+            : mJustify(m.mJustify)
+            , mLine(m.mLine)
+            , mText(m.mText) { }
+        Marginal(std::initializer_list<Marginal> m) {
+            if (m.size() != 1) return;
+            const Marginal& first = *m.begin();
+            mJustify = first.mJustify;
+            mLine =    first.mLine;
+            mText =    first.mText;
+        }
+
+        virtual ~Marginal() { }
+
+        Marginal& operator=(const Marginal& m) { if (this != &m) { mJustify = m.mJustify; mLine = m.mLine; mText = m.mText; } return *this; }
+        Marginal& operator=(Marginal&& m) { mJustify = m.mJustify; mLine = m.mLine; mText = m.mText;  return *this; }
+
+        Justify   justify() const           { return mJustify; }
+        qlonglong line() const              { return mLine; }
+        void      setText(const QString& t) { mText = t; }
+        QString   text() const              { return mText; }
+
+    private:
+        Justify   mJustify = Justify::Left;
+        qlonglong mLine =    0;
+        QString   mText =    0;
+    };
+
+    void           addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path);
+    void           buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
+    void           buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
+    bool           canPasteMimeData(const QMimeData* mimeData);
+    QString        checked(const QString& path);
+    void           copyTreeItem();
+    void           cutTreeItem();
+    QString        findKey(QString& used, const QString& name, bool secondPass = false);
+    void           fitWindow();
+    QString        fromHtml(const QString& html);
+    void           justifyButtons();
+    void           loadScripts();
+    void           mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
+    WordPos        nextWord(const QString& str, qlonglong pos = 0);
+    bool           nothingAbove();
+    bool           nothingBelow();
+    bool           parentIsRoot();
+    List<Marginal> parseMarginal(const QString& marginal);
+    void           pasteTreeItem();
+    void           printMarginal(QPainter& painter, qlonglong y, const Marginal& object, const qreal& xFactor, const qreal& yFactor);
+    bool           receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
+    QString        reduceBackslashes(const QString& text);
+    void           registerImages(const QString& html, QTextDocument* doc);
+    void           replaceText(QTextCursor cursor, const QString& text);
+    QString        resolveTag(const QString& tag);
+    void           save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
+    TreeNode       saveTree(QTreeWidgetItem* node);
+    QSize          scrollBarSize(QScrollBar* bar);
+    void           setHtml(const QString& html);
+    void           setIcon(QToolButton* button, bool isChecked);
+    void           setMenu(QAction* button, bool isChecked);
+    void           setPosition(qlonglong pos);
+    void           setupActions();
+    void           setupConnections();
+    void           setupScripting();
+    void           setupIcons();
+    void           setupTabOrder();
+    qlonglong      skipSpaces(const QString& str, qlonglong pos);;
+    void           update();
+    void           updateFromPrefs();
+    void           updateHtml();
+    void           workTree(QTreeWidgetItem* item, bool expand);
 
 public:
     Main(QApplication* app, QWidget* parent = nullptr);
@@ -242,47 +289,55 @@ public:
     static constexpr bool WithAlignment =    true;
     static constexpr bool WithoutAlignment = false;
 
-    void         busy()                           { QApplication::setOverrideCursor(Qt::WaitCursor); }
-    qlonglong    currentNode()                    { return mCurrentNode; }
-    QString      docDir()                         { return mDocDir; }
-    Item&        fifthItem(fifth::stack& user)    { return mNovel.fifthItem(user); }
-    Message&     msg()                            { return mMsg; }
-    QString      getIconPath(const QString& name) { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
-    Novel&       novel()                          { return mNovel; }
-    Preferences& prefs()                          { return mPrefs; }
-    bool         prefsLoaded()                    { return mPrefsLoaded; }
-    void         print(QPrinter* printer)         { return doPrintNovel(printer); }
-    Printer*     printer()                        { return mPrinter; }
-    void         ready()                          { QApplication::restoreOverrideCursor(); }
-    void         setDocDir(const QString& d)      { mDocDir = d; }
-    void         setPrinter(Printer* p)           { mPrinter = p; }
-    Ui::Main*    ui()                             { return mUi; }
-    WordCounts&  wordCount()                      { return mWordCount; }
+    void         busy()                            { QApplication::setOverrideCursor(Qt::WaitCursor); }
+    qlonglong    currentNode()                     { return mCurrentNode; }
+    QString      docDir()                          { return mDocDir; }
+    Preferences* exchangePrefs(Preferences* p)     { auto* t = &mPrefs; mPrefs = *p; return t; }
+    Printer*     exchangePrinter(Printer* p)       { auto* t = mPrinter; mPrinter = p; return t; }
+    Item&        fifthItem(fifth::stack& user)     { return mNovel.fifthItem(user); }
+    Message&     msg()                             { return mMsg; }
+    QString      getIconPath(const QString& name)  { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
+    Novel&       novel()                           { return mNovel; }
+    Preferences& prefs()                           { return mPrefs; }
+    bool         prefsLoaded()                     { return mPrefsLoaded; }
+    void         print(QPrinter* printer)          { return doPrintNovel(printer); }
+    Printer*     printer()                         { return mPrinter; }
+    void         ready()                           { QApplication::restoreOverrideCursor(); }
+    void         setDocDir(const QString& d)       { mDocDir = d; }
+    void         setPrinter(Printer* p)            { delete mPrinter; mPrinter = p; }
+    Ui::Main*    ui()                              { return mUi; }
+    WordCounts&  wordCount()                       { return mWordCount; }
 
     void               buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
     QTreeWidgetItem*   buildTreeFromJson(Json5Object& obj);
     void               changeNovelFont(const QFont& font);
+    QString            createParagraph(const QString& html);
     StringList         createParagraphs(Item& item, bool align = WithoutAlignment);
     QTreeWidgetItem*   findItem(QTreeWidgetItem* tree, qlonglong node);
-    int                handleCover(Item& item,
-                                   int pageNo,
+    void               footer(QPainter& painter, const qreal& xFactr, const qreal& yFactor);
+    void               handleCover(Item& item,
                                    bool startingPage,
                                    QSizeF& pageSize,
                                    QMarginsF& margins,
                                    QPainter& painter,
+                                   qreal xFactor,
+                                   qreal yFactor,
                                    std::function<void()> printer);
+    void               header(QPainter& painter, const qreal& xFactor, const qreal& yFactopr);
     void               loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
     void               loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
     StringList         mergeWordFragments(QList<Words::Word>& words);
-    void               newPage(QPainter& painter, std::function<void()> printer);
+    void               newPage(QPainter& painter, std::function<void()> printer, const qreal& xFactor, const qreal& yFactor, bool marginals = false);
     void               outputNovel(QList<qlonglong> ids,
                                    const QString& chapterTag,
                                    const QString& sceneTag,
                                    const QString& coverTag,
                                    QPainter& painter,
                                    QSizeF pageSize,
-                                   QMarginsF margins,
                                    std::function<void()> pager);
+    void               printLine(QPainter& painter, QList<Words::Word>& line, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill, qreal& xFactor, qreal& yFactor);
+    void               printParagraphs(QPainter& painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& xFactor, qreal& yFactor,
+                                        qreal& at, bool& startingPage, StringList& paragraphs);
     QList<Words::Word> paragraphWords(const QString& paragrapth);
     void               removeEmptyFirstBlock(TextEdit* text);
     void               setupHtml(TextEdit& text);

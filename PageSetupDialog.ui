@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>705</width>
-    <height>473</height>
+    <width>781</width>
+    <height>557</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,128 +36,18 @@
       <enum>QFrame::Shadow::Plain</enum>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QFrame" name="frame_3">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::Shape::NoFrame</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Shadow::Plain</enum>
-        </property>
-        <layout class="QFormLayout" name="formLayout">
-         <property name="labelAlignment">
-          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Header:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="headerLineEdit">
-           <property name="placeholderText">
-            <string>&gt;Title: $t$|&gt;Author: $a</string>
-           </property>
-           <property name="clearButtonEnabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Footer:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="footerLineEdit">
-           <property name="placeholderText">
-            <string>&gt;Page #p&lt;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Top Margin:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="topMaginLineEdit">
-           <property name="placeholderText">
-            <string>1&quot;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Left Margin:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QLineEdit" name="leftMarginLineEdit">
-           <property name="placeholderText">
-            <string>1&quot;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Right Margin</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QLineEdit" name="rightMarginLineEdit">
-           <property name="placeholderText">
-            <string>1&quot;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Bottom Margin:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QLineEdit" name="bottomMaarginineEdit">
-           <property name="placeholderText">
-            <string>1&quot;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="1">
-          <widget class="QLineEdit" name="marginsLineEdit">
-           <property name="placeholderText">
-            <string>1&quot;, 1&quot;, 1&quot;, 1&quot;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>Margins:</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QFrame" name="previewFrame">
         <property name="sizePolicy">
@@ -170,6 +60,12 @@
          <size>
           <width>131</width>
           <height>151</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>400</width>
+          <height>16777215</height>
          </size>
         </property>
         <property name="sizeIncrement">
@@ -189,6 +85,679 @@
         </property>
         <property name="frameShadow">
          <enum>QFrame::Shadow::Plain</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QFrame" name="frame_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>390</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>390</height>
+            </size>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
+             <height>390</height>
+            </size>
+           </property>
+           <property name="baseSize">
+            <size>
+             <width>390</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Shape::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Shadow::Plain</enum>
+           </property>
+           <layout class="QFormLayout" name="formLayout">
+            <property name="fieldGrowthPolicy">
+             <enum>QFormLayout::FieldGrowthPolicy::ExpandingFieldsGrow</enum>
+            </property>
+            <property name="labelAlignment">
+             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Printer:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="printerComboBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Orietation:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="orientationComboBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <item>
+               <property name="text">
+                <string>Portrait</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Landscape</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>Header:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QFrame" name="frame_2">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Shape::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Shadow::Plain</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QTextEdit" name="headerLeftTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>75</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTextEdit" name="headerCenterTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>88</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="sizeIncrement">
+                  <size>
+                   <width>1</width>
+                   <height>1</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTextEdit" name="headerRightTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>75</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="lineWrapMode">
+                  <enum>QTextEdit::LineWrapMode::NoWrap</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Footer:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QFrame" name="frame_4">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Shape::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Shadow::Plain</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QTextEdit" name="footerLeftTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>75</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTextEdit" name="footerCenterTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>65</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>88</height>
+                  </size>
+                 </property>
+                 <property name="sizeIncrement">
+                  <size>
+                   <width>1</width>
+                   <height>1</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTextEdit" name="footerRightTextEdit">
+                 <property name="minimumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>75</width>
+                   <height>70</height>
+                  </size>
+                 </property>
+                 <property name="baseSize">
+                  <size>
+                   <width>75</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Margins:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QFrame" name="frame_6">
+              <property name="frameShape">
+               <enum>QFrame::Shape::NoFrame</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Shadow::Plain</enum>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="frame_8">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::Shape::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Shadow::Plain</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_6">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <spacer name="horizontalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="topMarginDoubleSpinBox">
+                    <property name="minimumSize">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="suffix">
+                     <string>&quot;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_7">
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::Shape::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Shadow::Plain</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_5">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="leftMarginDoubleSpinBox">
+                    <property name="minimumSize">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="suffix">
+                     <string>&quot;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_3">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="rightMarginDoubleSpinBox">
+                    <property name="minimumSize">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>100</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="sizeIncrement">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="baseSize">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="suffix">
+                     <string>&quot;</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_9">
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::Shape::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Shadow::Plain</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_4">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <spacer name="horizontalSpacer_4">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="bottomMarginDoubleSpinBox">
+                    <property name="minimumSize">
+                     <size>
+                      <width>100</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="suffix">
+                     <string>&quot;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_5">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <spacer name="verticalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="frame_5">
+        <property name="frameShape">
+         <enum>QFrame::Shape::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Shadow::Raised</enum>
         </property>
        </widget>
       </item>

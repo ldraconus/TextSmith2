@@ -4,57 +4,263 @@
 #include "ui_Main.h"
 #include "PdfExporter.h"
 
+#include <QDir>
 #include <QLayout>
 #include <QPrintPreviewWidget>
 
+static constexpr qreal LeftMarginMin = 0.125;
+static constexpr qreal RightMarginMin = 0.125;
+static constexpr qreal TopMarginMin = 0.125;
+static constexpr qreal BottomMarginMin = 0.125;
+
 PageSetupDialog::PageSetupDialog(QWidget* parent)
     : QDialog(parent)
-    , mPrefs(&Main::ref().prefs())
+    , mPrefs(new Preferences(Main::ref().prefs()))
     , mPrinter(Main::ref().printer())
     , mUi(new Ui::PageSetupDialog) {
     mUi->setupUi(this);
 
-    auto* layout = new QVBoxLayout(this);
-    mPreview = new QPrintPreviewWidget(mPrinter, this);
-    layout->addWidget(mPreview);
-    mUi->previewFrame->setLayout(layout);
+    mPreviewTimer = new QTimer(this);
+    mPreviewTimer->setSingleShot(true);
+    mPreviewTimer->setInterval(2000);
+    connect(mPreviewTimer, &QTimer::timeout, this, [this]() { updatePreview(); });
 
-    if (mPrinter == nullptr) Main::ref().setPrinter(mPrinter = new Printer(QPrinter::HighResolution));
+    justify(mUi->footerRightTextEdit,  Qt::AlignRight);
+    justify(mUi->footerCenterTextEdit, Qt::AlignCenter);
+    justify(mUi->footerLeftTextEdit,   Qt::AlignLeft);
+    justify(mUi->headerRightTextEdit,  Qt::AlignRight);
+    justify(mUi->headerCenterTextEdit, Qt::AlignCenter);
+    justify(mUi->headerLeftTextEdit,   Qt::AlignLeft);
+
+    mPrinterList = QPrinterInfo::availablePrinters();
+    StringList printers;
+    for (QPrinterInfo& info: mPrinterList) printers << info.printerName();
+    mUi->printerComboBox->addItems(printers.toQStringList());
+
+    QPrinterInfo def = QPrinterInfo::defaultPrinter();
+    if (!def.isNull()) mUi->printerComboBox->setCurrentText(def.printerName());
+
+    mPrinter = new Printer(QPrinter::ScreenResolution);
     if (mPrinter == nullptr || mPrinter->qprinter() == nullptr) {
-        Main::ref().msg().Statement("Unable to talk to the printer");
+        Main::ref().msg().Statement("Unable to talk to the preview printer");
+        reject();
         return;
     }
-    TextEdit* edit = Main::ref().ui()->textEdit;
+
+    mPrinter->setPrefs(mPrefs);
+
+    mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
+
+    QString header = mPrefs->header();
+    StringList lmc { header.split("&", Qt::KeepEmptyParts) };
+    if (lmc.size() == 3) {
+        mUi->headerLeftTextEdit->setPlaceholderText(lmc[0]);
+        mUi->headerCenterTextEdit->setPlaceholderText(lmc[1]);
+        mUi->headerRightTextEdit->setPlaceholderText(lmc[2]);
+    }
+    QString footer = mPrefs->footer();
+    lmc = footer.split("&", Qt::KeepEmptyParts);
+    if (lmc.size() == 3) {
+        mUi->footerLeftTextEdit->setPlaceholderText(lmc[0]);
+        mUi->footerCenterTextEdit->setPlaceholderText(lmc[1]);
+        mUi->footerRightTextEdit->setPlaceholderText(lmc[2]);
+    }
+
+    connect(mUi->footerLeftTextEdit,   &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->footerLeftTextEdit;   mPreviewTimer->start(); });
+    connect(mUi->footerCenterTextEdit, &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->footerCenterTextEdit; mPreviewTimer->start(); });
+    connect(mUi->footerRightTextEdit,  &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->footerRightTextEdit;  mPreviewTimer->start(); });
+    connect(mUi->headerLeftTextEdit,   &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->headerLeftTextEdit;   mPreviewTimer->start(); });
+    connect(mUi->headerCenterTextEdit, &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->headerCenterTextEdit; mPreviewTimer->start(); });
+    connect(mUi->headerRightTextEdit,  &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->headerRightTextEdit;  mPreviewTimer->start(); });
+
+    auto margins = mPrefs->margins();
+    mUi->leftMarginDoubleSpinBox->setValue(margins[Preferences::Left]);
+    mUi->rightMarginDoubleSpinBox->setValue(margins[Preferences::Right]);
+    mUi->topMarginDoubleSpinBox->setValue(margins[Preferences::Top]);
+    mUi->bottomMarginDoubleSpinBox->setValue(margins[Preferences::Bottom]);
+
+    checkMargins();
+
+    connect(mUi->printerComboBox, &QComboBox::currentIndexChanged, this,
+            [this]() {
+                if (!mPrinter) return;
+                Printer* p = new Printer(mPrinterList[this->mUi->printerComboBox->currentIndex()], QPrinter::HighResolution);
+                if (p == nullptr) return;
+                Main::ref().setPrinter(p);
+                QPrinterInfo info(*p->qprinter());
+                auto pageSize = info.defaultPageSize();
+                mPrinter->setPageSize(pageSize.id());
+                QPageLayout::Orientation orientation = QPageLayout::Portrait;
+                if (mUi->orientationComboBox->currentIndex() == 1) orientation = QPageLayout::Landscape;
+                mPrinter->setPageOrientation(orientation);
+                updatePreview();
+            });
+    connect(mUi->orientationComboBox, &QComboBox::currentIndexChanged, this,
+            [this]() {
+                QPageLayout::Orientation orientation = QPageLayout::Portrait;
+                if (mUi->orientationComboBox->currentIndex() == 1) orientation = QPageLayout::Landscape;
+                if (mPrinter) mPrinter->setPageOrientation(orientation);
+                updatePreview();
+            });
+
+    connect(mUi->leftMarginDoubleSpinBox,   &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
+    connect(mUi->rightMarginDoubleSpinBox,  &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
+    connect(mUi->topMarginDoubleSpinBox,    &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
+    connect(mUi->bottomMarginDoubleSpinBox, &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
+
+    connect(mPreviewTimer, &QTimer::timeout, this, &PageSetupDialog::updatePreview);
+
+    mPrinter->setOutputFormat(QPrinter::PdfFormat);
+    mPrinter->setOutputFileName(QDir::temp().filePath("preview.pdf"));
+    mPrinter->setPrinterName(QString());
+    mPrinter->setPageOrientation((mUi->orientationComboBox->currentIndex() == 1) ? QPageLayout::Landscape : QPageLayout::Portrait);
+
+    mPreview = new QPrintPreviewWidget(mPrinter->qprinter(), this);
+    auto* layout = new QVBoxLayout(mUi->previewFrame);
+    mUi->previewFrame->setLayout(layout);
+    layout->addWidget(mPreview);
+
+    auto* edit = Main::ref().ui()->textEdit;
     mPrinter->setImages(edit->internalImages());
     auto& images = edit->externalImageUrls();
     for (const auto& url: images) mPrinter->addImage(url);
     mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(),
                                              { mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag() }));
 
-    connect(mPreview, &QPrintPreviewWidget::paintRequested, this, [](QPrinter* printer) { Main::ref().print(printer); });
+    connect(mPreview, &QPrintPreviewWidget::paintRequested, this,
+            [this](QPrinter* printer) {
+                if (mPrinter == nullptr) return;
+                if (mPrinter->qprinter() == nullptr) return;
+                Preferences* savedPrefs = Main::ref().exchangePrefs(mPrefs);
+                Printer* savedPrinter = Main::ref().exchangePrinter(mPrinter);
+                Main::ref().print(mPrinter->qprinter());
+                mPrinter = Main::ref().exchangePrinter(savedPrinter);
+                mPrefs = Main::ref().exchangePrefs(savedPrefs);
+            });
+
+    mReady = true;
 }
 
-              PageSetupDialog::~PageSetupDialog() { delete mUi; }
-double        PageSetupDialog::bottomMargin()     { return PdfExporter::toInches(value(mUi->bottomMaarginineEdit)); }
-QString       PageSetupDialog::footer()           { return value(mUi->footerLineEdit); }
-QString       PageSetupDialog::header()           { return value(mUi->headerLineEdit); }
-double        PageSetupDialog::leftMargin()       { return PdfExporter::toInches(value(mUi->leftMarginLineEdit)); }
-QList<double> PageSetupDialog::margins()          { return list(mUi->marginsLineEdit); }
-double        PageSetupDialog::rightMargin()      { return PdfExporter::toInches(value(mUi->rightMarginLineEdit)); }
-double        PageSetupDialog::topMargin()        { return PdfExporter::toInches(value(mUi->topMaginLineEdit)); }
-
-QList<double> PageSetupDialog::list(QLineEdit* edit) {
-    QString text = value(edit);
-    StringList margins { text.split(",") };
-    while (margins.count() > 4) margins.takeLast();
-    while (margins.count() < 4) margins += "1\"";
-    QList<double> results;
-    for (auto i = 0; i < margins.count(); ++i) results += PdfExporter::toInches(margins[i].trimmed());
-    return results;
+PageSetupDialog::~PageSetupDialog() {
+    delete mPreviewTimer;
+    delete mPrinter;
+    delete mUi;
 }
 
-QString PageSetupDialog::value(QLineEdit* edit) {
-    QString text = edit->text();
-    if (text.isEmpty()) text = edit->placeholderText();
-    return text;
+bool PageSetupDialog::event(QEvent *e) {
+    if (e->type() == QEvent::ShortcutOverride) {
+        auto *ke = static_cast<QKeyEvent*>(e);
+
+        if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+            ke->accept();   // tell Qt: “don’t use this as a dialog shortcut”
+            return true;    // swallow it
+        }
+    } else if (e->type() == QEvent::FocusOut) {
+        auto* foe = dynamic_cast<QFocusEvent*>(e);
+        QWidget* has = QApplication::focusWidget();
+        if (mFocusWidget == mUi->footerCenterTextEdit
+            || mFocusWidget == mUi->footerLeftTextEdit
+            || mFocusWidget == mUi->footerRightTextEdit
+            || mFocusWidget == mUi->headerCenterTextEdit
+            || mFocusWidget == mUi->headerLeftTextEdit
+            || mFocusWidget == mUi->headerRightTextEdit) updatePreview();
+    }
+
+    return QDialog::event(e);
+}
+
+QString PageSetupDialog::footer() {
+    return mUi->footerLeftTextEdit->toHtml() + "&" + mUi->footerCenterTextEdit->toHtml() + "&" + mUi->footerRightTextEdit->toHtml();
+}
+
+QString PageSetupDialog::header() {
+    return mUi->headerLeftTextEdit->toHtml() + "&" + mUi->headerCenterTextEdit->toHtml() + "&" + mUi->headerRightTextEdit->toHtml();
+}
+
+void PageSetupDialog::justify(QTextEdit* edit, Qt::AlignmentFlag which) {
+    auto cursor = edit->textCursor();
+    auto block = cursor.blockFormat();
+    block.setAlignment(which);
+    cursor.setBlockFormat(block);
+    edit->setTextCursor(cursor);
+}
+
+double PageSetupDialog::bottomMargin() { return mUi->bottomMarginDoubleSpinBox->value(); }
+double PageSetupDialog::leftMargin()   { return mUi->leftMarginDoubleSpinBox->value(); }
+double PageSetupDialog::rightMargin()  { return mUi->rightMarginDoubleSpinBox->value(); }
+double PageSetupDialog::topMargin()    { return mUi->topMarginDoubleSpinBox->value(); }
+
+void PageSetupDialog::marginChanged() {
+    auto* edit = dynamic_cast<QDoubleSpinBox*>(sender());
+    if (edit == nullptr) return;
+    auto x = edit->value();
+    edit->setValue(x);
+    setMargins();
+}
+
+template <typename T>
+concept LessThanComparable =
+    requires (const T& a, const T& b) {
+        { a < b } -> std::convertible_to<bool>;
+    };
+template <LessThanComparable T>
+T max(T& val, const T& min) { return (val < min) ? min : val; }
+
+void PageSetupDialog::checkMargins() {
+    if (mPrinter == nullptr) return;
+
+    QList<qreal> margins;
+    margins.fill(1.0, 4);
+    qreal left =   mUi->leftMarginDoubleSpinBox->value();
+    qreal right =  mUi->rightMarginDoubleSpinBox->value();
+    qreal top =    mUi->topMarginDoubleSpinBox->value();
+    qreal bottom = mUi->bottomMarginDoubleSpinBox->value();
+
+    max(left,   LeftMarginMin);
+    max(right,  RightMarginMin);
+    max(top,    TopMarginMin);
+    max(bottom, BottomMarginMin);
+
+    auto minLR = LeftMarginMin + RightMarginMin;
+    if (left + right > mPrinter->pageSize(QPrinter::Inch).width() - minLR) {
+        left =  LeftMarginMin;
+        right = RightMarginMin;
+    }
+    auto minTB = TopMarginMin + BottomMarginMin;
+    if (top + bottom > mPrinter->pageSize(QPrinter::Inch).height() - minTB) {
+        top =    TopMarginMin;
+        bottom = BottomMarginMin;
+    }
+
+    mUi->leftMarginDoubleSpinBox->setValue(left);
+    mUi->rightMarginDoubleSpinBox->setValue(right);
+    mUi->topMarginDoubleSpinBox->setValue(top);
+    mUi->bottomMarginDoubleSpinBox->setValue(bottom);
+
+    setMargins();
+}
+
+void PageSetupDialog::setFooter() {
+    mPrefs->setFooter(footer());
+}
+
+void PageSetupDialog::setHeader() {
+    mPrefs->setHeader(header());
+}
+
+void PageSetupDialog::setMargins() {
+    qreal left =   PdfExporter::toInches(value(mUi->leftMarginDoubleSpinBox));
+    qreal top =    PdfExporter::toInches(value(mUi->topMarginDoubleSpinBox));
+    qreal right =  PdfExporter::toInches(value(mUi->rightMarginDoubleSpinBox));
+    qreal bottom = PdfExporter::toInches(value(mUi->bottomMarginDoubleSpinBox));
+    mPrefs->setMargins({ left, top, right, bottom });
+    updatePreview();
+}
+
+void PageSetupDialog::updatePreview() {
+    if (mPreview && mReady) mPreview->updatePreview();
+}
+
+QString PageSetupDialog::value(QDoubleSpinBox* edit) {
+    return QString::number(edit->value());
 }

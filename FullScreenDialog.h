@@ -7,6 +7,8 @@
 #include <QFont>
 #include <QTimer>
 
+#include <List.h>
+
 namespace Ui {
 class FullScreenDialog;
 }
@@ -20,11 +22,11 @@ public:
     ~FullScreenDialog();
 
     QString    html();
-    Json5Array other();
+    List<int>  other();
     qlonglong  position();
     void       setFont(const QFont& font);
     void       setHtml(const QString& html);
-    void       setOther(Json5Array& other);
+    void       setOther(List<int>& other);
     void       setPosition(qlonglong pos);
     void       setSoundPool(SoundPool* soundPool);
 

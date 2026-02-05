@@ -1,4 +1,5 @@
-[ ] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
+[X] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
+[/] Add headers and footers to print (>Title: \t\|>Author: \a; >Page \p<; \f - author first name, \l - auto last name)
 [ ] Add pause/play handling to speech
 [ ] Help
 [ ] Add a hollywood script writing display mode

@@ -104,6 +104,7 @@ qt_add_executable(TextSmith2
     SpellCheckDialog.ui
     dict.cpp 5th.cpp 5th.h
     PageSetupDialog.h PageSetupDialog.cpp PageSetupDialog.ui
+    Printer.cpp
 
 )
 

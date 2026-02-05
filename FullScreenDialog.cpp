@@ -43,8 +43,8 @@ void FullScreenDialog::imageFix() {
     mUi->textEdit->update();
 }
 
-Json5Array FullScreenDialog::other() {
-    Json5Array arr;
+List<int> FullScreenDialog::other() {
+    List<int> arr;
     QList<int> otr = mUi->splitter->sizes();
     for (auto& size: otr) arr.append(qlonglong(size));
     return arr;
@@ -75,9 +75,9 @@ void FullScreenDialog::setHtml(const QString &html) {
     text->document()->setDefaultFont(font);
 }
 
-void FullScreenDialog::setOther(Json5Array& other) {
+void FullScreenDialog::setOther(List<int>& other) {
     QList<int> otr;
-    for (auto& size: other) otr.append(size.toInt());
+    for (auto& size: other) otr.append(size);
     mUi->splitter->setSizes(otr);
 }
 

@@ -8,13 +8,19 @@
 #include <QRect>
 
 #include <Json5.h>
+#include <List.h>
 #include <Map.h>
 
-class Preferences {    
+class Preferences {
 public:
     Preferences();
     explicit Preferences(Json5Object& obj) { read(obj); }
     ~Preferences()                         { save(); }
+
+    static constexpr auto Bottom = 3;
+    static constexpr auto Left =   0;
+    static constexpr auto Right =  2;
+    static constexpr auto Top =    1;
 
     void        applyFontToTree(QWidget* w, const QFont& f);
     QString     checkPath(const QString& path, bool checked);
@@ -29,44 +35,49 @@ public:
     void        setSystemTheme();
     Json5Object write();
 
-    bool       autoSave()          { return mAutoSave; }
-    qlonglong  autoSaveIntyerval() { return mAutoSaveInterval; }
-    QString    chapterTag()        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
-    QString    coverTag()          { return mCoverTag.isEmpty() ? "Cover" : mCoverTag; }
-    QString    fontFamily()        { return mFontFamily; }
-    qlonglong  fontSize()          { return mFontSize; }
-    bool       isDarkTheme()       { return mIsDark; }
-    Json5Array margins()           { return mMargins; }
-    Json5Array mainSplitter()      { return mMainSplitter; }
-    Json5Array otherSplitter()     { return mOtherSplitter; }
-    qlonglong  position()          { return mPosition; }
-    QString    sceneTag()          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
-    qlonglong  theme()             { return mTheme; }
-    bool       typingSounds()      { return mTypingSounds; }
-    QString    uiFontFamily()      { return mUiFontFamily; }
-    qlonglong  uiFontSize()        { return mUiFontSize; }
-    qlonglong  voice()             { return mVoice; }
-    bool       wasDark()           { return mWasDark; }
-    QRect      windowLocation()    { return mWindow; }
+    bool        autoSave() const          { return mAutoSave; }
+    qlonglong   autoSaveIntyerval() const { return mAutoSaveInterval; }
+    QString     chapterTag() const        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
+    QString     coverTag() const          { return mCoverTag.isEmpty() ? "Cover" : mCoverTag; }
+    QString     fontFamily() const        { return mFontFamily; }
+    qlonglong   fontSize() const          { return mFontSize; }
+    QString     footer() const            { return mFooter.isEmpty() ? "&&" : mFooter; }
+    QString     header() const            { return mHeader.isEmpty() ? "&&" : mHeader; }
+    bool        isDarkTheme() const       { return mIsDark; }
+    List<int>   mainSplitter() const      { return mMainSplitter; }
+    List<qreal> margins() const           { return mMargins; }
+    List<int>   otherSplitter() const     { return mOtherSplitter; }
+    qlonglong   position() const          { return mPosition; }
+    QString     sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
+    qlonglong   theme() const             { return mTheme; }
+    qreal       top()  const              { return mMargins.at(0); }
+    bool        typingSounds() const      { return mTypingSounds; }
+    QString     uiFontFamily() const      { return mUiFontFamily; }
+    qlonglong   uiFontSize() const        { return mUiFontSize; }
+    qlonglong   voice() const             { return mVoice; }
+    bool        wasDark() const           { return mWasDark; }
+    QRect       windowLocation() const    { return mWindow; }
 
-    void setApplicaiton(QApplication* a)   { mApp = a; }
-    void setAutoSave(bool a)               { mAutoSave = a; }
-    void setAutoSaveInterval(qlonglong i)  { mAutoSaveInterval = i; }
-    void setChapterTag(const QString& c)   { mChapterTag = c; }
-    void setCoverTag(const QString& c)     { mCoverTag = c; }
-    void setFontFamily(const QString& f)   { mFontFamily = f; }
-    void setFontSize(qlonglong s)          { mFontSize = s; }
-    void setMainSplitter(Json5Array& s)    { mMainSplitter = s; }
-    void setMargins(Json5Array& m)         { mMargins = m; }
-    void setOtherSplitter(Json5Array& s)   { mOtherSplitter = s; }
-    void setPosition(qlonglong pos)        { mPosition = pos; }
-    void setSceneTag(const QString& s)     { mSceneTag = s; }
-    void setTheme(qlonglong t)             { mTheme = t; }
-    void setTypingSounds(bool t)           { mTypingSounds = t; }
-    void setUiFontFamily(const QString& f) { mUiFontFamily = f; }
-    void setUiFontSize(qlonglong s)        { mUiFontSize = s; }
-    void setVoice(qlonglong v)             { mVoice = v; }
-    void setWindowLocation(QRect r)        { mWindow = r; }
+    void setApplicaiton(QApplication* a)      { mApp = a; }
+    void setAutoSave(bool a)                  { mAutoSave = a; }
+    void setAutoSaveInterval(qlonglong i)     { mAutoSaveInterval = i; }
+    void setChapterTag(const QString& c)      { mChapterTag = c; }
+    void setCoverTag(const QString& c)        { mCoverTag = c; }
+    void setFontFamily(const QString& f)      { mFontFamily = f; }
+    void setFontSize(qlonglong s)             { mFontSize = s; }
+    void setFooter(const QString& f)          { mFooter = f; }
+    void setHeader(const QString& h)          { mHeader = h; }
+    void setMainSplitter(const List<int>& s)  { mMainSplitter = s; }
+    void setMargins(const List<qreal>& m)     { mMargins = m; }
+    void setOtherSplitter(const List<int>& s) { mOtherSplitter = s; }
+    void setPosition(qlonglong pos)           { mPosition = pos; }
+    void setSceneTag(const QString& s)        { mSceneTag = s; }
+    void setTheme(qlonglong t)                { mTheme = t; }
+    void setTypingSounds(bool t)              { mTypingSounds = t; }
+    void setUiFontFamily(const QString& f)    { mUiFontFamily = f; }
+    void setUiFontSize(qlonglong s)           { mUiFontSize = s; }
+    void setVoice(qlonglong v)                { mVoice = v; }
+    void setWindowLocation(QRect r)           { mWindow = r; }
 
 private:
     QApplication* mApp              { nullptr };
@@ -79,9 +90,9 @@ private:
     QString       mFooter           { "" };
     QString       mHeader           { "" };
     bool          mIsDark           { false };
-    Json5Array    mMainSplitter     { };
-    Json5Array    mMargins          { };
-    Json5Array    mOtherSplitter    { };
+    List<int>     mMainSplitter     { };
+    List<qreal>   mMargins          { };
+    List<int>     mOtherSplitter    { };
     qlonglong     mPosition         { 0 };
     QString       mSceneTag         { "scene" };
     qlonglong     mTheme            { 2 };

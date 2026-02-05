@@ -7,20 +7,29 @@
 #include <QPrinter>
 
 #include "Main.h"
+#include "Printer.h"
 
 void PdfExporter::render() {
-    QPdfWriter pdf(mFilename);
+    Printer* pdf = new Printer(mFilename);
+
 
     QPageSize pageSz(mPid);
     QSizeF pageSize(pageSz.sizePoints());
-    pdf.setPageSize(mPid);
-    pdf.setPageMargins({ 0, 0, 0, 0 });
-    pdf.setAuthor(mAuthor);
-    pdf.setTitle(mTitle);
+    pdf->setPageSize(mPid);
+    pdf->setPageMargins({ Main::ref().prefs().margins()[Preferences::Left],  Main::ref().prefs().margins()[Preferences::Top],
+                          Main::ref().prefs().margins()[Preferences::Right], Main::ref().prefs().margins()[Preferences::Right] });
+    pdf->setAuthor(mAuthor);
+    pdf->setTitle(mTitle);
 
-    QPainter painter(&pdf);
-    Main::ref().outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize, mMargins,
-                            [&pdf]() { pdf.newPage(); });
+    QPainter painter(dynamic_cast<QPaintDevice*>(pdf));
+
+    Main::ref().setPrinter(pdf);
+    Main::ref().outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
+        [this, &pdf, &painter]() {
+            Main::ref().header(painter, 1.0, 1.0);
+            Main::ref().footer(painter, 1.0, 1.0);
+            pdf->newPage();
+        });
 }
 
 bool PdfExporter::convert() {
