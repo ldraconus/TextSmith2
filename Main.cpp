@@ -848,17 +848,26 @@ void Main::doPrint() {
         mMsg.Statement("Unable to talk to the printer");
         return;
     }
+
     TextEdit* edit = mUi->textEdit;
     mPrinter->setImages(edit->internalImages());
     auto& images = edit->externalImageUrls();
     for (const auto& url: images) mPrinter->addImage(url);
-    mPrinter->setIds(vectorOfIds(mUi->treeWidget->currentItem(),
-                                 { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
+
+    mPrinter->setIds(vectorOfIds(mUi->treeWidget->currentItem(), { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
+
+    mPrinter->setPrefs(&mPrefs);
+
     QPrintPreviewDialog preview(mPrinter->qprinter(), this);
     preview.setWindowTitle("Print Novel");
     preview.setMinimumHeight(600); // NOLINT
     preview.setMinimumWidth(800); // NOLINT
-    connect(&preview, &QPrintPreviewDialog::paintRequested, this, &Main::printNovel);
+    connect(&preview, &QPrintPreviewDialog::paintRequested, this,
+            [this](QPrinter* printer) {
+                if (mPrinter == nullptr) return;
+                if (mPrinter->qprinter() == nullptr) return;
+                printNovel();
+            });
 
     preview.exec();
 }

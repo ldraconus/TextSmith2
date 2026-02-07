@@ -62,7 +62,7 @@ void Printer::printParagraphs(QPainter &painter,
                 Words::Word word = words.first();
                 if (line.size() != 0 && (current & Words::Tags::Partial) != Words::Tags::None) width += space;
                 auto withWord = metrics.horizontalAdvance(word.str()) / xFactor + width;
-                if (withWord < pageSize.width() / xFactor) {
+                if (withWord < pageSize.width()) {
                     auto word = words.takeFirst();
                     line.append(word);
                     width = withWord;
@@ -201,8 +201,8 @@ void Printer::handleCover(Item &item,
             QImage scaledImage = image;
             auto width = (pageSize.width() - margins.right() - margins.left()) * xFactor;
             auto height = (pageSize.height() - margins.top() - margins.bottom()) * yFactor;
-            if (image.width() > width) scaledImage = image.scaledToWidth(width, Qt::SmoothTransformation);
-            if (scaledImage.height() > height) scaledImage = image.scaledToHeight(height, Qt::SmoothTransformation);
+            if (image.width() < width) scaledImage = scaledImage.scaledToWidth(width, Qt::SmoothTransformation);
+            if (scaledImage.height() > height) scaledImage = scaledImage.scaledToHeight(height, Qt::SmoothTransformation);
             if (at.y() * yFactor + scaledImage.height() > (pageSize.height() - margins.bottom()) * yFactor) {
                 newPage(painter, printer, xFactor, yFactor);
                 ++mPageNo;
