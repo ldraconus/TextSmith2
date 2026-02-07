@@ -4,6 +4,7 @@
 #include <QPrinterInfo>
 
 #include <List.h>
+#include <Map.h>
 
 #include "Preferences.h"
 
@@ -60,6 +61,7 @@ private:
     void    setFooter();
     void    setHeader();
     void    setMargins();
+    void    updateFootersAndHeaders();
     void    updatePreview();
     QString value(QDoubleSpinBox* edit);
 };

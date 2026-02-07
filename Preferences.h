@@ -22,6 +22,8 @@ public:
     static constexpr auto Right =  2;
     static constexpr auto Top =    1;
 
+    static constexpr QChar sep = QChar(0x001F);
+
     void        applyFontToTree(QWidget* w, const QFont& f);
     QString     checkPath(const QString& path, bool checked);
     bool        isDark();

@@ -20,7 +20,6 @@
 #include "SearchReplace.h"
 #include "Speech.h"
 #include "TextEdit.h"
-#include "Words.h"
 
 class QApplication;
 class QCloseEvent;
@@ -67,6 +66,8 @@ public:
         void setTotal(qlonglong c)            { mTotal = c; }
     };
 
+    enum class StartingFlag { Starting, Continuing };
+
 private:
     struct WordPos {
         QString   mWord;
@@ -74,8 +75,6 @@ private:
         qlonglong mNext;
         bool      mUpperCase;
     };
-
-    enum class StartingFlag { Starting, Continuing };
 
     List<QAction*>                mActions;
     QApplication*                 mApp { nullptr };
@@ -96,7 +95,6 @@ private:
     QString                       mLocalDir;
     Message                       mMsg;
     Novel                         mNovel;
-    qlonglong                     mPageNo;
     qlonglong                     mPosition;
     Preferences                   mPrefs;
     bool                          mPrefsLoaded { false };
@@ -172,7 +170,6 @@ private:
     void doPaste();
     void doPreferences();
     void doPrint();
-    void doPrintNovel(QPrinter* printer);
     void doReadToMe();
     void doRedo();
     void doRemoveItem();
@@ -198,47 +195,7 @@ private:
 
     static constexpr bool NoUi = true;
 
-    class Marginal {
-    public:
-        enum class Justify { Left, Center, Right };
-
-        Marginal() { }
-        Marginal(Justify j, qlonglong l, const QString& t)
-            : mJustify(j)
-            , mLine(l)
-            , mText(t) { }
-        Marginal(const Marginal& m)
-            : mJustify(m.mJustify)
-            , mLine(m.mLine)
-            , mText(m.mText) { }
-        Marginal(Marginal&& m)
-            : mJustify(m.mJustify)
-            , mLine(m.mLine)
-            , mText(m.mText) { }
-        Marginal(std::initializer_list<Marginal> m) {
-            if (m.size() != 1) return;
-            const Marginal& first = *m.begin();
-            mJustify = first.mJustify;
-            mLine =    first.mLine;
-            mText =    first.mText;
-        }
-
-        virtual ~Marginal() { }
-
-        Marginal& operator=(const Marginal& m) { if (this != &m) { mJustify = m.mJustify; mLine = m.mLine; mText = m.mText; } return *this; }
-        Marginal& operator=(Marginal&& m) { mJustify = m.mJustify; mLine = m.mLine; mText = m.mText;  return *this; }
-
-        Justify   justify() const           { return mJustify; }
-        qlonglong line() const              { return mLine; }
-        void      setText(const QString& t) { mText = t; }
-        QString   text() const              { return mText; }
-
-    private:
-        Justify   mJustify = Justify::Left;
-        qlonglong mLine =    0;
-        QString   mText =    0;
-    };
-
+private:
     void           addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path);
     void           buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     void           buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
@@ -248,7 +205,6 @@ private:
     void           cutTreeItem();
     QString        findKey(QString& used, const QString& name, bool secondPass = false);
     void           fitWindow();
-    QString        fromHtml(const QString& html);
     void           justifyButtons();
     void           loadScripts();
     void           mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
@@ -256,14 +212,10 @@ private:
     bool           nothingAbove();
     bool           nothingBelow();
     bool           parentIsRoot();
-    List<Marginal> parseMarginal(const QString& marginal);
     void           pasteTreeItem();
-    void           printMarginal(QPainter& painter, qlonglong y, const Marginal& object, const qreal& xFactor, const qreal& yFactor);
     bool           receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
-    QString        reduceBackslashes(const QString& text);
     void           registerImages(const QString& html, QTextDocument* doc);
     void           replaceText(QTextCursor cursor, const QString& text);
-    QString        resolveTag(const QString& tag);
     void           save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode       saveTree(QTreeWidgetItem* node);
     QSize          scrollBarSize(QScrollBar* bar);
@@ -286,9 +238,6 @@ public:
     Main(QApplication* app, QWidget* parent = nullptr);
     ~Main();
 
-    static constexpr bool WithAlignment =    true;
-    static constexpr bool WithoutAlignment = false;
-
     void         busy()                            { QApplication::setOverrideCursor(Qt::WaitCursor); }
     qlonglong    currentNode()                     { return mCurrentNode; }
     QString      docDir()                          { return mDocDir; }
@@ -300,7 +249,7 @@ public:
     Novel&       novel()                           { return mNovel; }
     Preferences& prefs()                           { return mPrefs; }
     bool         prefsLoaded()                     { return mPrefsLoaded; }
-    void         print(QPrinter* printer)          { return doPrintNovel(printer); }
+    void         print()                           { return printNovel(); }
     Printer*     printer()                         { return mPrinter; }
     void         ready()                           { QApplication::restoreOverrideCursor(); }
     void         setDocDir(const QString& d)       { mDocDir = d; }
@@ -311,41 +260,16 @@ public:
     void               buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
     QTreeWidgetItem*   buildTreeFromJson(Json5Object& obj);
     void               changeNovelFont(const QFont& font);
-    QString            createParagraph(const QString& html);
-    StringList         createParagraphs(Item& item, bool align = WithoutAlignment);
     QTreeWidgetItem*   findItem(QTreeWidgetItem* tree, qlonglong node);
-    void               footer(QPainter& painter, const qreal& xFactr, const qreal& yFactor);
-    void               handleCover(Item& item,
-                                   bool startingPage,
-                                   QSizeF& pageSize,
-                                   QMarginsF& margins,
-                                   QPainter& painter,
-                                   qreal xFactor,
-                                   qreal yFactor,
-                                   std::function<void()> printer);
-    void               header(QPainter& painter, const qreal& xFactor, const qreal& yFactopr);
     void               loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
     void               loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
-    StringList         mergeWordFragments(QList<Words::Word>& words);
-    void               newPage(QPainter& painter, std::function<void()> printer, const qreal& xFactor, const qreal& yFactor, bool marginals = false);
-    void               outputNovel(QList<qlonglong> ids,
-                                   const QString& chapterTag,
-                                   const QString& sceneTag,
-                                   const QString& coverTag,
-                                   QPainter& painter,
-                                   QSizeF pageSize,
-                                   std::function<void()> pager);
-    void               printLine(QPainter& painter, QList<Words::Word>& line, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill, qreal& xFactor, qreal& yFactor);
-    void               printParagraphs(QPainter& painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& xFactor, qreal& yFactor,
-                                        qreal& at, bool& startingPage, StringList& paragraphs);
-    QList<Words::Word> paragraphWords(const QString& paragrapth);
     void               removeEmptyFirstBlock(TextEdit* text);
     void               setupHtml(TextEdit& text);
     Json5Object        treeOfItems(QTreeWidgetItem* branch);
     QList<Item*>       vectorOfItems(QTreeWidgetItem* branch);
     QList<qlonglong>   vectorOfIds(QTreeWidgetItem* branch,
-                                   const StringList& tags,
-                                   StartingFlag starting = StartingFlag::Starting);
+                                 const StringList& tags,
+                                 StartingFlag starting = StartingFlag::Starting);
     void               wordCounts();
 
     static Main* ptr() { return sMain; }
@@ -402,7 +326,7 @@ public slots:
     void aboutToShowViewMenuAction()  { doAboutToShowViewMenu(); }
     void aboutToShowFileHelpAction()  { doAboutToShowHelpMenu(); }
 
-    void printNovel(QPrinter* p)      { doPrintNovel(p); }
+    void printNovel() { mPrinter->printNovel(); }
 
     void focusChanged(QWidget *old, QWidget *now) { doFocusChanged(old, now); }
 

@@ -12,7 +12,6 @@
 void PdfExporter::render() {
     Printer* pdf = new Printer(mFilename);
 
-
     QPageSize pageSz(mPid);
     QSizeF pageSize(pageSz.sizePoints());
     pdf->setPageSize(mPid);
@@ -24,10 +23,10 @@ void PdfExporter::render() {
     QPainter painter(dynamic_cast<QPaintDevice*>(pdf));
 
     Main::ref().setPrinter(pdf);
-    Main::ref().outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
+    pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
         [this, &pdf, &painter]() {
-            Main::ref().header(painter, 1.0, 1.0);
-            Main::ref().footer(painter, 1.0, 1.0);
+            pdf->header(painter, 1.0, 1.0);
+            pdf->footer(painter, 1.0, 1.0);
             pdf->newPage();
         });
 }

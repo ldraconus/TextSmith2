@@ -74,7 +74,7 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
         first = false;
         QFontMetrics metrics(Main::ref().ui()->textEdit->font());
         auto indent = metrics.size(Qt::TextSingleLine, " ").width() / dpi * PointsPerInch * TwipsPerPoint * 4;
-        StringList paragraphs = Main::ref().createParagraphs(item, Main::WithAlignment);
+        StringList paragraphs = Printer::createParagraphs(item, Printer::WithAlignment);
         Tags current = Tags::None;
         for (auto& para: paragraphs) {
             rtf += "\\pard\\fi" + QString::number(indent);
@@ -84,7 +84,7 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
             else if (justification == "R") rtf += "\\qr ";
             else if (justification == "C") rtf += "\\qc ";
             else if (justification == "J") rtf += "\\qj ";
-            QList<Word> words = Main::ref().paragraphWords(paragraph);
+            List<Word> words = Printer::paragraphWords(paragraph);
             for (auto i = 0; i < words.count(); ++i) {
                 Word word = words[i];
                 Tags on = word.tags() & ~current;

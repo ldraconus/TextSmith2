@@ -68,8 +68,6 @@ template class Exporter<EBookExporter>;
 template class Exporter<RtfExporter>;
 
 constexpr qlonglong Second = 1000;
-constexpr qreal     PointsPerInch = 72.0;
-
 Main* Main::sMain = nullptr;
 
 class EditItemCommand
@@ -844,129 +842,6 @@ void Main::doPreferences() {
     updateFromPrefs();
 }
 
-void Main::printParagraphs(QPainter& painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font,
-                           qreal& xFactor, qreal& yFactor, qreal& at, bool& startingPage, StringList& paragraphs) {
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    int lineHeight = metrics.height() / yFactor;
-    int baseline = metrics.ascent() / yFactor;
-    int space = metrics.horizontalAdvance("N") / xFactor;
-    Tags current = Tags::None;
-    for (const auto& paragraph: paragraphs) {
-        int indent = 4 * metrics.horizontalAdvance("M") / xFactor;
-        QString align = paragraph.left(1);
-        QList<Word> words;
-        double extra = 0.0;
-
-        if (!align.isEmpty()) {
-            if (align[0].isDigit()) {
-                int i = 0;
-                for (; i < paragraph.length(); ++i) {
-                    if (!paragraph[i].isDigit()) break;
-                }
-                QString num = paragraph.left(i);
-                extra = num.toInt() * indent;
-                align = "I";
-                words = paragraphWords(paragraph.mid(i + 1));
-            } else words = paragraphWords(paragraph.mid(1));
-        } else align = "L";
-
-        bool first = true;
-        if (words.isEmpty()) at += lineHeight;
-        while (!words.isEmpty()) {
-            auto width = extra;
-            if (first) width += indent;
-            QList<Word> line;
-            while (!words.isEmpty()) {
-                Word word = words.first();
-                if (line.size() != 0 && (current & Tags::Partial) != Tags::None) width += space;
-                auto withWord = metrics.horizontalAdvance(word.str()) / xFactor + width;
-                if (withWord < pageSize.width() / xFactor) {
-                    auto word = words.takeFirst();
-                    line.append(word);
-                    width = withWord;
-                    if (!word.isPartial()) width += space;
-                } else break;
-            }
-
-            if (at + lineHeight > pageSize.height() - margins.bottom()) {
-                Main::ref().newPage(painter, pager, xFactor, yFactor);
-                ++mPageNo;
-                at = margins.top() + baseline;
-                startingPage = true;
-            }
-
-            qreal fill = 0.0;
-            qreal x = margins.left() + indent + extra;
-            if (!line.empty() && align == "J") {
-                if (line.count() > 1 && !words.isEmpty()) fill = width / (line.count() - 1);
-            } else {
-                if (align == "R") x = pageSize.width() / xFactor - margins.right() - width;
-                else if (align == "C") x = pageSize.width() / 2.0 - width / 2.0;
-            }
-
-            printLine(painter, line, font, current, x, at, fill, xFactor, yFactor);
-
-            startingPage = false;
-            at += lineHeight;
-            indent = 0;
-        }
-    }
-}
-
-void Main::outputNovel(QList<qlonglong> ids,
-                       const QString& chapterTag,
-                       const QString& sceneTag,
-                       const QString& coverTag,
-                       QPainter& painter,
-                       QSizeF pageSize,
-                       std::function<void()> pager) {
-    if (mPrinter == nullptr) return;
-    auto* prefs = mPrinter->prefs();
-    QMarginsF margins(prefs->margins()[Preferences::Left] * PointsPerInch,
-                      prefs->margins()[Preferences::Top] * PointsPerInch,
-                      prefs->margins()[Preferences::Right] * PointsPerInch,
-                      prefs->margins()[Preferences::Bottom] * PointsPerInch);
-    qreal xFactor = mPrinter->physicalDpiX() / PointsPerInch;
-    qreal yFactor = mPrinter->physicalDpiX() / PointsPerInch;
-    QFont font = Main::ref().ui()->textEdit->font();
-    font.setPixelSize(yFactor * font.pixelSize());
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    int baseline = metrics.ascent() / yFactor;
-    qreal at = margins.top() + baseline;
-    painter.setFont(font);
-    mSavedTags.clear();
-
-    mPageNo = 1;
-    bool startingPage = true;
-    mIds = ids;
-    for (const auto& id : ids) {
-        mId = id;
-        Item& item = mNovel.findItem(id);
-        if (!item.hasTag(chapterTag) && !item.hasTag(sceneTag) && !item.hasTag(coverTag))
-            continue;
-        if (item.hasTag(coverTag)) {
-            handleCover(item, startingPage, pageSize, margins, painter, xFactor, yFactor, pager);
-            newPage(painter, pager, xFactor, yFactor, false);
-            at = margins.top() + baseline;
-            startingPage = true;
-            continue;
-        } else if (item.hasTag(chapterTag)) {
-            if (!startingPage && mPageNo != 1) {
-                Main::ref().newPage(painter, pager, xFactor, yFactor);
-                ++mPageNo;
-                at = margins.top() + baseline;
-                startingPage = true;
-            }
-        }
-
-        StringList paragraphs = createParagraphs(item, WithAlignment);
-        printParagraphs(painter, pageSize, pager, margins, font, xFactor, yFactor, at, startingPage, paragraphs);
-    }
-
-    if (!startingPage)
-        Main::ref().newPage(painter, pager, xFactor, yFactor);
-}
-
 void Main::doPrint() {
     if (mPrinter == nullptr) mPrinter = new Printer(QPrinter::HighResolution);
     if (mPrinter == nullptr || mPrinter->qprinter() == nullptr) {
@@ -986,20 +861,6 @@ void Main::doPrint() {
     connect(&preview, &QPrintPreviewDialog::paintRequested, this, &Main::printNovel);
 
     preview.exec();
-}
-
-void Main::doPrintNovel(QPrinter*) {
-    mPrinter->setFullPage(true);
-    QSizeF pageSize(mPrinter->pageSize(QPrinter::Point));
-    QPainter painter = mPrinter->painter();
-    outputNovel(mPrinter->ids(), mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag(), painter, pageSize,
-                [this, &painter]() {
-                    qreal xFactor = mPrinter->physicalDpiX() / PointsPerInch;
-                    qreal yFactor = mPrinter->physicalDpiX() / PointsPerInch;
-                    header(painter, xFactor, yFactor);
-                    footer(painter, xFactor, yFactor);
-                    mPrinter->newPage();
-                });
 }
 
 void Main::doReadToMe() {
@@ -1412,47 +1273,6 @@ QString Main::checked(const QString& path) {
     return parts.join(".");
 }
 
-StringList Main::createParagraphs(Item& item, bool align) {
-    StringList paragraphs;
-    QTextDocument doc;
-    QTextDocument empty;
-    doc.setHtml(item.html());
-    for (QTextBlock block = doc.begin(); block != doc.end(); block = block.next()) {
-        QTextCursor cursor(block);
-        QString alignment;
-        cursor.select(QTextCursor::BlockUnderCursor);
-        QString html = cursor.selection().toHtml();
-        if (!html.isEmpty()) {
-            StringList paras { html.split("<p ") };
-            for (const auto& para: paras) {
-                if (para.contains("<body>"))                                   continue;
-                if (align) {
-                         if (para.startsWith("align=\"left"))                  alignment = "L";
-                    else if (para.startsWith("align=\"right"))                 alignment = "R";
-                    else if (para.startsWith("align=\"center"))                alignment = "C";
-                    else if (para.startsWith("align=\"justify"))               alignment = "F";
-                    else if (para.startsWith("style=\"-qt-paragraph-type:empty;"))     continue;
-                    else if (para.indexOf(" -qt-block-indent:0; ") == -1) {
-                        StringList indented { para.split("-qt-block-indent:") };
-                        if (indented.size() < 2 || !indented[1].contains(">")) alignment = "L";
-                        else {
-                            StringList parts { indented[1].split(";") };
-                            if (parts.size() < 2) alignment = "L";
-                            else {
-                                auto indent = parts[0].toInt();
-                                alignment = QString::number(indent) + "I";
-                            }
-                        }
-                    } else                                                     alignment = "L";
-                }
-                paragraphs.append(alignment + createParagraph(html));
-            }
-        } else paragraphs.append("");
-    }
-
-    return paragraphs;
-}
-
 QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
     if (tree == nullptr) return nullptr;
     if (auto id = tree->data(0, Qt::UserRole).toLongLong(); id == node) return tree;
@@ -1462,89 +1282,6 @@ QTreeWidgetItem* Main::findItem(QTreeWidgetItem* tree, qlonglong node) {
         }
     }
     return nullptr;
-}
-
-QString Main::resolveTag(const QString& key) {
-    QString value;
-    for (const auto& id: mIds) {
-        const Item& item = mNovel.findItem(id);
-        const auto& tags = item.tags();
-        for (const auto tag: tags) {
-            if (tag.startsWith(key + ":", Qt::CaseInsensitive)) return tag.mid(key.length() + 1);
-        }
-        if (mId == id) break;
-    }
-    return value;
-}
-
-List<Main::Marginal> Main::parseMarginal(const QString& marginal) {
-    List<Main::Marginal> marginals;
-    StringList lcr { marginal.split("&", Qt::KeepEmptyParts) };
-    if (lcr.size() != 3) return marginals;
-    QTextEdit edit;
-    for (auto [i, str]: enumerate(lcr)) {
-        StringList lines { str.split("\n", Qt::KeepEmptyParts) };
-        Main::Marginal::Justify justify = Marginal::Justify::Left;
-        switch (i) {
-        case 1: justify = Marginal::Justify::Center; break;
-        case 2: justify = Marginal::Justify::Right;  break;
-        }
-        for (auto [lineNum, line]: enumerate(lines)) marginals.append({ justify, lineNum, line });
-    }
-
-    // handle: \\ -      \
-    //         \# -      page number
-    //         \t(tag) - look up tag for this id:value, output value
-    //         every other \, remove.
-    Item& item = mNovel.findItem(mId);
-    for (auto& margin: marginals) {
-        QString text = margin.text();
-        text.replace("\\#", QString::number(mPageNo));
-        StringList tags { text.split("\\t(") };
-        text = "";
-        for (const auto& tag: tags) {
-            if (text.isEmpty()) text = tag;
-            else {
-                StringList parts { tag.split(")") };
-                QString value = "";
-                if (parts.size() != 1) text += resolveTag(parts[0]) + parts[1];
-            }
-        }
-
-        margin.setText(reduceBackslashes(text));
-    }
-
-    return marginals;
-}
-
-void Main::newPage(QPainter& painter, std::function<void()> printer, const qreal& xFactor, const qreal& yFactor, bool marginals) {
-    if (marginals) {
-        header(painter, xFactor, yFactor);
-        footer(painter, xFactor, yFactor);
-    }
-    printer();
-}
-
-void Main::printLine(QPainter& painter, QList<Words::Word>& line, QFont& font, Tags& current, qreal x, qreal at, qreal fill, qreal& xFactor, qreal& yFactor) {
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    at *= yFactor;
-    fill *= xFactor;
-    x *= xFactor;
-    int space = metrics.horizontalAdvance("N");
-
-    bool first = false;
-    while (!line.empty()) {
-        Word word = line.takeFirst();
-        current = (current & word.tags()) | word.tags();
-        QFont wFont = font;
-        if ((current & Tags::Bold) != Tags::None) wFont.setWeight(QFont::Bold);
-        if ((current & Tags::Italic) != Tags::None) wFont.setItalic(true);
-        if ((current & Tags::Underline) != Tags::None) wFont.setUnderline(true);
-        painter.setFont(wFont);
-        painter.drawText(QPoint(x + 0.5, at + 0.5), word.str());
-        x += fill + metrics.horizontalAdvance(word.str());
-        if (!word.isPartial()) x += space;
-    }
 }
 
 void Main::fitWindow() {
@@ -1586,103 +1323,6 @@ void Main::fitWindow() {
     mPrefs.setWindowLocation(geom);
 }
 
-void Main::printMarginal(QPainter& painter, qlonglong y, const Marginal& object, const qreal& xFactor, const qreal& yFactor) {
-    qreal left = mPrefs.margins()[Preferences::Left] * PointsPerInch * xFactor;
-    qreal top = mPrefs.margins()[Preferences::Top] * PointsPerInch * yFactor;
-    qreal right = mPrefs.margins()[Preferences::Right] * PointsPerInch * xFactor;
-    qreal bottom = mPrefs.margins()[Preferences::Bottom] * PointsPerInch * yFactor;
-    QMarginsF margins(top, left, right, bottom);
-    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    QString text = object.text();
-    auto size = metrics.boundingRect(text);
-    auto width = size.width();
-    auto x = margins.left();
-
-    switch (object.justify()) {
-    case Marginal::Justify::Center: x = mPrinter->pageRect(QPrinter::DevicePixel).width() / 2 - width / 2;           break;
-    case Marginal::Justify::Left:                                                                                    break;
-    case Marginal::Justify::Right:  x = mPrinter->pageRect(QPrinter::DevicePixel).width() - margins.right() - width; break;
-    }
-
-    painter.drawText(QPoint({ int(x + 0.5), int(y + 0.5) }), text);
-}
-
-void Main::footer(QPainter& painter, const qreal& xFactor, const qreal& yFactor) {
-    auto marginals = parseMarginal(mPrefs.footer());
-    QMarginsF margins(mPrefs.margins()[Preferences::Left],  mPrefs.margins()[Preferences::Top],
-                      mPrefs.margins()[Preferences::Right], mPrefs.margins()[Preferences::Bottom]);
-    qreal y = margins.top();
-    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    y -= metrics.descent();
-    y += metrics.lineSpacing();
-    for (const auto& marginal: marginals) {
-        double line = y + marginal.line() * metrics.lineSpacing();
-        printMarginal(painter, line, marginal, xFactor, yFactor);
-    }
-}
-
-void Main::header(QPainter& painter, const qreal& xFactor, const qreal& yFactor) {
-    auto marginals = parseMarginal(mPrefs.header());
-    QMarginsF margins(mPrefs.margins()[Preferences::Left],  mPrefs.margins()[Preferences::Top],
-                      mPrefs.margins()[Preferences::Right], mPrefs.margins()[Preferences::Bottom]);
-    qreal y = margins.top();
-    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
-    QFontMetricsF metrics(font, mPrinter->paintdevice());
-    y += metrics.descent();
-    y -= metrics.lineSpacing();
-    y += marginals.last().line() * metrics.lineSpacing();
-    for (const auto& marginal: marginals) {
-        double line = y + marginal.line() * metrics.lineSpacing();
-        printMarginal(painter, line, marginal, xFactor, yFactor);
-    }
-}
-
-void Main::handleCover(Item& item,
-                       bool startingPage,
-                       QSizeF& pageSize,
-                       QMarginsF& margins,
-                       QPainter& painter,
-                       qreal xFactor,
-                       qreal yFactor,
-                       std::function<void()> printer) {
-    QPointF at = QPointF(margins.top(), margins.left());
-    if (mPageNo != 1) {
-        if (!startingPage) {
-            newPage(painter, printer, xFactor, yFactor, true);
-            ++mPageNo;
-            if (mPageNo % 2 != 0) {
-                newPage(painter, printer, xFactor, yFactor, true);
-                ++mPageNo;
-            }
-        }
-    }
-    QString html = item.html();
-    StringList imgParts { html.split("<img src=\"") };
-    for (auto i = 1; i < imgParts.count(); ++i) {
-        StringList name { imgParts[i].split("\"")};
-        if (name.count() >= 2) {
-            QUrl url(name[0]);
-            const QImage& image = mPrinter->images()[url];
-            QImage scaledImage = image;
-            auto width = (pageSize.width() - margins.right() - margins.left()) * xFactor;
-            auto height = (pageSize.height() - margins.top() - margins.bottom()) * yFactor;
-            if (image.width() > width) scaledImage = image.scaledToWidth(width, Qt::SmoothTransformation);
-            if (scaledImage.height() > height) scaledImage = image.scaledToHeight(height, Qt::SmoothTransformation);
-            if (at.y() * yFactor + scaledImage.height() > (pageSize.height() - margins.bottom()) * yFactor) {
-                newPage(painter, printer, xFactor, yFactor);
-                ++mPageNo;
-                at = QPointF(margins.left(), margins.top());
-            }
-            auto size = scaledImage.size();
-            QRectF imageRect(at.x() * xFactor, at.y() * yFactor, size.width(), size.height());
-            painter.drawImage(imageRect, scaledImage);
-            at.setY(at.y() + scaledImage.height());
-        }
-    }
-}
-
 void Main::loadImageBytes(const QImage& img, std::function<void(QByteArray)> callback) {
     QByteArray data;
     QBuffer buffer(&data);
@@ -1709,19 +1349,6 @@ void Main::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)
         QImage img(data);
         loadImageBytes(img, callback);
     });
-}
-
-StringList Main::mergeWordFragments(QList<Words::Word>& words) {
-    StringList wordList;
-    QString w;
-    for (const auto& word: words) {
-        w += word.str();
-        if (!word.isPartial()) {
-            wordList += w;
-            w.clear();
-        }
-    }
-    return wordList;
 }
 
 void Main::justifyButtons() {
@@ -1847,118 +1474,6 @@ void Main::replaceText(QTextCursor cursor, const QString& text) {
         }
         ++position;
     }
-}
-
-QString Main::fromHtml(const QString& html) {
-    static std::unordered_map<QString, QString> conversions {
-        { "&quot;",    { "\"" } },
-        { "&apos;",    { "'" } },
-        { "&nbsp;",    { " " } },
-        { "&emsp;",    { " " } },
-        { "&ensp;",    { " " } },
-        { "&thinsp;",  { " " } },
-        { "&ndash;",   { "-" } },
-        { "&mdash;",   { "-" } },
-        { "&lsquo;",   { "‘" } },
-        { "&rsquo;",   { "’" } },
-        { "&ldquo;",   { "“" } },
-        { "&rdquo;",   { "”" } },
-        { "&hellip;",  { "…" } },
-        { "&copy;",    { "©" } },
-        { "&reg;",     { "®" } },
-        { "&trade;",   { "™" } },
-        { "&euro;",    { "€" } },
-        { "&pound;",   { "£" } },
-        { "&yen;",     { "¥" } },
-        { "&rarr;",    { "→" } },
-        { "&larr;",    { "←" } },
-        { "&uarr;",    { "↑" } },
-        { "&darr;",    { "↓" } },
-    };
-
-    QString work = html;
-    for (const auto& pair: conversions) work = work.replace(pair.first, pair.second, Qt::CaseInsensitive);
-    return work;
-}
-
-QString Main::createParagraph(const QString& html) {
-    StringList bodyless { html.split("<body>") };
-    if (bodyless.count() != 2) return "";
-    bodyless = { bodyless[1].split("</body>") };
-    if (bodyless.count() != 2) return "";
-    bodyless = { bodyless[0].split("<p")} ;
-
-    QString block;
-    for (auto [i, para]: enumerate(bodyless)) {
-        if (i == 0) continue;
-        StringList end { para.split("</p>") };
-        if (end.size() != 2) continue;
-
-        StringList spanned { end[0].split("<span") };
-        if (spanned.count() != 2) {
-            spanned = { spanned[0].split("<br/>") };
-            if (spanned.count() != 2) continue;
-            block += "\n";
-            continue;
-        }
-
-        spanned = { spanned[1].split(";\">") };
-        if (spanned.count() != 2) continue;
-        spanned = { spanned[1].split("</span>") };
-        if (spanned.count() != 2) continue;
-        block += spanned[0];
-    }
-
-    return fromHtml(block);
-}
-
-QList<Word> Main::paragraphWords(const QString& paragraph) {
-    QList<Word> words;
-    StringList wordList { paragraph.split(" ", Qt::SkipEmptyParts) };
-    for (const auto& item: wordList) {
-        StringList parts { item.split("<", Qt::SkipEmptyParts) };
-        // now parts has (for ex. b>text, /b>)
-        Word word;
-        for (auto [i, part]: enumerate(parts)) {
-            QString fragment = part;
-            if (i != 0) word.setTags(words[i - 1].tags());
-            bool found = true;
-            while(found) {
-                found = true;
-                       if (fragment.startsWith("b>")) {
-                    word += Tags::Bold;
-                    fragment = fragment.mid(2);
-                    continue;
-                } else if (fragment.startsWith("i>")) {
-                    word += Tags::Italic;
-                    fragment = fragment.mid(2);
-                    continue;
-                } else if (fragment.startsWith("u>")) {
-                    word += Tags::Underline;
-                    fragment = fragment.mid(2);
-                    continue;
-                } else if (fragment.startsWith("/b>")) {
-                    word -= Tags::Bold;
-                    fragment = fragment.mid(3);
-                    continue;
-                } else if (fragment.startsWith("/i>")) {
-                    word -= Tags::Italic;
-                    fragment = fragment.mid(3);
-                    continue;
-                } else if (fragment.startsWith("/u>")) {
-                    word -= Tags::Underline;
-                    fragment = fragment.mid(3);
-                    continue;
-                }
-                found = false;
-            }
-            word.setStr(fragment);
-            words.append(word);
-            word.clear();
-            if (i != 0) words[i - 1] += Tags::Partial;
-        }
-    }
-    return words;
 }
 
 bool Main::parentIsRoot() {
@@ -2102,26 +1617,6 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
     }
 
     return true;
-}
-
-QString Main::reduceBackslashes(const QString& in) {
-    QString out;
-    out.reserve(in.size());
-
-    for (int i = 0; i < in.size(); ++i) {
-        if (in[i] == '\\') {
-            // Look ahead for a second backslash
-            if (i + 1 < in.size() && in[i+1] == '\\') {
-                out += '\\';   // double → single
-                ++i;           // skip the second one
-            }
-            // single backslash → remove (do nothing)
-        } else {
-            out += in[i];
-        }
-    }
-
-    return out;
 }
 
 void Main::registerImages(const QString& html, QTextDocument* doc) {
@@ -2923,7 +2418,7 @@ void Main::setupScripting() {
     mVm->addBuiltin("html2para", [this](fifth::vm* vm) { // id -u-> para[n] ... para[1] n
         auto& user = vm->user();
         Item& item = fifthItem(user);
-        StringList paragraphs = createParagraphs(item);
+        StringList paragraphs = Printer::createParagraphs(item);
         for (auto i = paragraphs.count(); i != 0; --i) user.push(paragraphs[i - 1]);
         user.push(paragraphs.count());
     });
@@ -2931,8 +2426,8 @@ void Main::setupScripting() {
         auto& user = vm->user();
         auto s = user.pop();
         auto paragraph = s.asString().str();
-        auto words = paragraphWords(paragraph);
-        auto wordList = mergeWordFragments(words);
+        auto words = Printer::paragraphWords(paragraph);
+        auto wordList = Printer::mergeWordFragments(words);
         for (auto i = wordList.count(); i != 0; --i) user.push(wordList[i - 1]);
         user.push(wordList.count());
     });

@@ -13,6 +13,10 @@ static constexpr qreal RightMarginMin = 0.125;
 static constexpr qreal TopMarginMin = 0.125;
 static constexpr qreal BottomMarginMin = 0.125;
 
+static constexpr auto Left = 0;
+static constexpr auto Center = 1;
+static constexpr auto Right = 2;
+
 PageSetupDialog::PageSetupDialog(QWidget* parent)
     : QDialog(parent)
     , mPrefs(new Preferences(Main::ref().prefs()))
@@ -23,7 +27,7 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     mPreviewTimer = new QTimer(this);
     mPreviewTimer->setSingleShot(true);
     mPreviewTimer->setInterval(2000);
-    connect(mPreviewTimer, &QTimer::timeout, this, [this]() { updatePreview(); });
+    connect(mPreviewTimer, &QTimer::timeout, this, [this]() { updateFootersAndHeaders(); });
 
     justify(mUi->footerRightTextEdit,  Qt::AlignRight);
     justify(mUi->footerCenterTextEdit, Qt::AlignCenter);
@@ -52,18 +56,18 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
     QString header = mPrefs->header();
-    StringList lmc { header.split("&", Qt::KeepEmptyParts) };
-    if (lmc.size() == 3) {
-        mUi->headerLeftTextEdit->setPlaceholderText(lmc[0]);
-        mUi->headerCenterTextEdit->setPlaceholderText(lmc[1]);
-        mUi->headerRightTextEdit->setPlaceholderText(lmc[2]);
+    StringList lcr { header.split(Preferences::sep, Qt::KeepEmptyParts) };
+    if (lcr.size() == 3) {
+        mUi->headerLeftTextEdit->setText(lcr[Left]);
+        mUi->headerCenterTextEdit->setText(lcr[Center]);
+        mUi->headerRightTextEdit->setText(lcr[Right]);
     }
     QString footer = mPrefs->footer();
-    lmc = footer.split("&", Qt::KeepEmptyParts);
-    if (lmc.size() == 3) {
-        mUi->footerLeftTextEdit->setPlaceholderText(lmc[0]);
-        mUi->footerCenterTextEdit->setPlaceholderText(lmc[1]);
-        mUi->footerRightTextEdit->setPlaceholderText(lmc[2]);
+    lcr = footer.split(Preferences::sep, Qt::KeepEmptyParts);
+    if (lcr.size() == 3) {
+        mUi->footerLeftTextEdit->setText(lcr[Left]);
+        mUi->footerCenterTextEdit->setText(lcr[Center]);
+        mUi->footerRightTextEdit->setText(lcr[Right]);
     }
 
     connect(mUi->footerLeftTextEdit,   &QTextEdit::textChanged, this, [this] { mFocusWidget = mUi->footerLeftTextEdit;   mPreviewTimer->start(); });
@@ -115,9 +119,9 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     mPrinter->setPrinterName(QString());
     mPrinter->setPageOrientation((mUi->orientationComboBox->currentIndex() == 1) ? QPageLayout::Landscape : QPageLayout::Portrait);
 
-    mPreview = new QPrintPreviewWidget(mPrinter->qprinter(), this);
     auto* layout = new QVBoxLayout(mUi->previewFrame);
     mUi->previewFrame->setLayout(layout);
+    mPreview = new QPrintPreviewWidget(mPrinter->qprinter(), mUi->previewFrame);
     layout->addWidget(mPreview);
 
     auto* edit = Main::ref().ui()->textEdit;
@@ -131,11 +135,9 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
             [this](QPrinter* printer) {
                 if (mPrinter == nullptr) return;
                 if (mPrinter->qprinter() == nullptr) return;
-                Preferences* savedPrefs = Main::ref().exchangePrefs(mPrefs);
                 Printer* savedPrinter = Main::ref().exchangePrinter(mPrinter);
-                Main::ref().print(mPrinter->qprinter());
+                Main::ref().printNovel();
                 mPrinter = Main::ref().exchangePrinter(savedPrinter);
-                mPrefs = Main::ref().exchangePrefs(savedPrefs);
             });
 
     mReady = true;
@@ -157,7 +159,6 @@ bool PageSetupDialog::event(QEvent *e) {
         }
     } else if (e->type() == QEvent::FocusOut) {
         auto* foe = dynamic_cast<QFocusEvent*>(e);
-        QWidget* has = QApplication::focusWidget();
         if (mFocusWidget == mUi->footerCenterTextEdit
             || mFocusWidget == mUi->footerLeftTextEdit
             || mFocusWidget == mUi->footerRightTextEdit
@@ -170,11 +171,11 @@ bool PageSetupDialog::event(QEvent *e) {
 }
 
 QString PageSetupDialog::footer() {
-    return mUi->footerLeftTextEdit->toHtml() + "&" + mUi->footerCenterTextEdit->toHtml() + "&" + mUi->footerRightTextEdit->toHtml();
+    return mUi->footerLeftTextEdit->toHtml() + Preferences::sep + mUi->footerCenterTextEdit->toHtml() + Preferences::sep + mUi->footerRightTextEdit->toHtml();
 }
 
 QString PageSetupDialog::header() {
-    return mUi->headerLeftTextEdit->toHtml() + "&" + mUi->headerCenterTextEdit->toHtml() + "&" + mUi->headerRightTextEdit->toHtml();
+    return mUi->headerLeftTextEdit->toHtml() + Preferences::sep + mUi->headerCenterTextEdit->toHtml() + Preferences::sep + mUi->headerRightTextEdit->toHtml();
 }
 
 void PageSetupDialog::justify(QTextEdit* edit, Qt::AlignmentFlag which) {
@@ -254,6 +255,12 @@ void PageSetupDialog::setMargins() {
     qreal right =  PdfExporter::toInches(value(mUi->rightMarginDoubleSpinBox));
     qreal bottom = PdfExporter::toInches(value(mUi->bottomMarginDoubleSpinBox));
     mPrefs->setMargins({ left, top, right, bottom });
+    updatePreview();
+}
+
+void PageSetupDialog::updateFootersAndHeaders() {
+    mPrefs->setFooter(footer());
+    mPrefs->setHeader(header());
     updatePreview();
 }
 
