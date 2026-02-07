@@ -38,7 +38,9 @@ class QPrinter;
 class QTextDocument;
 class QTreeWidgetItem;
 class Ui_SpellWidget;
+class Ui_SpeechWidget;
 class Ui_Widget;
+
 namespace fifth {
 class vm;
 }
@@ -105,8 +107,10 @@ private:
     SearchCore*                   mSearch { nullptr };
     Map<QShortcut*, fifth::value> mShortcut;
     SoundPool                     mSoundPool;
+    QWidget*                      mSpeaking;
     Speech                        mSpeech;
     bool                          mSpeechAvailable { false };
+    Ui_SpeechWidget*              mSpeechWidget;
     EasySpelling                  mSpelling;
     Ui_SpellWidget*               mSpellWidget { nullptr };
     QWidget*                      mSpellcheck { nullptr };
@@ -114,7 +118,6 @@ private:
     Map<qlonglong, bool>          mState;
     QList<qlonglong>              mSpellcheckIds;
     qlonglong                     mSpellcheckPosition { -1 };
-    QToolButton*                  mStopButton { nullptr };
     QString                       mTextToSpeak;
     QTimer                        mTimer;
     Ui::Main*                     mUi { nullptr };
@@ -168,6 +171,7 @@ private:
     void doOutdent();
     void doPageSetup();
     void doPaste();
+    void doPause();
     void doPreferences();
     void doPrint();
     void doReadToMe();
@@ -342,6 +346,8 @@ public slots:
     void replace()                                       { doReplace(); }
     void replaceAll()                                    { doReplaceAll(); }
     void replaceChanged()                                { doReplaceChanged(); }
+
+    void pause()                                         { doPause(); }
     void stop()                                          { doStop(); }
     void stopped()                                       { doStop(true); }
 

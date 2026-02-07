@@ -514,3 +514,15 @@ Json5Object Preferences::write() {
 
     return obj;
 }
+
+static constexpr auto PointsPerInch = 72.0;
+
+List<qreal> Preferences::margins(Units unit) const {
+    if (unit == Units::Inches) return mMargins;
+    auto margins = mMargins;
+    margins[Left]   *= PointsPerInch;
+    margins[Right]  *= PointsPerInch;
+    margins[Top]    *= PointsPerInch;
+    margins[Bottom] *= PointsPerInch;
+    return margins;
+}

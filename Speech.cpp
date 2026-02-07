@@ -6,16 +6,17 @@
 
 Speech::Speech(QObject* parent)
     : QObject(parent) {
-    connect(&mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
-             if (state == QTextToSpeech::Ready && mCurrentIndex < mSentences.size()) speakNextSentence();
+    mTts = new QTextToSpeech("winrt", this);
+    connect(mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
+             if (state == QTextToSpeech::Ready && !mPaused && mCurrentIndex < mSentences.size()) speakNextSentence();
         else if (state == QTextToSpeech::Ready && mCurrentIndex >= mSentences.size()) emit speakingFinished();
         else if (state == QTextToSpeech::Speaking) emit speakingStarted();
-        else if (state == QTextToSpeech::Error) emit errorOccurred(mTts.errorString());
+        else if (state == QTextToSpeech::Error) emit errorOccurred(mTts->errorString());
     });
 }
 
 void Speech::setVoice(qlonglong voiceIdx) {
-    auto voices = mTts.availableVoices();
+    auto voices = mTts->availableVoices();
     StringList voiceNames;
     for (auto& voice: voices) voiceNames << voice.name();
     voiceNames.sort();
@@ -24,7 +25,7 @@ void Speech::setVoice(qlonglong voiceIdx) {
     for (voiceIdx = 0; voiceIdx < voices.size(); ++voiceIdx) {
         if (voices[voiceIdx].name() == name) break;
     }
-    mTts.setVoice(voices[voiceIdx]);
+    mTts->setVoice(voices[voiceIdx]);
 }
 
 void Speech::extractSentences(const QString& text) {
@@ -77,7 +78,7 @@ void Speech::speak(const QString& text) {
 void Speech::speakNextSentence() {
     if (mNeedsPrimed) {
         mNeedsPrimed = false;
-        mTts.say("One...");
+        mTts->say("One...");
         speakNextSentence();
         return;
     }
@@ -85,7 +86,7 @@ void Speech::speakNextSentence() {
         Sentence data = mSentences[mCurrentIndex++];
         QString sentence = data.mSentence.trimmed() + data.mPunct;
         highlightSentence(data);
-        mTts.say(sentence);
+        mTts->say(sentence);
     }
 }
 
@@ -94,7 +95,7 @@ void Speech::highlightSentence(const Sentence &sentence) {
 }
 
 void Speech::stop() {
-    mTts.stop();
+    mTts->stop();
     mSentences.clear();
     mNeedsPrimed = true;
     mCurrentIndex = 0;

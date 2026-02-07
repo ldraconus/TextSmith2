@@ -24,10 +24,13 @@ public:
 
     static constexpr QChar sep = QChar(0x001F);
 
+    enum class Units { Inches, Points };
+
     void        applyFontToTree(QWidget* w, const QFont& f);
     QString     checkPath(const QString& path, bool checked);
     bool        isDark();
     bool        load();
+    List<qreal> margins(Units unit = Units::Inches) const;
     QString     newPath(const QString& path);
     bool        read(Json5Object& obj);
     void        resetIcons(bool isDark);
@@ -47,7 +50,6 @@ public:
     QString     header() const            { return mHeader.isEmpty() ? "&&" : mHeader; }
     bool        isDarkTheme() const       { return mIsDark; }
     List<int>   mainSplitter() const      { return mMainSplitter; }
-    List<qreal> margins() const           { return mMargins; }
     List<int>   otherSplitter() const     { return mOtherSplitter; }
     qlonglong   position() const          { return mPosition; }
     QString     sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }

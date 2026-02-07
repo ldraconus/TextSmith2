@@ -10,7 +10,7 @@ PreferencesDialog* PreferencesDialog::sPreferencesDialog = nullptr;
 PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     : QDialog(parent)
     , mPrefs(&prefs)
-    , mSpeech(new QTextToSpeech())
+    , mSpeech(new QTextToSpeech("winrt", this))
     , mUi(new Ui::PreferencesDialog) {
     sPreferencesDialog = this;
 

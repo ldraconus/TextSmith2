@@ -13,6 +13,12 @@
 #undef Ui_spellDialog
 #undef QDialog
 
+#define QDialog QWidget
+#define Ui_speechDialog Ui_SpeechWidget
+#include "ui_SpeechDialog.h"
+#undef Ui_speechDialog
+#undef QDialog
+
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCloseEvent>
@@ -835,6 +841,17 @@ void Main::doPaste() {
     }
 }
 
+void Main::doPause() {
+    if (!mSpeechAvailable) return;
+    if (mSpeech.paused()) {
+        mSpeech.play();
+        mSpeechWidget->pausePlayPushButton->setText(";");
+    } else {
+        mSpeech.pause();
+        mSpeechWidget->pausePlayPushButton->setText("8");
+    }
+}
+
 void Main::doPreferences() {
     Preferences prefs(mPrefs);
     PreferencesDialog dlg(mPrefs, this);
@@ -881,7 +898,8 @@ void Main::doReadToMe() {
 
     if (mTextToSpeak.size() == 0) return;
 
-    mStopButton->setVisible(true);
+    mSpeaking->setVisible(true);
+    mSpeechWidget->pausePlayPushButton->setText(";");
     mSavedCursor = cursor;
 
     mSpeech.setVoice(mPrefs.voice());
@@ -1118,7 +1136,7 @@ void Main::doStop(bool stopped) {
         cursor.setPosition(mSavedCursor.selectionEnd());
         mUi->textEdit->setTextCursor(cursor);
     } else setPosition(mSavedCursor.position());
-    mStopButton->setVisible(false);
+    mSpeaking->setVisible(false);
     if (!stopped) mSpeech.stop();
 }
 
@@ -1871,7 +1889,7 @@ Main::Main(QApplication* app, QWidget* parent)
     mSoundPool.load(SoundPool::Sound::ReturnClunk, QUrl("qrc:/Sound/ReturnClunk.mp3"), 8);
     mSoundPool.load(SoundPool::Sound::MarginDing,  QUrl("qrc:/Sound/MarginDing.mp3"),  8);
 
-    QTextToSpeech* speech = new QTextToSpeech();
+    QTextToSpeech* speech = new QTextToSpeech("winrt", this);
     mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
     delete speech;
 
@@ -1885,12 +1903,6 @@ Main::Main(QApplication* app, QWidget* parent)
     QDir().mkpath(mLocalDir);
 
     mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
-    if (mSpeechAvailable) {
-        mStopButton = new QToolButton(mUi->statusbar);
-        mStopButton->setText("■");
-        mStopButton->setVisible(false);
-        mUi->statusbar->addPermanentWidget(mStopButton);
-    }
 
     setupActions();
     setupConnections();
@@ -2169,9 +2181,16 @@ void Main::setupConnections() {
 
     connect(qApp, &QApplication::focusChanged, this, &Main::focusChanged);
 
-    connect(mStopButton, &QToolButton::clicked,     this, &Main::stop);
-    connect(&mSpeech,    &Speech::speaking,         this, &Main::highlight);
-    connect(&mSpeech,    &Speech::speakingFinished, this, &Main::stopped);
+    mSpeaking = new QWidget();
+    mSpeechWidget = new Ui_SpeechWidget();
+    mSpeechWidget->setupUi(mSpeaking);
+    mSpeaking->hide();
+    statusBar()->addPermanentWidget(mSpeaking);
+
+    connect(mSpeechWidget->stopPushButton,      &QPushButton::clicked,     this, &Main::stop);
+    connect(mSpeechWidget->pausePlayPushButton, &QPushButton::clicked,     this, &Main::pause);
+    connect(&mSpeech,                           &Speech::speaking,         this, &Main::highlight);
+    connect(&mSpeech,                           &Speech::speakingFinished, this, &Main::stopped);
 
     QShortcut* editItemShortcut = new QShortcut(QKeySequence("F2"), this);
     connect(editItemShortcut, &QShortcut::activated, this, &Main::doEditItem);

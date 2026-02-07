@@ -13,6 +13,9 @@ class Speech: public QObject {
 public:
     explicit Speech(QObject *parent = nullptr);
 
+    void pause()  { mPaused = true; }
+    bool paused() { return mPaused; }
+    void play()   { mPaused = false; speakNextSentence(); }
     void setVoice(const qlonglong voice);
     void speak(const QString& text);
 
@@ -35,7 +38,8 @@ private:
     int             mCurrentIndex { 0 };
     List<Sentence>  mSentences;
     bool            mNeedsPrimed { true };
-    QTextToSpeech   mTts;
+    bool            mPaused { false };
+    QTextToSpeech*  mTts;
     QVoice          mVoice;
 
     void extractSentences(const QString& text);

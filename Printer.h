@@ -29,6 +29,8 @@ private:
     QPdfWriter*       mPdf     { nullptr };
     Preferences*      mPrefs   { nullptr };
     QPrinter*         mPrinter { nullptr };
+    qreal             mXFactor;
+    qreal             mYFactor;
 
     class Marginal {
     public:
@@ -89,7 +91,7 @@ private:
     }
 
     List<Marginal> parseMarginal(const QString& marginal);
-    void           printMarginal(QPainter& painter, qlonglong y, const Marginal& object, const qreal& xFactor, const qreal& yFactor);
+    void           printMarginal(QPainter& painter, qlonglong y, const Marginal& object);
     QString        resolveTag(const QString& key);
 
 public:
@@ -145,30 +147,22 @@ public:
         });
     }
 
-    void        footer(QPainter& painter, const qreal& xFactor, const qreal& yFactor);
-    void        handleCover(Item& item,
+    void        footer(QPainter& painter);
+    void        printCover(Item& item,
                             bool startingPage,
                             QSizeF& pageSize,
                             QMarginsF& margins,
                             QPainter& painter,
-                            qreal xFactor,
-                            qreal yFactor,
                             std::function<void()> printer);
-    void         header(QPainter& painter, const qreal& xFactor, const qreal& yFactor);
-    void         newPage(QPainter& painter, std::function<void()> printer, const qreal& xFactor, const qreal& yFactor, bool marginals = false);
-    void         outputNovel(List<qlonglong> ids,
-                             const QString& chapterTag,
-                             const QString& sceneTag,
-                             const QString& coverTag,
-                             QPainter& painter,
-                             QSizeF pageSize,
-                             std::function<void()> pager);
+    void         header(QPainter& painter);
+    void         newPage(QPainter& painter, std::function<void()> printer, bool marginals = false);
+    void         outputNovel(List<qlonglong> ids, const QString& chapterTag, const QString& sceneTag, const QString& coverTag, QPainter& painter,
+                             QSizeF pageSize, std::function<void()> pager);
     const QSizeF pageSize(QPrinter::Unit unit) const;
-    void         printLine(QPainter& painter, List<Words::Word>& line, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill,
-                           qreal& xFactor, qreal& yFactor);
+    void         printLine(QPainter& painter, List<Words::Word>& line, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill);
     void         printNovel();
-    void         printParagraphs(QPainter& painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& xFactor, qreal& yFactor,
-                                 qreal& at, bool& startingPage, StringList& paragraphs);
+    void         printParagraphs(QPainter& painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& at, bool& startingPage,
+                                 StringList& paragraphs);
 
     static QString            createParagraph(const QString& html);
     static StringList         createParagraphs(Item& item, bool align = WithoutAlignment);

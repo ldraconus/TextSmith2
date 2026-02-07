@@ -25,8 +25,8 @@ void PdfExporter::render() {
     Main::ref().setPrinter(pdf);
     pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
         [this, &pdf, &painter]() {
-            pdf->header(painter, 1.0, 1.0);
-            pdf->footer(painter, 1.0, 1.0);
+            pdf->header(painter);
+            pdf->footer(painter);
             pdf->newPage();
         });
 }
