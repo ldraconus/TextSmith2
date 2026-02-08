@@ -279,7 +279,8 @@ public:
     static Main* ptr() { return sMain; }
     static Main& ref() { return *ptr(); }
 
-    static void  changeDocumentFont(QTextDocument* doc, const QFont& font);
+    static void       changeDocumentFont(QTextDocument* doc, const QFont& font);
+    static StringList splitToList(const QString& tag);
 
 public slots:
     void exitAction()   { doExit(); }

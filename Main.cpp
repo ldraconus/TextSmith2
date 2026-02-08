@@ -2008,12 +2008,15 @@ QList<Item*> Main::vectorOfItems(QTreeWidgetItem* branch) {
 }
 
 QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& tags, StartingFlag starting) {
+    StringList usingTags;
+    for (const auto& tag: tags) usingTags += Main::splitToList(tag);
+
     QList<qlonglong> ids;
     auto id = branch->data(0, Qt::UserRole).toLongLong();
     Item& item = mNovel.findItem(id);
-    if (tags.isEmpty() || item.hasTag(tags) || starting == StartingFlag::Starting) ids.append(id);
+    if (usingTags.isEmpty() || item.hasTag(usingTags) || starting == StartingFlag::Starting) ids.append(id);
     for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
-        auto childItems = vectorOfIds(branch->child(childNum), tags, StartingFlag::Continuing);
+        auto childItems = vectorOfIds(branch->child(childNum), usingTags, StartingFlag::Continuing);
         ids.append(childItems);
     }
     return ids;
@@ -2603,3 +2606,9 @@ void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
     Main::ref().ui()->textEdit->setWrapMargin();
 }
 
+StringList Main::splitToList(const QString& tag) {
+    StringList tags { tag.split(",") };
+    StringList resultTags;
+    for (auto& tag: tags) resultTags += tag.trimmed();
+    return resultTags;
+}

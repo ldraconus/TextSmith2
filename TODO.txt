@@ -1,12 +1,17 @@
-[ ] Add comma separated extra scene and chapter tags
-[ ] Add printing embedded images in chapter or scenes
-[ ] Add putting displayed images in exporters (except pdf, & ebook -- because of what they are they already work).
+[/] Add printing embedded images in chapter or scenes
+    - Fix html import to preserve images and basic formating, but loses everything else.
+    [ ] Make printer work right
+[ ] Add putting displayed images in exporters (except pdf, text, html, & ebook -- because of what they are they already work bvecause of previous issues
+    or straight html ... so basically Rtf, I think).
 [ ] Help
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] Fix issue with typing two returns at end wiping paragraph format.
 [ ] Fix issue with backspace on last line wiping paragraph format.
 [ ] Write extra scripts
 [ ] Add a hollywood script writing display mode
+[X] Add comma separated extra scene and chapter tags
+    - PageSetup
+    - Exporters
 [X] Fix ItemDescriptionDialog buttons
 [X] Fixed paste issue with html
 [X] Add pause/play handling to speech

@@ -86,6 +86,7 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
             else if (justification == "J") rtf += "\\qj ";
             List<Word> words = Printer::paragraphWords(paragraph);
             for (auto i = 0; i < words.count(); ++i) {
+                // fix image insert here
                 Word word = words[i];
                 Tags on = word.tags() & ~current;
                 Tags off = current & ~word.tags();

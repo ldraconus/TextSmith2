@@ -48,36 +48,52 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
         tempDoc.setHtml(source->html());
 
         // 2. Create a cursor for your MAIN editor
-        QTextCursor cur = this->textCursor();
+        QTextCursor cur = textCursor();
         cur.beginEditBlock(); // Group into one Undo step
+        QTextBlockFormat blockFmt = cur.blockFormat();
 
         // 3. Iterate over the confused HTML mess
         for (auto it = tempDoc.begin(); it != tempDoc.end(); it = it.next()) {
             QTextBlock block = it;
 
-            // Iterate over text fragments (chunks of text with same format)
+            cur.setBlockFormat(blockFmt);
+
             for (auto it2 = block.begin(); it2 != block.end(); it2++) {
                 QTextFragment frag = it2.fragment();
                 if (!frag.isValid()) continue;
 
-                // 4. THE MAGIC: Extract only what we care about
                 QTextCharFormat dirtyFmt = frag.charFormat();
-                QTextCharFormat cleanFmt;
 
-                // Only copy the "Novel" attributes
-                if (dirtyFmt.fontItalic()) cleanFmt.setFontItalic(true);
-                if (dirtyFmt.fontWeight() > QFont::Normal) cleanFmt.setFontWeight(QFont::Bold);
+                // --- 1. CHECK FOR IMAGE ---
+                if (dirtyFmt.isImageFormat()) {
+                    QTextImageFormat dirtyImg = dirtyFmt.toImageFormat();
 
-                // Enforce YOUR standard font (e.g. Times, 12pt)
-                cleanFmt.setFontFamilies({ this->fontFamily() });
-                cleanFmt.setFontPointSize(this->fontPointSize());
+                    // Create a pristine image format (strips size, borders, alignment)
+                    QTextImageFormat cleanImg;
+                    cleanImg.setName(dirtyImg.name()); // Keep ONLY the URL
 
-                // Insert the sanitized chunk
-                cur.insertText(frag.text(), cleanFmt);
+                    cur.insertImage(cleanImg);
+                }
+                // --- 2. HANDLE TEXT ---
+                else {
+                    QTextCharFormat cleanFmt;
+
+                    // Only copy the "Novel" attributes
+                    if (dirtyFmt.fontItalic()) cleanFmt.setFontItalic(true);
+                    if (dirtyFmt.fontUnderline()) cleanFmt.setFontUnderline(true);
+                    if (dirtyFmt.fontWeight() > QFont::Normal) cleanFmt.setFontWeight(QFont::Bold);
+
+                    // Enforce YOUR standard font
+                    cleanFmt.setFontFamilies({ fontFamily() });
+                    cleanFmt.setFontPointSize(fontPointSize());
+
+                    // Insert the sanitized chunk
+                    // Note: Since we are in the 'else', we verify this isn't an image placeholder
+                    cur.insertText(frag.text(), cleanFmt);
+                }
             }
 
-            // Insert a block break (paragraph) unless it's the last one
-            if (block.next().isValid()) cur.insertBlock();
+            if (block.next().isValid()) cur.insertBlock(blockFmt); // <--- CRITICAL: Insert next block with YOUR format
         }
 
         cur.endEditBlock();
