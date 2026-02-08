@@ -20,7 +20,7 @@ void PdfExporter::render() {
     pdf->setAuthor(mAuthor);
     pdf->setTitle(mTitle);
 
-    QPainter painter(dynamic_cast<QPaintDevice*>(pdf));
+    QPainter* painter = new QPainter(dynamic_cast<QPaintDevice*>(pdf));
 
     Main::ref().setPrinter(pdf);
     pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,

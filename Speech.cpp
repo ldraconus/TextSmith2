@@ -6,9 +6,14 @@
 
 Speech::Speech(QObject* parent)
     : QObject(parent) {
-    mTts = new QTextToSpeech("winrt", this);
+    // Explicitly check available engines, fallback if winrt isn't there
+    // (Optional safety, but good practice)
+    if (QTextToSpeech::availableEngines().contains("winrt")) mTts = new QTextToSpeech("winrt", this);
+    else mTts = new QTextToSpeech(this);
+
     connect(mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
-             if (state == QTextToSpeech::Ready && !mPaused && mCurrentIndex < mSentences.size()) speakNextSentence();
+        if (mPaused) return;
+             if (state == QTextToSpeech::Ready && mCurrentIndex < mSentences.size()) speakNextSentence();
         else if (state == QTextToSpeech::Ready && mCurrentIndex >= mSentences.size()) emit speakingFinished();
         else if (state == QTextToSpeech::Speaking) emit speakingStarted();
         else if (state == QTextToSpeech::Error) emit errorOccurred(mTts->errorString());
@@ -17,14 +22,12 @@ Speech::Speech(QObject* parent)
 
 void Speech::setVoice(qlonglong voiceIdx) {
     auto voices = mTts->availableVoices();
+    if (voices.isEmpty()) return;
+
     StringList voiceNames;
     for (auto& voice: voices) voiceNames << voice.name();
     voiceNames.sort();
     if (voiceIdx >= voices.size() || voiceIdx < 0) voiceIdx = 0;
-    auto name = voiceNames[voiceIdx];
-    for (voiceIdx = 0; voiceIdx < voices.size(); ++voiceIdx) {
-        if (voices[voiceIdx].name() == name) break;
-    }
     mTts->setVoice(voices[voiceIdx]);
 }
 
@@ -69,24 +72,28 @@ void Speech::extractSentences(const QString& text) {
 
 void Speech::speak(const QString& text) {
     // Split into sentences
-    extractSentences(text);
-    mCurrentIndex = 0;
+    stop();
 
+    extractSentences(text);
+    if (mSentences.isEmpty()) return;
+
+    mCurrentIndex = 0;
+    mPaused = false;
     speakNextSentence();
 }
 
 void Speech::speakNextSentence() {
     if (mNeedsPrimed) {
         mNeedsPrimed = false;
-        mTts->say("One...");
-        speakNextSentence();
+        mTts->say(" ");
         return;
     }
     if (mCurrentIndex < mSentences.size()) {
-        Sentence data = mSentences[mCurrentIndex++];
+        const Sentence& data = mSentences[mCurrentIndex];
         QString sentence = data.mSentence.trimmed() + data.mPunct;
         highlightSentence(data);
         mTts->say(sentence);
+        ++mCurrentIndex;
     }
 }
 
@@ -95,8 +102,9 @@ void Speech::highlightSentence(const Sentence &sentence) {
 }
 
 void Speech::stop() {
+    mPaused = true;
     mTts->stop();
     mSentences.clear();
-    mNeedsPrimed = true;
     mCurrentIndex = 0;
+    mNeedsPrimed = true;
 }

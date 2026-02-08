@@ -1087,8 +1087,8 @@ void Main::doSpellcheckNext() {
                 if (QWidget* w = btn->widget()) w->deleteLater();
                 delete btn;
             }
-            QPushButton* button;
-            for (auto [i, suggestion]: enumerate(suggestions)) {
+            QPushButton* button { nullptr };
+            for (auto&& [i, suggestion]: enumerate(suggestions)) {
                 auto* contents = mSpellWidget->scrollAreaWidgetContents;
                 auto* button = new QPushButton(suggestion, contents);
                 button->setObjectName(mSpellcheckWord.mWord);
@@ -1104,6 +1104,7 @@ void Main::doSpellcheckNext() {
                 layout->addWidget(button);
                 contents->adjustSize();
             }
+            if (!button) break;
             repaint();
             mSpellWidget->leftPushButton->setDisabled(true);
             auto geom = button->geometry();

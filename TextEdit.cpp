@@ -28,7 +28,7 @@ TextEdit::TextEdit(QWidget* parent)
     // Default margin is fine; you can tweak per your layout
 }
 
-void TextEdit::insertFromMimeData(const QMimeData *source) {    
+void TextEdit::insertFromMimeData(const QMimeData *source) {
     ReentryGuard guard(mReentry);
     if (guard.active() || mInserting || mResizing) return; // guard against re-entry
 
@@ -42,10 +42,50 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
         }
     }
 
-    if (source->hasHtml()) {
-        // scan for possible image issues?
-        insertHtml(source->html());
-        // scan for possible image issues?
+    if (source->hasHtml()) { // strange, but possible ...
+        // 1. Use a lightweight document to parse the HTML structure
+        QTextDocument tempDoc;
+        tempDoc.setHtml(source->html());
+
+        // 2. Create a cursor for your MAIN editor
+        QTextCursor cur = this->textCursor();
+        cur.beginEditBlock(); // Group into one Undo step
+
+        // 3. Iterate over the confused HTML mess
+        for (auto it = tempDoc.begin(); it != tempDoc.end(); it = it.next()) {
+            QTextBlock block = it;
+
+            // Iterate over text fragments (chunks of text with same format)
+            for (auto it2 = block.begin(); it2 != block.end(); it2++) {
+                QTextFragment frag = it2.fragment();
+                if (!frag.isValid()) continue;
+
+                // 4. THE MAGIC: Extract only what we care about
+                QTextCharFormat dirtyFmt = frag.charFormat();
+                QTextCharFormat cleanFmt;
+
+                // Only copy the "Novel" attributes
+                if (dirtyFmt.fontItalic()) cleanFmt.setFontItalic(true);
+                if (dirtyFmt.fontWeight() > QFont::Normal) cleanFmt.setFontWeight(QFont::Bold);
+
+                // Enforce YOUR standard font (e.g. Times, 12pt)
+                cleanFmt.setFontFamilies({ this->fontFamily() });
+                cleanFmt.setFontPointSize(this->fontPointSize());
+
+                // Insert the sanitized chunk
+                cur.insertText(frag.text(), cleanFmt);
+            }
+
+            // Insert a block break (paragraph) unless it's the last one
+            if (block.next().isValid()) cur.insertBlock();
+        }
+
+        cur.endEditBlock();
+        return;
+    }
+
+    if (source->hasText()) {
+        insertPlainText(source->text());
         return;
     }
 

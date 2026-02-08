@@ -7,10 +7,10 @@
 #include <string>
 #include <vector>
 
-#include <hunspell.hxx>
+#include <hunspell/hunspell.hxx>
 
 EasySpelling::EasySpelling() {
-    mReady.store(false, std::memory_order_acquire);
+    mReady.exchange(false, std::memory_order_acquire);
     QThread *t = QThread::create([this]{
         QDir tempDir(QDir::temp().filePath("TextSmith2_dict"));
         tempDir.mkpath(".");
@@ -24,7 +24,7 @@ EasySpelling::EasySpelling() {
 
         mEngine = std::make_unique<Hunspell>(this->mAffPath.toStdString().c_str(), this->mDictPath.toStdString().c_str());
 
-        mReady.store(true, std::memory_order_release);
+        mReady.exchange(true, std::memory_order_release);
     });
     t->start();
 }

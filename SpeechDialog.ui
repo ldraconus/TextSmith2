@@ -28,8 +28,16 @@
     <height>16777215</height>
    </size>
   </property>
+  <property name="font">
+   <font>
+    <family>Webdings</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>Dialog</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="spacing">
@@ -58,7 +66,19 @@
      <property name="font">
       <font>
        <family>Webdings</family>
+       <pointsize>-1</pointsize>
+       <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#pausePlayPushButton {
+    font-family: &quot;Webdings&quot;;
+    font-size: 10px; /* Try a specific pixel size, not point size */
+    font-weight: bold;
+    border: 1px solid #555; /* Force the box model to render */
+    min-height: 20px;       /* Ensure it's tall enough to show the font! */
+    padding: 2px;
+}</string>
      </property>
      <property name="text">
       <string>8</string>
@@ -79,7 +99,19 @@
      <property name="font">
       <font>
        <family>Webdings</family>
+       <pointsize>-1</pointsize>
+       <bold>true</bold>
       </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#stopPushButton {
+    font-family: &quot;Webdings&quot;;
+    font-size: 10px; /* Try a specific pixel size, not point size */
+    font-weight: bold;
+    border: 1px solid #555; /* Force the box model to render */
+    min-height: 20px;       /* Ensure it's tall enough to show the font! */
+    padding: 2px;
+}</string>
      </property>
      <property name="text">
       <string>&lt;</string>

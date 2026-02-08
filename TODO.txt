@@ -1,6 +1,7 @@
-[ ] Add pause/play handling to speech
 [ ] Help
 [ ] Add a hollywood script writing display mode
+[X] Fixed paste issue with html
+[X] Add pause/play handling to speech
 [X] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
 [X] Add headers and footers to print (>Title: \t\|>Author: \a; >Page \p<; \f - author first name, \l - auto last name)
 [X] UI font selection

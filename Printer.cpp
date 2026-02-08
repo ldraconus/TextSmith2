@@ -7,7 +7,7 @@
 void Printer::printNovel() {
     setFullPage(true);
     QSizeF size = pageSize(QPrinter::Point);
-    QPainter paint = painter();
+    QPainter* paint = painter();
     outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), paint, size,
                 [this, &paint]() {
                     header(paint);
@@ -16,7 +16,7 @@ void Printer::printNovel() {
                 });
 }
 
-void Printer::printParagraphs(QPainter &painter,
+void Printer::printParagraphs(QPainter* painter,
                               QSizeF &pageSize,
                               std::function<void()> &pager,
                               QMarginsF &margins,
@@ -141,7 +141,7 @@ QList<Words::Word> Printer::paragraphWords(const QString &paragraph) {
     return words;
 }
 
-void Printer::footer(QPainter &painter) {
+void Printer::footer(QPainter* painter) {
     auto marginals = parseMarginal(mPrefs->footer());
     qreal bottom = mPrefs->margins()[Preferences::Bottom] * PointsPerInch * mYFactor;
     qreal y = mPrinter->pageRect(QPrinter::Point).height() * mYFactor - bottom;
@@ -169,12 +169,7 @@ QString Printer::fromHtml(const QString &html) {
     return work;
 }
 
-void Printer::printCover(Item &item,
-                          bool startingPage,
-                          QSizeF &pageSize,
-                          QMarginsF &margins,
-                          QPainter &painter,
-                          std::function<void()> printer) {
+void Printer::printCover(Item &item, bool startingPage, QSizeF &pageSize, QMarginsF &margins, QPainter *painter, std::function<void()> printer) {
     QPointF at = QPointF(margins.top(), margins.left());
     if (mPageNo != 1) {
         if (!startingPage) {
@@ -206,13 +201,13 @@ void Printer::printCover(Item &item,
             }
             auto size = scaledImage.size();
             QRectF imageRect(at.x() * mXFactor, at.y() * mYFactor, size.width(), size.height());
-            painter.drawImage(imageRect, scaledImage);
+            painter->drawImage(imageRect, scaledImage);
             at.setY(at.y() + scaledImage.height());
         }
     }
 }
 
-void Printer::header(QPainter &painter) {
+void Printer::header(QPainter* painter) {
     auto marginals = parseMarginal(mPrefs->header());
     if (marginals.size() < 1) return;
 
@@ -241,7 +236,7 @@ StringList Printer::mergeWordFragments(QList<Words::Word> &words) {
     return wordList;
 }
 
-void Printer::newPage(QPainter &painter,
+void Printer::newPage(QPainter* painter,
                       std::function<void()> printer,
                       bool marginals) {
     if (marginals) {
@@ -255,7 +250,7 @@ void Printer::outputNovel(List<qlonglong> ids,
                           const QString &chapterTag,
                           const QString &sceneTag,
                           const QString &coverTag,
-                          QPainter &painter,
+                          QPainter* painter,
                           QSizeF pageSize,
                           std::function<void()> pager) {
     if (mPrinter == nullptr) return;
@@ -270,7 +265,7 @@ void Printer::outputNovel(List<qlonglong> ids,
     qreal lineHeight = metrics.height() / mYFactor;
     qreal at = margins.top() + ascent;
     qreal bottom = pageSize.height() - margins.bottom();
-    painter.setFont(font);
+    painter->setFont(font);
 
     mPageNo = 1;
     bool startingPage = true;
@@ -310,8 +305,8 @@ void Printer::outputNovel(List<qlonglong> ids,
     if (!startingPage) newPage(painter, pager);
 }
 
-void Printer::printLine(QPainter &painter, List<Words::Word> &line, QFont &font, Words::Tags &current, qreal x, qreal at, qreal fill) {
-    QFontMetricsF metrics(painter.fontMetrics());
+void Printer::printLine(QPainter* painter, List<Words::Word> &line, QFont &font, Words::Tags &current, qreal x, qreal at, qreal fill) {
+    QFontMetricsF metrics(painter->fontMetrics());
     at *= mYFactor;
     fill *= mXFactor;
     x *= mXFactor;
@@ -325,8 +320,8 @@ void Printer::printLine(QPainter &painter, List<Words::Word> &line, QFont &font,
         if ((current & Words::Tags::Bold) != Words::Tags::None) wFont.setWeight(QFont::Bold);
         if ((current & Words::Tags::Italic) != Words::Tags::None) wFont.setItalic(true);
         if ((current & Words::Tags::Underline) != Words::Tags::None) wFont.setUnderline(true);
-        painter.setFont(wFont);
-        painter.drawText(QPoint(x + 0.5, at + 0.5), word.str());
+        painter->setFont(wFont);
+        painter->drawText(QPoint(x + 0.5, at + 0.5), word.str());
         x += fill + metrics.horizontalAdvance(word.str());
         if (!word.isPartial()) x += space;
     }
@@ -381,12 +376,13 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
     return marginals;
 }
 
-void Printer::printMarginal(QPainter &painter, qlonglong y, const Marginal &object) {
+void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal &object)
+{
     qreal left = mPrefs->margins()[Preferences::Left] * PointsPerInch * mXFactor;
     qreal right = (mPrinter->pageRect(QPrinter::Point).width() -  mPrefs->margins()[Preferences::Right] * PointsPerInch) * mXFactor;
     qreal center = mPrinter->pageRect(QPrinter::Point).width() * mXFactor / 2;
     QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
-    QFontMetricsF metrics(painter.fontMetrics());
+    QFontMetricsF metrics(painter->fontMetrics());
     QString text = object.text();
     auto width = metrics.horizontalAdvance(text);
     auto x = left;
@@ -397,7 +393,7 @@ void Printer::printMarginal(QPainter &painter, qlonglong y, const Marginal &obje
     case Marginal::Justify::Right:  x = right - width;      break;
     }
 
-    painter.drawText(QPoint({ int(x + 0.5), int(y + 0.5) }), text);
+    painter->drawText(QPoint({ int(x + 0.5), int(y + 0.5) }), text);
 }
 
 QString Printer::resolveTag(const QString &key) {
