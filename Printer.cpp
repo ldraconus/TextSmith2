@@ -14,6 +14,7 @@ void Printer::printNovel() {
                     footer(paint);
                     newPage();
                 });
+    delete paint;
 }
 
 void Printer::printParagraphs(QPainter* painter,
@@ -99,7 +100,7 @@ QList<Words::Word> Printer::paragraphWords(const QString &paragraph) {
         StringList parts { item.split("<", Qt::SkipEmptyParts) };
         // now parts has (for ex. b>text, /b>)
         Words::Word word;
-        for (auto [i, part]: enumerate(parts)) {
+        for (auto&& [i, part]: enumerate(parts)) {
             QString fragment = part;
             if (i != 0) word.setTags(words[i - 1].tags());
             bool found = true;

@@ -7,22 +7,27 @@
 
 #include "Novel.h"
 
+static constexpr auto AreaWidth = 382;
+
 ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget* parent)
     : QDialog(parent)
     , mItem(item)
     , mUi(new Ui::ItemDescriptionDialog) {
     mUi->setupUi(this);
 
+    QFont font(Main::ref().prefs().uiFontFamily(), Main::ref().prefs().uiFontSize());
+    Main::ref().prefs().applyFontToTree(this, font);
+
     mUi->nameLineEdit->setText(item->name());
     mUi->nameLineEdit->selectAll();
-    addTags(mItem->tags());
+
+    addTags(font, mItem->tags());
 
     setupConnections();
 
     noDefault(mUi->buttonBox->button(QDialogButtonBox::Ok));
     noDefault(mUi->buttonBox->button(QDialogButtonBox::Cancel));
 
-    QFont font(Main::ref().prefs().uiFontFamily(), Main::ref().prefs().uiFontSize());
     Main::ref().prefs().applyFontToTree(this, font);
     updateGeometry();
     repaint();
@@ -42,7 +47,8 @@ void ItemDescriptionDialog::keyPressEvent(QKeyEvent* event) {
 }
 
 void ItemDescriptionDialog::doButtonPressed() {
-    removeButton(dynamic_cast<QPushButton*>(sender()));
+    QPushButton* btn = dynamic_cast<QPushButton*>(sender());
+    removeButton(btn);
 }
 
 void ItemDescriptionDialog::doEdited(const QString& t) {
@@ -60,32 +66,68 @@ void ItemDescriptionDialog::doReturnPressed() {
     edit->setText("");
 
     mItem->addTag(text);
-    for (auto i = 0; i < mButtons.size(); ++i) delete mButtons[i];
+    mUi->tagFrame->setUpdatesEnabled(false); // Freeze painting
+    for (auto i = 0; i < mButtons.size(); ++i) mButtons[i]->deleteLater();
     mButtons.clear();
+    mUi->tagFrame->setUpdatesEnabled(true); // Allow painting
 
-    addTags(mItem->tags());
+    QFont font(Main::ref().prefs().uiFontFamily(), Main::ref().prefs().uiFontSize());
+    addTags(font, mItem->tags());
 }
 
-void ItemDescriptionDialog::addButton(int num, const QString& tag) {
-    QPushButton* button = new QPushButton(tag, mUi->tagFrame);
+void ItemDescriptionDialog::addButton(const QFont& font, const QString& tag) {
+    const int BTN_HEIGHT = 30;
+    const int SPACING = 3;         // Space between buttons
+    const int PADDING = 20;         // Internal padding for text inside the button
 
-    int x = (num % 3) * button->geometry().width() + (num % 3 + 1) * 6;
-    int y = (num / 3) * button->geometry().height() + (num / 3 + 1) * 6;
-    QRect g = button->geometry();
-    g.setX(x);
-    g.setY(y);
-    button->setGeometry(g.x(), g.y(), g.x() + g.width(), g.y() + g.height());
+    int max_container_width = 382;
+    int base_btn_width = max_container_width / 3 - SPACING * 2;  // Width of a "single" button
+    // 1. Calculate the required width based on text
+    QFontMetrics fm(font);
+    int textWidth = fm.horizontalAdvance(tag); // Use fm.width(text) for older Qt versions
 
-    connect(button, &QPushButton::clicked, this, &ItemDescriptionDialog::buttonPressedAction);
-    mButtons.append(button);
-    button->setEnabled(true);
-    button->setVisible(true);
-    repaint();
+    int buttonWidth = base_btn_width;
+
+    // Logic: Span 2 or 3 spaces if text is too wide
+    int oneUnit = base_btn_width;
+    int twoUnits = (base_btn_width * 2) + SPACING;
+    int threeUnits = (base_btn_width * 3) + (SPACING * 2);
+
+    if (textWidth + PADDING > oneUnit) {
+        if (textWidth + PADDING > twoUnits) {
+            buttonWidth = threeUnits; // Max cap
+        } else {
+            buttonWidth = twoUnits;
+        }
+    }
+
+    // 2. Check if we need to wrap to the next line
+    // If adding this button exceeds the container width...
+    if (mX + buttonWidth > max_container_width) {
+        mX = 0; // Reset X (or set to your left margin)
+        mY += BTN_HEIGHT + SPACING; // Move Y down
+    }
+
+    // Optional: Check if we have run out of vertical space
+    // if (currentY + BTN_HEIGHT > 200) { return; }
+
+    // 3. Create and position the button
+    QPushButton* btn = new QPushButton(tag, mUi->tagFrame);
+    connect(btn, &QPushButton::clicked, this, &ItemDescriptionDialog::buttonPressedAction);
+
+    btn->setGeometry(mX, mY, buttonWidth, BTN_HEIGHT);
+    btn->show();
+
+    // 4. Update the X position for the next button
+    // Move X past this button + spacing
+    mX += buttonWidth + SPACING;
+
+    mButtons.append(btn);
 }
 
-void ItemDescriptionDialog::addTags(const StringList &tags) {
-    int i = 0;
-    for (const auto& tag: tags) addButton(i++, tag);
+void ItemDescriptionDialog::addTags(const QFont& font, const StringList &tags) {
+    mX = mY = 0;
+    for (const auto& tag: tags) addButton(font, tag);
 }
 
 void ItemDescriptionDialog::noDefault(QPushButton* btn) {
@@ -96,10 +138,13 @@ void ItemDescriptionDialog::noDefault(QPushButton* btn) {
 void ItemDescriptionDialog::removeButton(const QPushButton* button) {
     mItem->clearTag(button->text());
 
-    for (auto i = 0; i < mButtons.size(); ++i) delete mButtons[i];;
+    mUi->tagFrame->setUpdatesEnabled(false); // Freeze painting
+    for (auto i = 0; i < mButtons.size(); ++i) mButtons[i]->deleteLater();
+    mUi->tagFrame->setUpdatesEnabled(true); // Allow painting
     mButtons.clear();
 
-    addTags(mItem->tags());
+    QFont font(Main::ref().prefs().uiFontFamily(), Main::ref().prefs().uiFontSize());
+    addTags(font, mItem->tags());
 }
 
 void ItemDescriptionDialog::setupConnections() {

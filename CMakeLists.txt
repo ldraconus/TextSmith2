@@ -24,8 +24,6 @@ find_package(Qt6 REQUIRED COMPONENTS
 
 
 if(MSVC)
-    message(STATUS "Found Hunspell vi vcpkg")
-    # Include directories
     include_directories(
         E:/QtSource/include
         E:/QtSource/libzip/build
@@ -49,7 +47,10 @@ endif()
 
 # Sources
 set(SOURCES
+    5th.cpp
+    dict.cpp
     EBookExporter.cpp
+    EasySpelling.cpp
     ExportDialog.cpp
     FullScreenDialog.cpp
     HtmlExporter.cpp
@@ -57,20 +58,24 @@ set(SOURCES
     Main.cpp
     MarkdownExporter.cpp
     Novel.cpp
+    PageSetupDialog.cpp
     PdfExporter.cpp
     Preferences.cpp
     PreferencesDialog.cpp
+    Printer.cpp
+    RtfExporter.cpp
     SearchReplace.cpp
     SoundPool.cpp
     Speech.cpp
     Start.cpp
     TextEdit.cpp
-
 )
 
 # Headers
 set(HEADERS
+    5th.h
     EBookExporter.h
+    EasySpelling.h
     ExportDialog.h
     Exporter.h
     FullScreenDialog.h
@@ -79,27 +84,31 @@ set(HEADERS
     Main.h
     MarkdownExporter.h
     Novel.h
+    PageSetupDialog.h
     PdfExporter.h
     Preferences.h
     PreferencesDialog.h
     Printer.h
+    RtfExporter.h
     SearchReplace.h
     Speech.h
     SoundPool.h
     TextEdit.h
     TreeWidget.h
     Words.h
-
 )
 
 # UI files
 set(FORMS
+    dialog.ui
     ExportDialog.ui
     FullScreenDialog.ui
     ItemDescriptionDialog.ui
     Main.ui
     PreferencesDialog.ui
-    dialog.ui
+    PageSetupDialog.ui
+    SpeechDialog.ui
+    SpellCheckDialog.ui
 )
 
 # Resource file
@@ -113,61 +122,7 @@ qt_add_executable(TextSmith2
     ${RESOURCES}
     appicon.rc
     TODO.txt
-    RtfExporter.h RtfExporter.cpp
-    EasySpelling.h EasySpelling.cpp
-    SpellCheckDialog.ui
-    dict.cpp 5th.cpp 5th.h
-    PageSetupDialog.h PageSetupDialog.cpp PageSetupDialog.ui
-    Printer.cpp
-    SpeechDialog.ui
-
 )
-
-# Tell the linker where to find libzip.dll.a
-#link_directories("E:/QtSource/libzip/build/lib")
-if(MSVC)
-# 1. Define where Vcpkg lives (Hardcoded based on your setup)
-    set(VCPKG_INSTALLED_DIR "E:/QtSource/vcpkg/installed/x64-windows")
-
-    message(STATUS "Checking for Hunspell in: ${VCPKG_INSTALLED_DIR}")
-
-    # 2. Find the Header (looks for hunspell/hunspell.hxx)
-    find_path(HUNSPELL_INCLUDE_DIR
-        NAMES hunspell.hxx
-        PATHS "${VCPKG_INSTALLED_DIR}/include/hunspell"
-        NO_DEFAULT_PATH
-    )
-
-    # 3. Find the Library (looks for hunspell.lib or libhunspell.lib)
-    find_library(HUNSPELL_LIBRARY
-        NAMES hunspell-1.7.lib
-        PATHS "${VCPKG_INSTALLED_DIR}/lib"
-        NO_DEFAULT_PATH
-    )
-
-    if(HUNSPELL_INCLUDE_DIR AND HUNSPELL_LIBRARY)
-        message(STATUS "  - Found Header: ${HUNSPELL_INCLUDE_DIR}")
-        message(STATUS "  - Found Lib:    ${HUNSPELL_LIBRARY}")
-
-        # 4. Create the target manually so it works like the auto-detected version
-        add_library(hunspell::hunspell UNKNOWN IMPORTED)
-        set_target_properties(hunspell::hunspell PROPERTIES
-            IMPORTED_LOCATION "${VCPKG_INSTALLED_DIR}/lib/hunspell-1.7.lib"
-            INTERFACE_INCLUDE_DIRECTORIES "${HUNSPELL_INCLUDE_DIR}"
-        )
-        set(HUNSPELL_TARGET hunspell::hunspell)
-        target_link_libraries(TextSmith2 PRIVATE "${VCPKG_INSTALLED_DIR}/lib/hunspell-1.7.lib")
-    else()
-        message(FATAL_ERROR "Could NOT find Hunspell in ${VCPKG_INSTALLED_DIR}. Check if the folder exists.")
-    endif()
-else()
-    add_library(hunspell::hunspell UNKNOWN IMPORTED)
-    set_target_properties(hunspell::hunspell PROPERTIES
-        IMPORTED_LOCATION "E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a"
-        INTERFACE_INCLUDE_DIRECTORIES "E:/QtSource/Spelling/hunspell" "E:/QtSource/Spelling/parsers" "E:/QtSource/Spelling/tools"
-    )
-    set(HUNSPELL_TARGET hunspell::hunspell)
-endif()
 
 # Link Qt + libzip
 target_link_libraries(TextSmith2 PRIVATE
@@ -179,6 +134,16 @@ target_link_libraries(TextSmith2 PRIVATE
     E:/QtSource/libzip/build/lib/libzip.dll.a
     E:/QtSource/zlib-1.3.1/build/libzlib.dll.a
 )
+
+if(MSVC)
+    target_link_libraries(TextSmith2 PRIVATE
+        "E:/QtSource/vcpkg/installed/x64-windows/lib/hunspell-1.7.lib"
+    )
+else()
+    target_link_libraries(TextSmith2 PRIVATE
+        "E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a"
+    )
+endif()
 
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE

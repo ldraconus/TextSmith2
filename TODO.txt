@@ -1,5 +1,13 @@
+[ ] Add comma separated extra scene and chapter tags
+[ ] Add printing embedded images in chapter or scenes
+[ ] Add putting displayed images in exporters (except pdf, & ebook -- because of what they are they already work).
 [ ] Help
+[ ] Add scroll area for tags in the ItemDescriptionDialog.
+[ ] Fix issue with typing two returns at end wiping paragraph format.
+[ ] Fix issue with backspace on last line wiping paragraph format.
+[ ] Write extra scripts
 [ ] Add a hollywood script writing display mode
+[X] Fix ItemDescriptionDialog buttons
 [X] Fixed paste issue with html
 [X] Add pause/play handling to speech
 [X] Custom print setup dialog for chapter/scene/cover tag setting, margins, font, force left-justification to Full, indent, etc.
@@ -63,7 +71,6 @@
 
 rogelio.sanchez@nymanturkish.com
 Need last date worked, exactly.
-
 
 Custom Print Dialog:
 

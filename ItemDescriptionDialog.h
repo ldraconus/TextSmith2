@@ -30,13 +30,15 @@ private:
     QList<QPushButton*>        mButtons;
     Item*                      mItem;
     Ui::ItemDescriptionDialog* mUi;
+    qlonglong                  mX;
+    qlonglong                  mY;
 
     void doButtonPressed();
     void doEdited(const QString& t);
     void doReturnPressed();
 
-    void addButton(int num, const QString& tag);
-    void addTags(const StringList& tags);
+    void addButton(const QFont& font, const QString& tag);
+    void addTags(const QFont& font, const StringList& tags);
     void noDefault(QPushButton* btn);
     void removeButton(const QPushButton* button);
     void setupConnections();
