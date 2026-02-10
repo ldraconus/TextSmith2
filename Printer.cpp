@@ -28,6 +28,7 @@ void Printer::printParagraphs(QPainter* painter,
     QFontMetricsF metrics(font, paintdevice());
     qreal lineWidth = pageSize.width() - margins.left() - margins.right();
     qreal lineHeight = metrics.height() / mYFactor;
+    qreal pageHeight = pageSize.height() - margins.bottom() - margins.top();
     qreal bottom = pageSize.height() - margins.bottom();
     qreal ascent = metrics.ascent() / mYFactor;
     qreal space = metrics.horizontalAdvance("N") / mXFactor;
@@ -53,15 +54,36 @@ void Printer::printParagraphs(QPainter* painter,
         } else align = "L";
 
         bool first = true;
+        List<QString> imgs;
         while (!words.isEmpty()) {
             auto width = extra;
             if (first) width += indent;
             List<Words::Word> line;
+            qreal workingLineHeight = lineHeight;
             while (!words.isEmpty()) {
+                qreal imageHeight = 0.0;
+                QString imgUrl;
                 Words::Word word = words.first();
-                if (line.size() != 0 && (current & Words::Tags::Partial) != Words::Tags::None) width += space;
-                auto withWord = width + metrics.horizontalAdvance(word.str()) / mXFactor;
+                if (line.size() != 0 &&  (current & Words::Tags::Partial) != Words::Tags::None) width += space;
+                qreal withWord = 0.0;
+
+                if (word.hasTag(Words::Tags::Image)) {
+                    QString str = word.str();
+                    auto [x, y, img] = clampToPage(str, lineWidth, pageHeight);
+                    if (x == 0.0 || y == 0.0) {
+                        words.takeFirst();
+                        continue;
+                    }
+                    withWord = width + x;
+                    workingLineHeight = y;
+                    str = "\x1F" + QString::number(imgs.count());
+                    words[0].setStr(str);
+                } else withWord = width + metrics.horizontalAdvance(word.str()) / mXFactor;
+
                 if (withWord < lineWidth) {
+                    if (word.hasTag(Words::Tags::Image)) {
+                        imgs.append(imgUrl);
+                    }
                     auto word = words.takeFirst();
                     line.append(word);
                     width = withWord;
@@ -69,7 +91,7 @@ void Printer::printParagraphs(QPainter* painter,
                 } else break;
             }
 
-            if (at + lineHeight > bottom) {
+            if (at + workingLineHeight > bottom) {
                 newPage(painter, pager);
                 ++mPageNo;
                 at = margins.top() + ascent;
@@ -85,10 +107,11 @@ void Printer::printParagraphs(QPainter* painter,
                 else if (align == "C") x = pageSize.width() / 2.0 - width / 2.0;
             }
 
-            printLine(painter, line, font, current, x, at, fill);
+            printLine(painter, line, imgs, font, current, x, at, fill);
             at += lineHeight;
             startingPage = false;
             indent = 0;
+            imgs.clear();
         }
     }
 }
@@ -98,10 +121,25 @@ QList<Words::Word> Printer::paragraphWords(const QString &paragraph) {
     StringList wordList { paragraph.split(" ", Qt::SkipEmptyParts) };
     for (const auto& item: wordList) {
         StringList parts { item.split("<", Qt::SkipEmptyParts) };
-        // now parts has (for ex. b>text, /b>)
+        // now parts has (for ex. b>text, /b> or other text formatting
+        //                     or img ... src=\"...\" ... />) at a minimum
         Words::Word word;
+        Words::Word img;
+        bool inImage = false;
         for (auto&& [i, part]: enumerate(parts)) {
             QString fragment = part;
+            if (i != 0 && inImage) {
+                if (fragment.startsWith("/>")) {
+                    inImage = false;
+                    words.append(img);
+                    img.clear();
+                } else img.setStr(img.str() + " " + fragment);
+                continue;
+            } else if (i != 0 && fragment.startsWith("img ")) {
+                img += Words::Tags::Image;
+                inImage = true;
+                continue;
+            }
             if (i != 0) word.setTags(words[i - 1].tags());
             bool found = true;
             while(found) {
@@ -306,7 +344,7 @@ void Printer::outputNovel(List<qlonglong> ids,
     if (!startingPage) newPage(painter, pager);
 }
 
-void Printer::printLine(QPainter* painter, List<Words::Word> &line, QFont &font, Words::Tags &current, qreal x, qreal at, qreal fill) {
+void Printer::printLine(QPainter* painter, List<Words::Word> &line, List<QString>& imgs, QFont &font, Words::Tags &current, qreal x, qreal at, qreal fill) {
     QFontMetricsF metrics(painter->fontMetrics());
     at *= mYFactor;
     fill *= mXFactor;
@@ -316,15 +354,28 @@ void Printer::printLine(QPainter* painter, List<Words::Word> &line, QFont &font,
     bool first = false;
     while (!line.empty()) {
         Words::Word word = line.takeFirst();
-        current = (current & word.tags()) | word.tags();
-        QFont wFont = font;
-        if ((current & Words::Tags::Bold) != Words::Tags::None) wFont.setWeight(QFont::Bold);
-        if ((current & Words::Tags::Italic) != Words::Tags::None) wFont.setItalic(true);
-        if ((current & Words::Tags::Underline) != Words::Tags::None) wFont.setUnderline(true);
-        painter->setFont(wFont);
-        painter->drawText(QPoint(x + 0.5, at + 0.5), word.str());
-        x += fill + metrics.horizontalAdvance(word.str());
-        if (!word.isPartial()) x += space;
+        if (word.str().left(1) == "\x1F") {
+            auto str = word.str();
+            auto temp = str.mid(1);
+            auto imgIdx = temp.toInt();
+            QImage image(imgs[imgIdx]);
+            auto size = image.size();
+            size.setWidth(size.width() * mXFactor);
+            size.setHeight(size.height() * mYFactor);
+            QRectF imageRect(x, at, size.width(), size.height());
+            painter->drawImage(imageRect, image);
+            x += size.width();
+        } else {
+            current = (current & word.tags()) | word.tags();
+            QFont wFont = font;
+            if ((current & Words::Tags::Bold) != Words::Tags::None)      wFont.setWeight(QFont::Bold);
+            if ((current & Words::Tags::Italic) != Words::Tags::None)    wFont.setItalic(true);
+            if ((current & Words::Tags::Underline) != Words::Tags::None) wFont.setUnderline(true);
+            painter->setFont(wFont);
+            painter->drawText(QPoint(x + 0.5, at + 0.5), word.str());
+            x += fill + metrics.horizontalAdvance(word.str());
+            if (!word.isPartial()) x += space;
+        }
     }
 }
 
@@ -338,14 +389,14 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
         edit.setHtml(html);
         lcr.append(edit.toPlainText());
     }
-    for (auto [i, str]: enumerate(lcr)) {
+    for (auto&& [i, str]: enumerate(lcr)) {
         StringList lines { str.split("\n", Qt::KeepEmptyParts) };
         Marginal::Justify justify = Marginal::Justify::Left;
         switch (i) {
         case 1: justify = Marginal::Justify::Center; break;
         case 2: justify = Marginal::Justify::Right;  break;
         }
-        for (auto [lineNum, line]: enumerate(lines)) marginals.append({ justify, lineNum, line });
+        for (auto&& [lineNum, line]: enumerate(lines)) marginals.append({ justify, lineNum, line });
     }
 
     // handle: \\ -      \
@@ -377,8 +428,54 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
     return marginals;
 }
 
-void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal &object)
-{
+std::tuple<qreal, qreal, QString> Printer::clampToPage(QString& img, const qreal width, const qreal height) {
+    qreal newWidth = 0.0;
+    qreal newHeight = 0.0;
+    QString imgUrl;
+
+    StringList imgParts = { img. split("=\"") };
+    if (imgParts.size() >= 4) {
+        auto imgStr = imgParts[1];
+        auto widthStr = imgParts[2];
+        auto heightStr = imgParts[3];
+        auto loc = widthStr.indexOf("\"");
+        if (loc != -1) {
+            QString temp = widthStr.left(loc);
+            newWidth = temp.toInt();
+            if (newWidth < 1.0) newWidth = 0;
+            else {
+                loc = heightStr.indexOf("\"");
+                if (loc == -1) newWidth = 0.0;
+                else {
+                    temp = heightStr.left(loc);
+                    newHeight = temp.toInt();
+                    if (newHeight < 1.0) newHeight = newWidth = 0.0;
+                    else {
+                        if (newWidth > width) {
+                            double scale = width / newWidth;
+                            newWidth = width;
+                            newHeight = height * scale;
+                        }
+                        if (newHeight > height) {
+                            double scale = height / newHeight;
+                            newHeight = height;
+                            newWidth = width * scale;
+                        }
+                    }
+                }
+            }
+        }
+
+        loc = imgStr.indexOf("\"");
+        if (loc != -1) imgUrl = imgStr.left(loc);
+        else newWidth = newHeight = 0.0;
+
+        img = imgParts[0] + "=" + imgParts[1] + "\"" + QString::number(newWidth) + "\" height`=\"" + QString::number(newHeight) + "\" />";
+    }
+    return { newWidth, newHeight, imgUrl };
+}
+
+void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal& object) {
     qreal left = mPrefs->margins()[Preferences::Left] * PointsPerInch * mXFactor;
     qreal right = (mPrinter->pageRect(QPrinter::Point).width() -  mPrefs->margins()[Preferences::Right] * PointsPerInch) * mXFactor;
     qreal center = mPrinter->pageRect(QPrinter::Point).width() * mXFactor / 2;
@@ -418,7 +515,7 @@ QString Printer::createParagraph(const QString &html) {
     bodyless = { bodyless[0].split("<p")} ;
 
     QString block;
-    for (auto [i, para]: enumerate(bodyless)) {
+    for (auto&& [i, para]: enumerate(bodyless)) {
         if (i == 0) continue;
         StringList end { para.split("</p>") };
         if (end.size() != 2) continue;

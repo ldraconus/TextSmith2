@@ -90,9 +90,10 @@ private:
         return mPdf->pageLayout().paintRect(toPdfUnits(unit));
     }
 
-    List<Marginal> parseMarginal(const QString& marginal);
-    void           printMarginal(QPainter* painter, qlonglong y, const Marginal& object);
-    QString        resolveTag(const QString& key);
+    std::tuple<qreal, qreal, QString> clampToPage(QString&, const qreal width, const qreal height);
+    List<Marginal>                    parseMarginal(const QString& marginal);
+    void                              printMarginal(QPainter* painter, qlonglong y, const Marginal& object);
+    QString                           resolveTag(const QString& key);
 
 public:
     Printer(QPrinter::PrinterMode mode = QPrinter::ScreenResolution)
@@ -164,7 +165,7 @@ public:
                              QSizeF pageSize,
                              std::function<void()> pager);
     const QSizeF pageSize(QPrinter::Unit unit) const;
-    void         printLine(QPainter* painter, List<Words::Word>& line, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill);
+    void         printLine(QPainter* painter, List<Words::Word>& line, List<QString>& imgs, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill);
     void         printNovel();
     void         printParagraphs(QPainter* painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& at, bool& startingPage,
                                  StringList& paragraphs);
