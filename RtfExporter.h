@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QTextEdit>
+#include <QTextfragment>
 
 #include "Exporter.h"
 
@@ -34,8 +35,9 @@ public:
 private:
     QMarginsF mMargins { 1.0, 1.0, 1.0, 1.0 };
 
-    QString escapeText(const QString& str);
-    QString handleCover(Item& item);
-    QString handleCover(const QString& cover);
+    QString escapeRtfText(const QString &text);
+    QString handleImage(Item& item);
+    QString handleImage(const QString& cover);
     QString itemsToRtf(const QString& cover);
+    QString processText(const QTextFragment& fragment);
 };

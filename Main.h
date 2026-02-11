@@ -265,8 +265,9 @@ public:
     QTreeWidgetItem*   buildTreeFromJson(Json5Object& obj);
     void               changeNovelFont(const QFont& font);
     QTreeWidgetItem*   findItem(QTreeWidgetItem* tree, qlonglong node);
-    void               loadImageBytes(const QImage& image, std::function<void(QByteArray)> callback);
+    void               loadImageBytes(const QImage& image, const QString& type, std::function<void(QByteArray)> callback);
     void               loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback);
+    void               loadImageBytesFromUrl(const QUrl& url, const QString& type, std::function<void(QByteArray)> callback);
     void               removeEmptyFirstBlock(TextEdit* text);
     void               setupHtml(TextEdit& text);
     Json5Object        treeOfItems(QTreeWidgetItem* branch);

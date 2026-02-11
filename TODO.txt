@@ -1,11 +1,13 @@
-[ ] Add putting displayed images in exporters (except pdf, text, html, & ebook -- because of what they are they already work bvecause of previous issues
-    or straight html ... so basically Rtf, I think).
+[ ] Oof, annoying. Drag and drop should fill the background with a solid color so it can be seen ... Icky now.
 [ ] Help
+[ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] Fix issue with typing two returns at end wiping paragraph format.
 [ ] Fix issue with backspace on last line wiping paragraph format.
 [ ] Write extra scripts
 [ ] Add a hollywood script writing display mode
+[X] Add putting displayed images in exporters (except pdf, text, html, & ebook -- because of what they are they already work bvecause of previous issues
+    or straight html ... so basically Rtf, I think).
 [X] Add printing embedded images in chapter or scenes
     - Fix html import to preserve images and basic formating, but loses everything else.
     - Make printer handle images right
@@ -74,62 +76,90 @@
 [X] Fix fullscreen to better follow the preferences but still look like a page of paper
 
 
-rogelio.sanchez@nymanturkish.com
-Need last date worked, exactly.
+[Help outline]
 
-Custom Print Dialog:
+Part I: The Philosophy
+The "One Object" Rule: Whether it's a Hero, a Castle, a Chapter, or a Scene—inside the engine, they are all just "Items."
 
-class CustomPrintPreviewDialog : public QDialog {
-    Q_OBJECT
-public:
-    CustomPrintPreviewDialog(QPrinter* printer, QWidget* parent = nullptr)
-        : QDialog(parent), m_printer(printer) {
-        auto* layout = new QVBoxLayout(this);
+The Tree is King: The visual hierarchy is the only structure that matters.
 
-        // Add your custom fields
-        auto* optionsLayout = new QHBoxLayout();
-        m_headerField = new QLineEdit();
-        m_footerField = new QLineEdit();
-        optionsLayout->addWidget(new QLabel("Header:"));
-        optionsLayout->addWidget(m_headerField);
-        optionsLayout->addWidget(new QLabel("Footer:"));
-        optionsLayout->addWidget(m_footerField);
+Why Tags Matter: Tags are the only way the engine knows that "Item A" is text to be printed and "Item B" is a character note to be ignored.
 
-        // add margins
+Part II: The Writer's Interface (The "How-To")
+Creating Items: The basic building block.
 
-        layout->addLayout(optionsLayout);
+Writing Content: The editor, formatting, and full-screen focus.
 
-        // The actual preview widget
-        m_preview = new QPrintPreviewWidget(m_printer, this);
-        layout->addWidget(m_preview);
+The "Scene" Tag: Telling the compiler "This is content."
 
-        connect(m_preview, &QPrintPreviewWidget::paintRequested,
-                this, &CustomPrintPreviewDialog::renderPreview);
+The "Chapter" Tag: Telling the compiler "Start a new section."
 
-        resize(900, 700);
-    }
+Nesting: Putting Scenes inside Chapters (visual organization vs. tag logic).
 
-private slots:
-    void renderPreview(QPrinter* printer) {
-        // Render your QTextDocument here
-        m_document->print(printer);
-    }
+Part III: The World Builder (Metadata)
+Defining Your Schema: You aren't stuck with "Character" sheets. You define "NPC," "Villain," or "MacGuffin" using your own tags.
 
-private:
-    QPrinter* m_printer;
-    QPrintPreviewWidget* m_preview;
-    QLineEdit* m_headerField;
-    QLineEdit* m_footerField;
-    QTextDocument* m_document;
-};
+The "Bible" View: Storing world data (characters, locations) right next to the manuscript in the same tree.
 
-[Usage]
+Images: Using items as containers for maps and portraits.
 
-CustomPrintPreviewDialog dlg(&printer);
-dlg.exec();
+Part IV: The Chameleon Compiler (Exporting)
+Mapping Tags to Output: The core instruction set.
+
+Default: Chapter = Heading + Break. Scene = Text.
+
+Custom: Using shorthand (e.g., 'C' vs 'Chapter') and how the project remembers it.
+
+The "Ignore" Rule: Anything untagged is invisible to the exporter.
+
+Target-Specific Tags: PDF-Cover vs EBook-Cover.
+
+Part V: Preferences & Defaults
+Project Memory: How the system learns your specific tag style for this book.
+
+Global Defaults: Setting the baseline for future projects.
+
+Part VI: The Scripting Engine (The Aseembly Line)
+The Parity Principle: "If you can do it with a mouse, you can do it with a script."
+
+1. The Concept: The Stack of Plates
+The Golden Rule: "Put data on the table, then tell the robot what to do with it.
+"Visual Metaphor: Explain that the script works like a cafeteria stack. You put a "Scene" on the stack, then you put a "Command" on top to process it.
+Reading Order: Explain why it reads Left-to-Right (Data $\to$ Action) rather than the reverse (Action $\leftarrow$ Data) they might remember from High School algebra.2.
+
+2. Basic Verbs (The "Words")
+Navigation: NextScene, PrevScene, GoToChapter.
+Content: GetText, SetText, Insert.
+Tags: GetTags, AddTag, RemoveTag.
+Documentation Style: Don't use function signatures void addTag(string t). Use stack effects: ( Item Tag -- Item ) (Show what it takes, and what it leaves).
+
+3. The "Nice to Have" Examples (Deconstructed)
+Use your actual planned scripts as the tutorials.
+The "Word Count" Tutorial:
+    Explain the flow: CurrentItem $\to$ GetText $\to$ CountWords $\to$ ShowAlert.
+The "Tag Injection" Tutorial:
+    Explain the conditional: GetText $\to$ "Letter:" $\to$ Contains? $\to$ IF $\to$ "Correspondence" $\to$ AddTag $\to$ ENDIF.
+
+4. Safety First
+The Undo Sandwich: Explain that every script that modifies text must start with BeginUndo and end with EndUndo.
+The "ReadOnly" Mode: Advise users to test scripts on a "Copy" of their item first.
+
+5. The Dictionary (Reference)
+Group commands by category (Movement, Editing, Logic, Math).
+Crucial: Include a "Cheat Sheet" for stack manipulation (Dup, Swap, Drop). This is the hardest part for newbies ("Wait, why is my text gone? Oh, I forgot to Dup it before counting words.").
+
+Automation:
+
+Batch Tagging (e.g., "Tag all items in folder 'Drafts' as 'ToDo'").
+
+Content Generation (e.g., "Create 10 items named 'Soldier 1' to 'Soldier 10'").
+
+Formatting Cleanup (e.g., "Find all double spaces and replace with single").
+
+The API Reference: The dictionary of commands that mirror the UI.
 
 
-Scripting ideas:
+[Scripting ideas}
 
 📄 Export & Formatting
 - Scene Outline Export: generate a list of scene titles with summaries/tags.

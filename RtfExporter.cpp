@@ -6,104 +6,126 @@
 using namespace Words;
 
 #include <QFileInfo>
+#include <QTextBlock>
 
-QString RtfExporter::handleCover(const QString& cover) {
+QString RtfExporter::handleImage(const QString& cover) {
+    QString rtf;
+
     QByteArray imgData;
     Main::ref().loadImageBytesFromUrl(cover, [&](QByteArray data){ imgData = data; });
-    QImage img(imgData);
-    QBuffer buffer(&imgData);
-    buffer.open(QIODevice::WriteOnly);
-    img.save(&buffer, "BMP");
-    QByteArray dib = imgData.mid(14);
-    QString hex;
-    hex.reserve(dib.size() * 2);
-    for (auto& c: dib) hex += QString("%1").arg(int(c), 2, 16, QLatin1Char('0'));
-    return "{\\pict\\dibitmap0\n" + hex + "\n}\n";
-}
+    QImage img = QImage::fromData(imgData);
+    if (img.isNull()) return rtf;
+    QString hexData = imgData.toHex();
 
-QString RtfExporter::handleCover(Item& item) {
-    QString rtf;
-    // for each image in item: handleCover(image url)
+    int twipWidth = img.width() * 15;
+    int twipHeight = img.height() * 15;
+
+    rtf += "  {\\pict";
+    rtf += "\\pngblip";
+    rtf += "\\picw" + QString::number(img.width());   // Source width (pixels)
+    rtf += "\\pich" + QString::number(img.height());  // Source height (pixels)
+    rtf += "\\picwgoal" + QString::number(twipWidth); // Target display width (twips)
+    rtf += "\\pichgoal" + QString::number(twipHeight);// Target display height (twips)
+
+    rtf += + "    \n"; // <--- CRITICAL SPACE separating commands from data
+
+    rtf += hexData;
+
+    rtf += "  }\n";
     return rtf;
-}
-
-QString RtfExporter::escapeText(const QString& str) {
-    QString out;
-
-    for (auto c: str) {
-        char ch = c.toLatin1();
-        if (ch == '\\') out += "\\\\";
-        else if (ch == '{') out += "\\{}";
-        else if (ch == '}')  out += "\\}";
-        else {
-            if ((ch & 0x80) == 0) out += c;
-            else out += "\\u" + QString::number((int16_t) ch) + "?";
-        }
-    }
-
-    return out;
 }
 
 QString RtfExporter::itemsToRtf(const QString& cover) {
     QString rtf = "{\\rtf1\\ansi\\deff0\n"
-                  "{\\fonttbl{\\f0 " + Main::ref().ui()->textEdit->font().family() + ";}}\n";
+                  "  {\\fonttbl{\\f0 " + Main::ref().ui()->textEdit->font().family() + ";}}\n";
     mMargins *= PointsPerInch * TwipsPerPoint;
-    rtf += QString("\\margl%1\\margr%2\\margt%3\\margb%4\n")
+    rtf += QString("  \\margl%1\\margr%2\\margt%3\\margb%4\n")
                .arg(mMargins.left())
                .arg(mMargins.right())
                .arg(mMargins.top())
                .arg(mMargins.bottom());
     bool first = true;
-    if (!cover.isEmpty()) {
-        handleCover(cover);
-        rtf += "\\page\n";
-    }
     int dpi = Main::ref().ui()->textEdit->viewport()->logicalDpiX();
+    QFontMetrics metrics(Main::ref().ui()->textEdit->font());
+    auto indent = metrics.size(Qt::TextSingleLine, " ").width() / dpi * PointsPerInch * TwipsPerPoint * 4;
+
+    if (!cover.isEmpty()) handleImage(cover);
+
     for (auto& id: mItemIds) {
         Item& item = mNovel.findItem(id);
         if (!item.hasTag(mChapterTag) &&
             !item.hasTag(mSceneTag) &&
             !item.hasTag(mCoverTag)) continue;
-        if (item.hasTag(mCoverTag)) {
-            if (!first) rtf += "\\page\n";
-            rtf += handleCover(item);
-        }
-        else if (item.hasTag(mChapterTag)) {
-            if (!first) rtf += "\\page\n";
+        if (item.hasTag(mCoverTag) || item.hasTag(mChapterTag)) {
+            if (!first) rtf += "  \\page\n";
         }
         first = false;
-        QFontMetrics metrics(Main::ref().ui()->textEdit->font());
-        auto indent = metrics.size(Qt::TextSingleLine, " ").width() / dpi * PointsPerInch * TwipsPerPoint * 4;
-        StringList paragraphs = Printer::createParagraphs(item, Printer::WithAlignment);
-        Tags current = Tags::None;
-        for (auto& para: paragraphs) {
-            rtf += "\\pard\\fi" + QString::number(indent);
-            QString justification = para.left(1);
-            QString paragraph = para.mid(1);
-            if (justification == "L")      rtf += "\\ql";
-            else if (justification == "R") rtf += "\\qr ";
-            else if (justification == "C") rtf += "\\qc ";
-            else if (justification == "J") rtf += "\\qj ";
-            List<Word> words = Printer::paragraphWords(paragraph);
-            for (auto i = 0; i < words.count(); ++i) {
-                // fix image insert here
-                Word word = words[i];
-                Tags on = word.tags() & ~current;
-                Tags off = current & ~word.tags();
-                if ((off & Tags::Bold) != Tags::None)      rtf += " \\b0 ";
-                if ((off & Tags::Italic) != Tags::None)    rtf += " \\i0 ";
-                if ((off & Tags::Underline) != Tags::None) rtf += " \\ul0 ";
-                current = word.tags();
-                if ((on & Tags::Bold) != Tags::None)      rtf += " \\b ";
-                if ((on & Tags::Italic) != Tags::None)    rtf += " \\i ";
-                if ((on & Tags::Underline) != Tags::None) rtf += " \\ul ";
-                rtf += escapeText(word.str());
-                if (!word.isPartial()) rtf += " ";
+
+        QTextDocument doc;
+        doc.setHtml(item.html());
+
+        for (auto it = doc.begin(); it != doc.end(); it = it.next()) {
+            QTextBlock block = it;
+            auto blockFmt = block.blockFormat();
+            rtf += "  \\pard\\fi" + QString::number(indent);
+            switch (blockFmt.alignment()) {
+            case Qt::AlignCenter:  rtf += "\\qc "; break;
+            case Qt::AlignRight:   rtf += "\\qr "; break;
+            case Qt::AlignJustify: rtf += "\\qj "; break;
+            default:               rtf += "\\ql "; break;
             }
+
+            for (auto it2 = block.begin(); it2 != block.end(); it2++) {
+                QTextFragment frag = it2.fragment();
+                if (!frag.isValid()) continue;
+
+                QTextCharFormat fmt = frag.charFormat();
+                if (fmt.isImageFormat()) rtf += handleImage(fmt.toImageFormat().name());
+                else                     rtf += processText(frag);
+            }
+            rtf += "\n  \\par\n";
         }
-        rtf += "\\par";
     }
     return rtf + "}";
+}
+
+QString RtfExporter::escapeRtfText(const QString &text) {
+    QString rtf;
+    // Reserve space to avoid frequent reallocations (approx 10% overhead est.)
+    rtf.reserve(text.size() * 1.1);
+
+    for (QChar c : text) {
+        ushort val = c.unicode();
+
+        if (val == '\\') rtf.append("\\\\");
+        else if (val == '{') rtf.append("\\{");
+        else if (val == '}') rtf.append("\\}");
+        else if (val == '\t') rtf.append("\\tab ");
+        else if (val == '\n' || val == '\r') rtf.append("\\line "); // Soft line break
+        else if (val < 128) rtf.append(c);
+        else {
+            short signedVal = static_cast<short>(val);
+            rtf.append(QString("\\u%1?").arg(signedVal));
+        }
+    }
+    return rtf;
+}
+
+QString RtfExporter::processText(const QTextFragment& frag) {
+    QString rtf;
+    QTextCharFormat format = frag.charFormat();
+    if (format.fontWeight() > QFont::Normal) rtf += "\\b";
+    if (format.fontItalic())                 rtf += "\\i";
+    if (format.fontUnderline())              rtf += "\\u";
+    bool addSpace = !rtf.isEmpty();
+
+    rtf += (addSpace ? " " : "") + escapeRtfText(frag.text());
+
+    if (format.fontWeight() > QFont::Normal) rtf += "\\b0";
+    if (format.fontItalic())                 rtf += "\\i0";
+    if (format.fontUnderline())              rtf += "\\ulnone";
+
+    return rtf + (addSpace ? " " : "");
 }
 
 bool RtfExporter::convert() {

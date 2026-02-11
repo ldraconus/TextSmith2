@@ -103,10 +103,10 @@ QMarginsF PdfExporter::parseMargins(StringList& inputMargins) {
     }
     default: {
         if (inputMargins.size() >= 4) {
-            double lmargin = toInches(inputMargins[1]);
-            double rmargin = toInches(inputMargins[2]);
-            double tmargin = toInches(inputMargins[3]);
-            double bmargin = toInches(inputMargins[4]);
+            double lmargin = toInches(inputMargins[Preferences::Left]);
+            double rmargin = toInches(inputMargins[Preferences::Right]);
+            double tmargin = toInches(inputMargins[Preferences::Top]);
+            double bmargin = toInches(inputMargins[Preferences::Bottom]);
             margins = { lmargin, tmargin, rmargin, bmargin };
         }
         break;

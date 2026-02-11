@@ -1351,19 +1351,39 @@ void Main::fitWindow() {
     mPrefs.setWindowLocation(geom);
 }
 
-void Main::loadImageBytes(const QImage& img, std::function<void(QByteArray)> callback) {
+void Main::loadImageBytes(const QImage& img, const QString& type, std::function<void(QByteArray)> callback) {
     QByteArray data;
-    QBuffer buffer(&data);
-    buffer.open(QIODevice::WriteOnly);
-    img.save(&buffer, "JPG");
+    if (!img.isNull()) {
+        QBuffer buffer(&data);
+        buffer.open(QIODevice::WriteOnly);
+        img.save(&buffer, type.toStdString().c_str());
+    }
     callback(data);
 }
 
 void Main::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)> callback) {
-    if (url.isLocalFile() || url.scheme() == "qrc" || url.scheme().isEmpty()) {
+    loadImageBytesFromUrl(url, "PNG", callback);
+}
+
+void Main::loadImageBytesFromUrl(const QUrl& url, const QString& type, std::function<void(QByteArray)> callback) {
+    if (url.isLocalFile()
+        || url.scheme() == "qrc"
+        || url.scheme().isEmpty()) {
         // Local file or resource
         QImage img(url.toLocalFile());
-        loadImageBytes(img, callback);
+        loadImageBytes(img, type, callback);
+        return;
+    }
+
+    if (url.scheme() == "internal") {
+        auto& imgs = mUi->textEdit->internalImages();
+        if (imgs.contains(url)) {
+            loadImageBytes(imgs[url], type, callback);
+            return;
+        }
+
+        QByteArray data;
+        callback(data);
         return;
     }
 
@@ -1371,11 +1391,11 @@ void Main::loadImageBytesFromUrl(const QUrl& url, std::function<void(QByteArray)
     auto* nam = new QNetworkAccessManager();
     QNetworkReply* reply = nam->get(QNetworkRequest(url));
 
-    QObject::connect(reply, &QNetworkReply::finished, [this, reply, callback]() {
+    QObject::connect(reply, &QNetworkReply::finished, [this, type, reply, callback]() {
         QByteArray data = reply->readAll();
         reply->deleteLater();
         QImage img(data);
-        loadImageBytes(img, callback);
+        loadImageBytes(img, type, callback);
     });
 }
 

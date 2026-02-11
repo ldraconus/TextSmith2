@@ -71,7 +71,7 @@ bool EBookExporter::convert() {
     for (auto i = keys.begin(); i != keys.end(); ++i) {
         QImage image = images[*i];
         QString name = i->fileName();
-        Main::ref().loadImageBytes(image, [&](QByteArray data) { imgData = data; });
+        Main::ref().loadImageBytes(image, "JPG", [&](QByteArray data) { imgData = data; });
         StringList fileParts { name.split(".") };
         fileParts.takeLast();
         name = fileParts.join(".") + ".jpg";
