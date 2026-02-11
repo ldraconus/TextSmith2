@@ -53,14 +53,30 @@ protected:
     void dropEvent(QDropEvent* de) override {
         const QMimeData* mime = de->mimeData();
 
+        QTreeWidgetItem *targetItem = itemAt(de->position().toPoint());
+
+        if (!targetItem || targetItem == topLevelItem(0)) {
+            if (dropIndicatorPosition() != QAbstractItemView::OnItem) return;
+        }
+
         if (mime->hasFormat("application/x-qabstractitemmodeldatalist")) {
             // Internal move: let QTreeWidget handle it
             QTreeWidget::dropEvent(de);
+            if (topLevelItemCount() > 1) {
+                QTreeWidgetItem *badItem = topLevelItem(1);
+                takeTopLevelItem(1);
+                topLevelItem(0)->addChild(badItem);
+            }
             return;
         }
 
         if (mReceiveMimeData(de, mime)) {
             de->acceptProposedAction();
+            if (topLevelItemCount() > 1) {
+                QTreeWidgetItem *badItem = topLevelItem(1);
+                takeTopLevelItem(1);
+                topLevelItem(0)->addChild(badItem);
+            }
             return;
         }
 
@@ -73,14 +89,24 @@ protected:
 
         auto mime = itemMimeData(selectedItems());
 
-        QColor pen = item->foreground(0).color();
+        QBrush fgBrush = item->foreground(0);
+        QPen pen;
+        if (fgBrush.style() != Qt::NoBrush) pen = fgBrush.color();
+        else pen = this->palette().text().color();
+
+        // Same logic for background (optional, usually you want the base color)
+        QBrush bgBrush = item->background(0);
+        QColor fill;
+        if (bgBrush.style() != Qt::NoBrush) fill = bgBrush.color();
+        else fill = this->palette().base().color();
+
         QFont font = this->font();
         QFontMetrics fm(font);
         QString text = item->text(0);
         QSize size(fm.horizontalAdvance(text) + 8, fm.height() + 4);
 
         QPixmap pixmap(size);
-        pixmap.fill(Qt::transparent);
+        pixmap.fill(QColor(fill.red(), fill.green(), fill.blue(), 220));
 
         QPainter painter(&pixmap);
         painter.setFont(font);
@@ -94,6 +120,24 @@ protected:
         drag->setPixmap(pixmap);
         drag->setHotSpot(QPoint(pixmap.width() / 2, pixmap.height() / 2));
         drag->exec(supportedActions);
+    }
+
+    void dragMoveEvent(QDragMoveEvent *event) override {
+        QTreeWidgetItem *targetItem = itemAt(event->position().toPoint());
+
+        if (!targetItem) {
+            event->ignore(); // Show "No Entry" cursor
+            return;
+        }
+
+        if (targetItem == topLevelItem(0)) {
+            if (dropIndicatorPosition() != QAbstractItemView::OnItem) {
+                event->ignore();
+                return;
+            }
+        }
+
+        QTreeWidget::dragMoveEvent(event);
     }
 
 public:

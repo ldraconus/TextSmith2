@@ -261,7 +261,6 @@ public:
     Ui::Main*    ui()                              { return mUi; }
     WordCounts&  wordCount()                       { return mWordCount; }
 
-    void               buildDrag(QTreeWidgetItem* branch, QMimeData* mime);
     QTreeWidgetItem*   buildTreeFromJson(Json5Object& obj);
     void               changeNovelFont(const QFont& font);
     QTreeWidgetItem*   findItem(QTreeWidgetItem* tree, qlonglong node);
@@ -272,9 +271,7 @@ public:
     void               setupHtml(TextEdit& text);
     Json5Object        treeOfItems(QTreeWidgetItem* branch);
     QList<Item*>       vectorOfItems(QTreeWidgetItem* branch);
-    QList<qlonglong>   vectorOfIds(QTreeWidgetItem* branch,
-                                 const StringList& tags,
-                                 StartingFlag starting = StartingFlag::Starting);
+    QList<qlonglong>   vectorOfIds(QTreeWidgetItem* branch, const StringList& tags, StartingFlag starting = StartingFlag::Starting);
     void               wordCounts();
 
     static Main* ptr() { return sMain; }

@@ -1887,23 +1887,6 @@ Main::Main(QApplication* app, QWidget* parent)
     sMain = this;
     mUi->setupUi(this);
 
-    mDocMetaType = qRegisterMetaType<QTextDocument*>("QTextDocument*");
-
-    mUi->treeWidget->setDragEnabled(true);
-    mUi->treeWidget->setAcceptDrops(true);
-    mUi->treeWidget->setDropIndicatorShown(true);
-    mUi->treeWidget->setDragDropMode(QAbstractItemView::InternalMove);
-    mUi->treeWidget->setMimeDataBuilder(std::bind(&Main::buildTreeMimeData, this,
-                                                  std::placeholders::_1,
-                                                  std::placeholders::_2));
-    mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this,
-                                                   std::placeholders::_1,
-                                                   std::placeholders::_2));
-    mUi->treeWidget->setMimeCanPaste(std::bind(&Main::canPasteMimeData, this,
-                                               std::placeholders::_1));
-
-    mUi->textEdit->setAcceptDrops(true);
-
     mSoundPool.load(SoundPool::Sound::KeyWhack,    QUrl("qrc:/Sound/KeyWhack.wav"),    8);
     mSoundPool.load(SoundPool::Sound::SpaceThunk,  QUrl("qrc:/Sound/SpaceThunk.mp3"),  8);
     mSoundPool.load(SoundPool::Sound::ReturnRoll,  QUrl("qrc:/Sound/ReturnRoll.mp3"),  8);
@@ -2105,7 +2088,7 @@ void Main::setupActions() {
 }
 
 void Main::setupConnections() {
-    qRegisterMetaType<QTextDocument*>("QTextDocument*");
+    mDocMetaType = qRegisterMetaType<QTextDocument*>("QTextDocument*");
 
     mUi->actionExit->setShortcut(QKeySequence("Alt+F4"));
     connect(mUi->actionExit,       &QAction::triggered, this, &Main::exitAction);
@@ -2194,11 +2177,14 @@ void Main::setupConnections() {
     connect(mUi->textEdit, &TextEdit::cursorPositionChanged, this, &Main::cursorPositionChanged);
     connect(mUi->textEdit, &TextEdit::textChanged,           this, &Main::textChangedAction);
 
+    mUi->treeWidget->setDragEnabled(true);
+    mUi->treeWidget->setDropIndicatorShown(true);
     mUi->treeWidget->setAcceptDrops(true);
     mUi->treeWidget->setDragDropMode(QAbstractItemView::DragDrop);
     mUi->treeWidget->setDefaultDropAction(Qt::MoveAction);
     mUi->treeWidget->setMimeDataBuilder(std::bind(&Main::buildTreeMimeData,    this, std::placeholders::_1, std::placeholders::_2));
     mUi->treeWidget->setMimeDataReceiver(std::bind(&Main::receiveTreeMimeData, this, std::placeholders::_1, std::placeholders::_2));
+    mUi->treeWidget->setMimeCanPaste(std::bind(&Main::canPasteMimeData,        this, std::placeholders::_1));
 
     mUi->textEdit->setAcceptDrops(true);
     mUi->textEdit->setAcceptRichText(true);

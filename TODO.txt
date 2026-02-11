@@ -1,4 +1,3 @@
-[ ] Oof, annoying. Drag and drop should fill the background with a solid color so it can be seen ... Icky now.
 [ ] Help
 [ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
@@ -6,6 +5,7 @@
 [ ] Fix issue with backspace on last line wiping paragraph format.
 [ ] Write extra scripts
 [ ] Add a hollywood script writing display mode
+[X] Oof, annoying. Drag and drop should fill the background with a solid color so it can be seen ... Icky now.
 [X] Add putting displayed images in exporters (except pdf, text, html, & ebook -- because of what they are they already work bvecause of previous issues
     or straight html ... so basically Rtf, I think).
 [X] Add printing embedded images in chapter or scenes
