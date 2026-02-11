@@ -73,6 +73,7 @@ void FullScreenDialog::setHtml(const QString &html) {
     cursor.mergeBlockFormat(format);
     text->setTextCursor(cursor);
     text->document()->setDefaultFont(font);
+    applyNovelFormatting();
 }
 
 void FullScreenDialog::setOther(List<int>& other) {
@@ -219,6 +220,26 @@ void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
         QDialog::keyPressEvent(evt);
         return;
     }
+}
+
+void FullScreenDialog::applyNovelFormatting() {
+    TextEdit* editor = mUi->textEdit;
+    QFontMetrics fm(editor->font());
+    int em = fm.horizontalAdvance('M');
+    int lineHeight = fm.height();
+
+    QTextBlockFormat fmt;
+
+    fmt.setTextIndent(4 * em);
+
+    fmt.setBottomMargin(1 * lineHeight);
+
+    QTextCursor cursor = editor->textCursor();
+    cursor.select(QTextCursor::Document);
+    cursor.setBlockFormat(fmt);
+
+    cursor.clearSelection();
+    editor->setTextCursor(cursor);
 }
 
 void FullScreenDialog::setDark() {

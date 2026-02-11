@@ -1,7 +1,7 @@
-[ ] Help
+[ ] Fix issue with typing two returns anywhere wiping out paragraph format.
+[/] Help
 [ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
-[ ] Fix issue with typing two returns at end wiping paragraph format.
 [ ] Fix issue with backspace on last line wiping paragraph format.
 [ ] Write extra scripts
 [ ] Add a hollywood script writing display mode

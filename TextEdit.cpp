@@ -188,6 +188,32 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         }
     }
 
+    if (key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter) {
+        QTextCursor cursor = textCursor();
+        int oldBlockNumber = cursor.blockNumber();
+        QTextBlockFormat currentFmt = cursor.blockFormat();
+
+        QTextEdit::keyPressEvent(key);
+
+        QTextCursor newCursor = textCursor();
+        int newBlockNumber = newCursor.blockNumber();
+
+        if (newBlockNumber == oldBlockNumber) {
+            newCursor.insertBlock(currentFmt);
+            setTextCursor(newCursor);
+        }
+
+        if (newCursor.blockFormat().textIndent() != currentFmt.textIndent()) {
+            QTextBlockFormat fixedFmt = newCursor.blockFormat();
+            fixedFmt.setTextIndent(currentFmt.textIndent());
+            fixedFmt.setBottomMargin(currentFmt.bottomMargin());
+            newCursor.setBlockFormat(currentFmt);
+            setTextCursor(newCursor);
+        }
+
+        return;
+    }
+
     // Let QTextEdit do its normal behavior
     QTextEdit::keyPressEvent(key);
 

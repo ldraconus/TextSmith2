@@ -600,6 +600,9 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     auto& item = mNovel.findItem(mCurrentNode);
     mPosition = item.position();
     setHtml(item.html());
+
+    doc = mUi->textEdit->document();
+
     doCursorPositionChanged();
     changed();
 }
@@ -1243,6 +1246,44 @@ void Main::addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& pa
     currentMenu->addAction(action);
 }
 
+void Main::applyNovelFormatting() {
+    TextEdit* editor = mUi->textEdit;
+    QFont targetFont(mPrefs.fontFamily(), mPrefs.fontSize());
+    editor->document()->setDefaultFont(targetFont);
+
+    QTextCursor cursor = editor->textCursor();
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat charFmt;
+    charFmt.setFontFamilies({ targetFont.family() });
+    if (targetFont.pointSize() > 0) charFmt.setFontPointSize(targetFont.pointSizeF());
+    else if (targetFont.pixelSize() > 0) charFmt.setFontPointSize(targetFont.pixelSize() * 0.75);
+    cursor.mergeCharFormat(charFmt);
+    cursor.clearSelection();
+
+    QFontMetrics fm(targetFont);
+    int em = fm.horizontalAdvance('M'); // The width of a capital M
+    int lineHeight = fm.height();
+
+    cursor.movePosition(QTextCursor::Start);
+
+    editor->blockSignals(true); // Disable updates for speed
+    cursor.beginEditBlock();    // Group into one undo step
+
+    do {
+        QTextBlockFormat fmt = cursor.blockFormat(); // Get EXISTING format
+
+        Qt::Alignment align = fmt.alignment();
+        if (align == Qt::AlignLeft || align == Qt::AlignJustify || align == Qt::AlignLeading) fmt.setTextIndent(4 * em);
+
+        fmt.setBottomMargin(1 * lineHeight);
+
+        cursor.setBlockFormat(fmt);
+    } while (cursor.movePosition(QTextCursor::NextBlock));
+
+    cursor.endEditBlock();
+    editor->blockSignals(false);
+}
+
 void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<qlonglong, bool>& byId) {
     auto twItem = new QTreeWidgetItem();
     auto& item = mNovel.findItem(branch.id());
@@ -1796,6 +1837,7 @@ void Main::setHtml(const QString& html) {
     fmt.setFontPointSize(mUi->textEdit->font().pointSizeF());
     c.setCharFormat(fmt);
     mUi->textEdit->setTextCursor(c);
+    applyNovelFormatting();
 }
 
 void Main::setIcon(QToolButton* button, bool isChecked) {
@@ -1983,6 +2025,7 @@ void Main::setupHtml(TextEdit& text) {
     QString html = Item::setupHtml(font);
     text.document()->setDefaultFont(font);
     text.document()->setHtml(html);
+//    applyNovelFormatting();
 }
 
 Json5Object Main::treeOfItems(QTreeWidgetItem* branch) {
@@ -2541,10 +2584,10 @@ void Main::setupScripting() {
         cursor.removeSelectedText();
         cursor.insertText(text);
     });
-    mVm->addBuiltin("position", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().position()); }); //   -u-> position
+    mVm->addBuiltin("position",     [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().position()); }); //   -u-> position
     mVm->addBuiltin("selectedtext", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().selectedText()); }); //  -u-> text
-    mVm->addBuiltin("setposition", [this](fifth::vm* vm) { mUi->textEdit->textCursor().setPosition(vm->user().pop().asNumber()); }); //  position -u->
-    mVm->addBuiltin("plaintext", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->toPlainText()); }); //   -u-> text
+    mVm->addBuiltin("setposition",  [this](fifth::vm* vm) { mUi->textEdit->textCursor().setPosition(vm->user().pop().asNumber()); }); //  position -u->
+    mVm->addBuiltin("plaintext",    [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->toPlainText()); }); //   -u-> text
 
     // TreeWidget words
     mVm->addBuiltin("rootid",        [this](fifth::vm* vm) { vm->user().push(mUi->treeWidget->topLevelItem(0)->data(0, Qt::UserRole).toLongLong()); }); //    -u-> id

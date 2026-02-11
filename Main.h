@@ -201,6 +201,7 @@ private:
 
 private:
     void           addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& path);
+    void           applyNovelFormatting();
     void           buildTree(const TreeNode& branch, QTreeWidgetItem* tree, Map<qlonglong, bool>& byId);
     void           buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
     bool           canPasteMimeData(const QMimeData* mimeData);
