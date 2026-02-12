@@ -14,7 +14,7 @@
 class Preferences {
 public:
     Preferences();
-    explicit Preferences(Json5Object& obj) { read(obj); }
+    explicit Preferences(Json5Object& obj) { read(obj); mWasDark = !isDark(); }
     ~Preferences()                         { save(); }
 
     static constexpr auto Bottom = 3;

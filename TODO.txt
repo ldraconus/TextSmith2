@@ -1,10 +1,14 @@
-[ ] Fix issue with typing two returns anywhere wiping out paragraph format.
 [/] Help
+[ ] Allow the user to turn the toolbar off (view menu)
 [ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
-[ ] Fix issue with backspace on last line wiping paragraph format.
 [ ] Write extra scripts
 [ ] Add a hollywood script writing display mode
+[X] Switch to a gray off mode, the bright on mode. Decided not to. used same colors, just dim and bright auto-magically
+[X] starting a new item does not get the program settings on fonts.
+[X] Reduce icon saize to 50% on toolbars
+[X] Fix issue with backspace on last line wiping paragraph format.
+[X] Fix issue with typing two returns anywhere wiping out paragraph format.
 [X] Oof, annoying. Drag and drop should fill the background with a solid color so it can be seen ... Icky now.
 [X] Add putting displayed images in exporters (except pdf, text, html, & ebook -- because of what they are they already work bvecause of previous issues
     or straight html ... so basically Rtf, I think).

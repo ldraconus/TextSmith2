@@ -90,7 +90,7 @@ private:
     Ui_Widget*                    mFindWidget { nullptr };
     QWidget*                      mFindLine { nullptr };
     QRect                         mGeom;
-    Map<QString, QString>         mIcons;
+    Map<QString, QIcon>           mIcons;
     qlonglong                     mId;
     List<qlonglong>               mIds;
     Map<QString, QImage>          mImageStore;
@@ -129,6 +129,7 @@ private:
     void       changed()      { mNovel.change(); }
     void       clearChanged() { mNovel.noChanges(); }
     void       doNothing()    { }
+    bool       isChanged()    { return mNovel.isChanged(); }
     fifth::vm* vm()           { return mVm; }
 
     void closeEvent(QCloseEvent* event) override;
@@ -207,10 +208,12 @@ private:
     bool           canPasteMimeData(const QMimeData* mimeData);
     QString        checked(const QString& path);
     void           copyTreeItem();
+    QIcon          createResponsiveIcon(const QString &path, int targetSize);
     void           cutTreeItem();
     QString        findKey(QString& used, const QString& name, bool secondPass = false);
     void           fitWindow();
     void           justifyButtons();
+    void           loadFile(const QString& filename);
     void           loadScripts();
     void           mapTree(Map<qlonglong, bool>& byId, QTreeWidgetItem* item);
     WordPos        nextWord(const QString& str, qlonglong pos = 0);
@@ -250,7 +253,7 @@ public:
     Printer*     exchangePrinter(Printer* p)       { auto* t = mPrinter; mPrinter = p; return t; }
     Item&        fifthItem(fifth::stack& user)     { return mNovel.fifthItem(user); }
     Message&     msg()                             { return mMsg; }
-    QString      getIconPath(const QString& name)  { if (mIcons.contains(name)) return mIcons[name]; else return ""; }
+    QIcon        getIcon(const QString& name)      { if (mIcons.contains(name)) return mIcons[name]; else return { }; }
     Novel&       novel()                           { return mNovel; }
     Preferences& prefs()                           { return mPrefs; }
     bool         prefsLoaded()                     { return mPrefsLoaded; }

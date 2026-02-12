@@ -232,13 +232,13 @@ private:
 };
 
 void Main::closeEvent(QCloseEvent* ce) {
-    if (mNovel.isChanged()) {
+    if (isChanged()) {
         mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave novel before exiting?",
                          [this]() { doSave(); },
                          [this]() { clearChanged(); },
                          [this]() { doNothing(); },
                          "Warning!");
-        if (mNovel.isChanged()) {
+        if (isChanged()) {
             ce->ignore();
             return;
         }
@@ -314,11 +314,11 @@ void Main::doBold() {
     QTextCharFormat format;
     if (cursor.charFormat().fontWeight() == QFont::Bold) {
         format.setFontWeight(QFont::Normal);
-        setIcon(mUi->boldToolButton, false);
+        mUi->boldToolButton->setChecked(false);
         setMenu(mUi->actionBold, false);
     } else {
         format.setFontWeight(QFont::Bold);
-        setIcon(mUi->boldToolButton, true);
+        mUi->boldToolButton->setChecked(true);
         setMenu(mUi->actionBold, true);
     }
     cursor.mergeCharFormat(format);
@@ -573,11 +573,11 @@ void Main::doItalic() {
     QTextCharFormat format;
     if (!cursor.charFormat().fontItalic()) {
         format.setFontItalic(true);
-        setIcon(mUi->italicToolButton, true);
+        mUi->italicToolButton->setChecked(true);
         setMenu(mUi->actionItalic, true);
     } else {
         format.setFontItalic(false);
-        setIcon(mUi->italicToolButton, false);
+        mUi->italicToolButton->setChecked(false);
         setMenu(mUi->actionItalic, false);
     }
     cursor.mergeCharFormat(format);
@@ -600,8 +600,6 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     auto& item = mNovel.findItem(mCurrentNode);
     mPosition = item.position();
     setHtml(item.html());
-
-    doc = mUi->textEdit->document();
 
     doCursorPositionChanged();
     changed();
@@ -689,14 +687,14 @@ void Main::doMoveUp() {
 }
 
 void Main::doNew() {
-    if (mNovel.isChanged()) {
+    if (isChanged()) {
         if (mNovel.isChanged()) {
             mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave this novel before starting a new Novel?",
                              [this]() { doSave(); },
                              [this]() { clearChanged(); },
                              [this]() { doNothing(); },
                              "Warning!");
-            if (mNovel.isChanged()) return;
+            if (isChanged()) return;
         }
     }
 
@@ -725,21 +723,25 @@ void Main::doOpenAll() {
     mUi->treeWidget->setCurrentItem(mUi->treeWidget->topLevelItem(0));
 }
 
+
 void Main::doOpen() {
-    if (mNovel.isChanged()) {
+    if (isChanged()) {
         mMsg.YesNoCancel("The current file has unsaved changes.\n\nSave this novel before working a different Novel?",
                          [this]() { doSave(); },
                          [this]() { clearChanged(); },
                          [this]() { doNothing(); },
                          "Warning!");
-        if (mNovel.isChanged()) return;
+        if (isChanged()) return;
     }
 
-    QString filename;
-    if (mNovel.filename().isEmpty()) filename = QFileDialog::getOpenFileName(this, "Open Which Novel?", mDocDir,
-                                                                             "Novels (*.novel);;All Files (*.*)");
-    else filename = mNovel.filename();
+    QString filename = QFileDialog::getOpenFileName(this, "Open Which Novel?", mDocDir,
+                                                    "Novels (*.novel);;All Files (*.*)");
+    if (filename.isEmpty()) return;
 
+    loadFile(filename);
+}
+
+void Main::loadFile(const QString& filename) {
     QFileInfo info(filename);
     mDocDir = info.absolutePath();
 
@@ -751,7 +753,6 @@ void Main::doOpen() {
     mNovel.setFilename(filename);
     mNovel.open();
     mUi->treeWidget->clearUndo();
-    clearChanged();
     Json5Object obj = mNovel.extra();
     if (obj.contains("Prefs")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
@@ -806,6 +807,7 @@ void Main::doOpen() {
     mWordCount.setSinceLastCounted(0);
     mWordCount.setSinceOpened(0);
     mWordCount.setTotal(total);
+    clearChanged();
     ready();
 }
 
@@ -1164,11 +1166,11 @@ void Main::doUnderline() {
     QTextCharFormat format;
     if (!cursor.charFormat().fontUnderline()) {
         format.setFontUnderline(true);
-        setIcon(mUi->underlineToolButton, true);
+        mUi->underlineToolButton->setChecked(true);
         setMenu(mUi->actionUnderline, true);
     } else {
         format.setFontUnderline(false);
-        setIcon(mUi->underlineToolButton, false);
+        mUi->underlineToolButton->setChecked(false);
         setMenu(mUi->actionUnderline, false);
     }
     cursor.mergeCharFormat(format);
@@ -1249,6 +1251,7 @@ void Main::addActionToMenuPath(QMenuBar* bar, QAction* action, const QString& pa
 void Main::applyNovelFormatting() {
     TextEdit* editor = mUi->textEdit;
     QFont targetFont(mPrefs.fontFamily(), mPrefs.fontSize());
+    auto* doc = editor->document();
     editor->document()->setDefaultFont(targetFont);
 
     QTextCursor cursor = editor->textCursor();
@@ -1282,6 +1285,21 @@ void Main::applyNovelFormatting() {
 
     cursor.endEditBlock();
     editor->blockSignals(false);
+
+    QTextCharFormat penFmt;
+    penFmt.setFontFamilies({targetFont.family()});
+
+    if (targetFont.pointSizeF() > 0) penFmt.setFontPointSize(targetFont.pointSizeF());
+    else if (targetFont.pixelSize() > 0) penFmt.setFontPointSize(targetFont.pixelSize() * 0.75);
+
+    editor->setCurrentCharFormat(penFmt);
+
+    if (doc->isEmpty()) {
+        QTextCursor startCursor = editor->textCursor();
+        startCursor.movePosition(QTextCursor::Start);
+        editor->setTextCursor(startCursor);
+        editor->setCurrentCharFormat(penFmt); // Set it again to be sure
+    }
 }
 
 void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<qlonglong, bool>& byId) {
@@ -1443,13 +1461,13 @@ void Main::loadImageBytesFromUrl(const QUrl& url, const QString& type, std::func
 void Main::justifyButtons() {
     auto cursor = mUi->textEdit->textCursor();
     auto block = cursor.blockFormat();
-    setIcon(mUi->leftJustifyToolButton,    block.alignment() == Qt::AlignLeft);
+    mUi->leftJustifyToolButton->setChecked(block.alignment() == Qt::AlignLeft);
     setMenu(mUi->actionLeft_Justify,       block.alignment() == Qt::AlignLeft);
-    setIcon(mUi->centerToolButton,         block.alignment() == Qt::AlignCenter);
-    setMenu(mUi->actionCenter,             block.alignment() == Qt::AlignCenter);
-    setIcon(mUi->rightJustifyToolButton,   block.alignment() == Qt::AlignRight);
-    setMenu(mUi->actionRight_Justify,      block.alignment() == Qt::AlignRight);
-    setIcon(mUi->fullJustifyToolButton,    block.alignment() == Qt::AlignJustify);
+    mUi->centerToolButton->setChecked(block.alignment() == Qt::AlignCenter);
+    setMenu(mUi->actionCenter,        block.alignment() == Qt::AlignCenter);
+    mUi->rightJustifyToolButton->setChecked(block.alignment() == Qt::AlignRight);
+    setMenu(mUi->actionRight_Justify,       block.alignment() == Qt::AlignRight);
+    mUi->fullJustifyToolButton->setChecked(block.alignment() == Qt::AlignJustify);
     setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
 }
 
@@ -1841,13 +1859,7 @@ void Main::setHtml(const QString& html) {
 }
 
 void Main::setIcon(QToolButton* button, bool isChecked) {
-    QString path = Main::ref().getIconPath(button->objectName());
-    if (mPrefs.wasDark() != mPrefs.isDark()) path = mPrefs.newPath(path);
-    if (isChecked) path = checked(path);
-    QPixmap pm(path);
-    QIcon icon;
-    icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
-    button->setIcon(icon);
+    button->setChecked(isChecked);
 }
 
 void Main::setMenu(QAction* menuItem, bool isChecked) {
@@ -1941,8 +1953,6 @@ Main::Main(QApplication* app, QWidget* parent)
 
     mCurrentNode = mNovel.root();
 
-    setupIcons();
-
     QDir().mkpath(mAppDir);
     QDir().mkpath(mDocDir);
     QDir().mkpath(mDocDir + "/TextSmith");
@@ -1957,6 +1967,7 @@ Main::Main(QApplication* app, QWidget* parent)
 
     loadScripts();
     mPrefsLoaded = mPrefs.load();
+    setupIcons();
     QFont font(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
     mPrefs.applyFontToTree(this, font);
     updateGeometry();
@@ -1966,15 +1977,12 @@ Main::Main(QApplication* app, QWidget* parent)
     mUi->textEdit->setTabChangesFocus(true);
 
     StringList arguments { app->arguments() };
-    if (arguments.size() > 1) {
-        mNovel.setFilename(arguments[1]);
-        clearChanged();
-        doOpen();
-    } else {
+    if (arguments.size() > 1) loadFile(arguments[1]);
+    else {
         doNew();
         Item::resetLastID(1);
-        clearChanged();
     }
+    clearChanged();
 }
 
 Main::~Main() {
@@ -2337,7 +2345,7 @@ void Main::setupScripting() {
     // Menu words
     mVm->addBuiltin("exit",   [this](fifth::vm*) { doExit(); });
     mVm->addBuiltin("new",    [this](fifth::vm*) { doNew(); });
-    mVm->addBuiltin("open",   [this](fifth::vm*) { doSave(); });
+    mVm->addBuiltin("open",   [this](fifth::vm*) { doOpen(); });
     mVm->addBuiltin("print",  [this](fifth::vm*) { doPrint(); });
     mVm->addBuiltin("save",   [this](fifth::vm*) { doSave(); });
     mVm->addBuiltin("saveAs", [this](fifth::vm*) { doSaveAs(); });
@@ -2607,21 +2615,66 @@ void Main::setupScripting() {
     });
 }
 
+QIcon Main::createResponsiveIcon(const QString &path, int targetSize) {
+    QPixmap source(path);
+
+    QPixmap brightPix = source.scaled(targetSize, targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    QPixmap dimPix(brightPix.size());
+    if (path.contains("Ck")) {
+        dimPix.fill(Qt::transparent);
+
+        QPainter p(&dimPix);
+        p.setOpacity(0.3); // 40% Opacity (Adjust for your eyes)
+        p.drawPixmap(0, 0, brightPix);
+        p.end();
+    } else dimPix = brightPix;
+
+    QIcon icon;
+
+    // State: Normal / Off -> Show DIM
+    icon.addPixmap(dimPix, QIcon::Normal, QIcon::Off);
+
+    // State: Hover / Active -> Show BRIGHT
+    icon.addPixmap(brightPix, QIcon::Active,   QIcon::Off);
+    icon.addPixmap(brightPix, QIcon::Selected, QIcon::Off);
+
+    // State: Checked (e.g. Bold is ON) -> Show BRIGHT
+    icon.addPixmap(brightPix, QIcon::Normal, QIcon::On);
+
+    return icon;
+}
+
 void Main::setupIcons() {
-    mIcons["newItemToolButton"] =        ":/icon/newItem.ico";
-    mIcons["deleteItemToolButton"] =     ":/icon/deleteItem.ico";
-    mIcons["upToolButton"] =             ":/icon/moveItemUp.ico";
-    mIcons["downToolButton"] =           ":/icon/moveItemDown.ico";
-    mIcons["outToolButton"] =            ":/icon/moveItemOut.ico";
-    mIcons["boldToolButton"] =           ":/icon/bold.ico";
-    mIcons["italicToolButton"] =         ":/icon/italic.ico";
-    mIcons["underlineToolButton"] =      ":/icon/underline.ico";
-    mIcons["leftJustifyToolButton"] =    ":/icon/leftjustify.ico";
-    mIcons["centerToolButton"] =         ":/icon/Center.ico";
-    mIcons["rightJustifyToolButton"] =   ":/icon/rightJustify.ico";
-    mIcons["fullJustifyToolButton"] =    ":/icon/fullJustify.ico";
-    mIcons["increaseIndentToolButton"] = ":/icon/increseIndent.ico";
-    mIcons["decreaseIndentToolButton"] = ":/icon/decreaseIndent.ico";
+    mIcons["newItemToolButton"] =        createResponsiveIcon(":/icon/newItem.ico", 24);
+    mIcons["deleteItemToolButton"] =     createResponsiveIcon(":/icon/deleteItem.ico", 24);
+    mIcons["upToolButton"] =             createResponsiveIcon(":/icon/moveItemUp.ico", 24);
+    mIcons["downToolButton"] =           createResponsiveIcon(":/icon/moveItemDown.ico", 24);
+    mIcons["outToolButton"] =            createResponsiveIcon(":/icon/moveItemOut.ico", 24);
+    mIcons["boldToolButton"] =           createResponsiveIcon(":/icon/boldCk.ico", 24);
+    mIcons["italicToolButton"] =         createResponsiveIcon(":/icon/italicCk.ico", 24);
+    mIcons["underlineToolButton"] =      createResponsiveIcon(":/icon/underlineCk.ico", 24);
+    mIcons["leftJustifyToolButton"] =    createResponsiveIcon(":/icon/leftjustifyCk.ico", 24);
+    mIcons["centerToolButton"] =         createResponsiveIcon(":/icon/CenterCk.ico", 24);
+    mIcons["rightJustifyToolButton"] =   createResponsiveIcon(":/icon/rightJustifyCk.ico", 24);
+    mIcons["fullJustifyToolButton"] =    createResponsiveIcon(":/icon/fullJustifyCk.ico", 24);
+    mIcons["increaseIndentToolButton"] = createResponsiveIcon(":/icon/LtincreseIndent.ico", 24);
+    mIcons["decreaseIndentToolButton"] = createResponsiveIcon(":/icon/LtdecreaseIndent.ico", 24);
+
+    mIcons["LtnewItemToolButton"] =        createResponsiveIcon(":/icon/LtnewItem.ico", 24);
+    mIcons["LtdeleteItemToolButton"] =     createResponsiveIcon(":/icon/LtdeleteItem.ico", 24);
+    mIcons["LtupToolButton"] =             createResponsiveIcon(":/icon/LtmoveItemUp.ico", 24);
+    mIcons["LtdownToolButton"] =           createResponsiveIcon(":/icon/LtmoveItemDown.ico", 24);
+    mIcons["LtoutToolButton"] =            createResponsiveIcon(":/icon/LtmoveItemOut.ico", 24);
+    mIcons["LtboldToolButton"] =           createResponsiveIcon(":/icon/LtboldCk.ico", 24);
+    mIcons["LtitalicToolButton"] =         createResponsiveIcon(":/icon/LtitalicCk.ico", 24);
+    mIcons["LtunderlineToolButton"] =      createResponsiveIcon(":/icon/LtunderlineCk.ico", 24);
+    mIcons["LtleftJustifyToolButton"] =    createResponsiveIcon(":/icon/LtleftjustifyCk.ico", 24);
+    mIcons["LtcenterToolButton"] =         createResponsiveIcon(":/icon/LtCenterCk.ico", 24);
+    mIcons["LtrightJustifyToolButton"] =   createResponsiveIcon(":/icon/LtrightJustifyCk.ico", 24);
+    mIcons["LtfullJustifyToolButton"] =    createResponsiveIcon(":/icon/LtfullJustifyCk.ico", 24);
+    mIcons["LtincreaseIndentToolButton"] = createResponsiveIcon(":/icon/LtincreseIndent.ico", 24);
+    mIcons["LtdecreaseIndentToolButton"] = createResponsiveIcon(":/icon/LtdecreaseIndent.ico", 24);
 }
 
 void Main::setupTabOrder() {

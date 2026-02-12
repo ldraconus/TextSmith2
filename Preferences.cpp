@@ -456,16 +456,10 @@ bool Preferences::isDark() {
 
 void Preferences::resetIcons(bool isDark) {
     for (auto* button: Main::ref().findChildren<QToolButton*>()) {
-        QString path = Main::ref().getIconPath(button->objectName());
-        if (!isDark) path = newPath(path);
-        QPixmap pm(path);
         QIcon icon;
-        icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::Off);
-        if (button->isCheckable()) path = checkPath(path, button->isChecked());
-        QPixmap cpm(path);
-        icon.addFile(path, QSize(), QIcon::Mode::Normal, QIcon::State::On);
+        if (!isDark) icon = Main::ref().getIcon("Lt" + button->objectName());
+        else icon = Main::ref().getIcon(button->objectName());
         button->setIcon(icon);
-        button->setIconSize(QSize(32, 32));
         button->setStyleSheet("QToolButton {\n"
                               "    background-color: palette(Button);\n"
                               "}");
