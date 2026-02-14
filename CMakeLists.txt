@@ -122,6 +122,8 @@ qt_add_executable(TextSmith2
     ${RESOURCES}
     appicon.rc
     TODO.txt
+    Documentation.novel
+    installer.sh
 )
 
 # Link Qt + libzip
@@ -151,8 +153,28 @@ target_compile_definitions(TextSmith2 PRIVATE
     HUNSPELL_STATIC
 )
 
-# Installer target (optional)
+get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
+
+find_program(BASH_EXECUTABLE bash)
+find_program(BINARY_CREATOR
+             NAMES binarycreator
+             PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin"
+)
+find_program(WINDEPLOY
+             NAMES windeployqt6 windeployqt6.exe
+             PATHS "${QT_BIN_DIR}"
+             NO_DEFAULT_PATH
+)
+
+# 2. Call bash, passing the script as an argument
 add_custom_target(Installer
-    COMMAND ${CMAKE_SOURCE_DIR}/../../installer.sh
-    DEPENDS TextSmith2
+# Pro-tip: Use CMAKE_CURRENT_SOURCE_DIR instead of hardcoding the D:/ drive
+# so you can move the project folder later without breaking the build.
+                  COMMAND "${BASH_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/installer.sh"
+                          "${CMAKE_CURRENT_BINARY_DIR}"
+                          "${BINARY_CREATOR}"
+                          "${WINDEPLOY}"
+                  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                  DEPENDS TextSmith2
 )

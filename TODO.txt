@@ -1,9 +1,20 @@
 [/] Help
+    - Intro
+    - Part I
+    [/] Part II
+    [ ] Part III
+    [ ] Part IV
+    [ ] Part V
+    [ ] Part VI
+[ ] Uppercase and lowercase should only be executable if text is selected ...
+[ ] Add a recent projects to the file menu
+[ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
+[ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Allow the user to turn the toolbar off (view menu)
 [ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
-[ ] Write extra scripts
-[ ] Add a hollywood script writing display mode
+[ ] Write scripts
+[ ] Add a hollywood script writing display mode - make file menu understand we're in script mode
 [X] Switch to a gray off mode, the bright on mode. Decided not to. used same colors, just dim and bright auto-magically
 [X] starting a new item does not get the program settings on fonts.
 [X] Reduce icon saize to 50% on toolbars

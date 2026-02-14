@@ -1,16 +1,24 @@
 #!/user/bin/bash
+BUILD_DIR="$1"
+echo "Build dir: $BUILD_DIR"
+BINARY_CREATOR="$2"
+echo "Binaray creator: $BINARY_CREATOR"
+WINDEPLOY="$3"
+echo "Win deploy: $WINDEPLOY"
 mkdir -p install
+echo "Gathering build files"
 cd install
 rm -rf config packages
-cd ..
-cp -ruf ../../packages install/packages
-cp -ruf ../../config install/config
-cp -uf release/TextSmith2.exe install/packages/com.vendor.product/data/TextSmith.exe
+cp -ruf ../packages packages
+cp -ruf ../config config
+cp -uf ../Installer.ico config/Installer.ico
+cp -uf ../Background.png config/Background.png
+cp -uf $BUILD_DIR/TextSmith2.exe packages/com.vendor.product/data/TextSmith.exe
 # copy documentation into data dir as well
-# copy scripts into scripts directory
-cd install/packages/com.vendor.product/data
-/D/ProgramFiles/Qt/6.10.1/mingw_64/bin/windeployqt --no-translations TextSmith.exe
+# copy scripts into scripts sub directory of data dir
+cd packages/com.vendor.product/data
+echo "Fetching libraries"
+$WINDEPLOY --no-translations TextSmith.exe
+echo "Building installer"
 cd ../../..
-cp -uf ../../../Installer.ico config/Installer.ico
-cp -uf ../../../Background.png config/Background.png
-/D/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin/binarycreator -c config/config.xml -p packages --offline-only TextSmithInstaller.exe
+$BINARY_CREATOR -c config/config.xml -p packages --offline-only TextSmithInstaller.exe

@@ -964,7 +964,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionAdd_Item">
    <property name="text">
-    <string>Add Branch</string>
+    <string>Add Item</string>
    </property>
    <property name="shortcut">
     <string>Alt+N</string>
@@ -972,7 +972,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionRemove_Item">
    <property name="text">
-    <string>Remove Branch</string>
+    <string>Remove Item</string>
    </property>
    <property name="shortcut">
     <string>Alt+Del</string>
@@ -980,7 +980,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_an_Item_Up">
    <property name="text">
-    <string>Move Current  Branch Up</string>
+    <string>Move Current  Item Up</string>
    </property>
    <property name="shortcut">
     <string>Alt+Up</string>
@@ -988,7 +988,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_Current_Item_Down">
    <property name="text">
-    <string>Move Current Branch Down</string>
+    <string>Move Current Item Down</string>
    </property>
    <property name="shortcut">
     <string>Alt+Down</string>
@@ -996,7 +996,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionMove_Current_Item_Out">
    <property name="text">
-    <string>Move Current Branch Out</string>
+    <string>Move Current Item Out</string>
    </property>
    <property name="shortcut">
     <string>Alt+Left</string>
@@ -1020,7 +1020,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionOpen_Current_Item">
    <property name="text">
-    <string>Open/Close Current Brnach</string>
+    <string>Open/Close Current Item</string>
    </property>
    <property name="shortcut">
     <string>Alt+O</string>
@@ -1106,7 +1106,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionEdit_Item">
    <property name="text">
-    <string>Edit Branch</string>
+    <string>Edit Item</string>
    </property>
    <property name="shortcut">
     <string>Alt+E</string>
