@@ -128,7 +128,7 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     mPrinter->setImages(edit->internalImages());
     auto& images = edit->externalImageUrls();
     for (const auto& url: images) mPrinter->addImage(url);
-    mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(),
+    mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->topLevelItem(0),
                                              { mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag() }));
 
     connect(mPreview, &QPrintPreviewWidget::paintRequested, this,

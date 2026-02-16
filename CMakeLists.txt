@@ -124,6 +124,8 @@ qt_add_executable(TextSmith2
     TODO.txt
     Documentation.novel
     installer.sh
+    AboutDialog.h AboutDialog.cpp AboutDialog.ui
+    HelpDialog.h HelpDialog.cpp HelpDialog.ui
 )
 
 # Link Qt + libzip

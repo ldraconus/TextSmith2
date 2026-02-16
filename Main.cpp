@@ -53,9 +53,11 @@
 
 Q_DECLARE_METATYPE(QTextDocument*)
 
+#include "AboutDialog.h"
 #include "ExportDialog.h"
 #include "Exporter.h"
 #include "FullScreenDialog.h"
+#include "HelpDialog.h"
 #include "ItemDescriptionDialog.h"
 #include "PageSetupDialog.h"
 #include "PreferencesDialog.h"
@@ -252,6 +254,11 @@ void Main::showEvent(QShowEvent* event) {
     fitWindow();
 }
 
+void Main::doAboutDialog() {
+    AboutDialog dlg;
+    dlg.exec();
+}
+
 void Main::doAboutToShowEditMenu() {
     if (focusWidget() == mUi->textEdit) {
         mUi->actionUndo->setEnabled(mUi->textEdit->document()->isUndoAvailable());
@@ -421,8 +428,8 @@ void Main::doExport(const QString& name) {
     exporter->setCoverTag(dlg.coverTag());
     exporter->setSceneTag(dlg.sceneTag());
     exporter->setInternalImages(mUi->textEdit->internalImages());
-    const auto finalIds = vectorOfIds(mUi->treeWidget->currentItem(),
-                                      { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
+    auto* rootItem = mUi->treeWidget->topLevelItem(0);
+    const auto finalIds = vectorOfIds(rootItem, { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
     exporter->setIds(finalIds);
 
     QString filename = dlg.filename();
@@ -551,6 +558,11 @@ void Main::doFullScreen() {
     setHtml(dlg.html());
     setPosition(dlg.position());
     doCursorPositionChanged();
+}
+
+void Main::doHelp() {
+    HelpDialog dlg;
+    dlg.exec();
 }
 
 void Main::doHighlight(const QString& text, qlonglong start) {
@@ -876,7 +888,7 @@ void Main::doPrint() {
     auto& images = edit->externalImageUrls();
     for (const auto& url: images) mPrinter->addImage(url);
 
-    mPrinter->setIds(vectorOfIds(mUi->treeWidget->currentItem(), { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
+    mPrinter->setIds(vectorOfIds(mUi->treeWidget->topLevelItem(0), { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
 
     mPrinter->setPrefs(&mPrefs);
 
@@ -2200,6 +2212,8 @@ void Main::setupConnections() {
     connect(mUi->actionWord_Count,       &QAction::triggered, this, &Main::doWordCount);
     connect(mUi->actionSpell_checking,   &QAction::triggered, this, &Main::spellCheck);
 
+    connect(mUi->actionAbout_TextSmith, &QAction::triggered, this, &Main::aboutDialog);
+
     connect(mUi->newItemToolButton,    &QToolButton::clicked, this, &Main::addItemAction);
     connect(mUi->deleteItemToolButton, &QToolButton::clicked, this, &Main::removeItemAction);
     connect(mUi->downToolButton,       &QToolButton::clicked, this, &Main::actionMoveDown);
@@ -2216,6 +2230,7 @@ void Main::setupConnections() {
     connect(mUi->decreaseIndentToolButton, &QToolButton::clicked, this, &Main::outdentAction);
     connect(mUi->rightJustifyToolButton,   &QToolButton::clicked, this, &Main::rightJustifyAction);
     connect(mUi->underlineToolButton,      &QToolButton::clicked, this, &Main::underlineAction);
+
 
     connect(mUi->menuFile,  &QMenu::aboutToShow, this, &Main::aboutToShowFileMenuAction);
     connect(mUi->menuEdit,  &QMenu::aboutToShow, this, &Main::aboutToShowEditMenuAction);

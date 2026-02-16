@@ -12,17 +12,18 @@ void HtmlExporter::extracted(QString& str, const QString& dir, QMap<QUrl, QImage
     for (auto i = 0; i < keys.size(); ++i) {
         const auto& key = keys[i];
         const auto& image = images[key];
-        QString name = key.fileName();
-        QString newPath = dir + "/internal_" + name + ".png";
-        image.save(newPath, "PNG");
-        QString oldUrl = key.toString();
-        str = str.replace(oldUrl, newPath);
+        if (key.scheme() == "internal") {   // probably not needed, but ... expect the unexpected!
+            QString name = key.host();
+            QString newPath = dir + "/internal_" + name + ".png";
+            image.save(newPath, "PNG");
+            QString oldUrl = key.toString();
+            str = str.replace(oldUrl, newPath);
+        }
     }
 }
 
 bool HtmlExporter::convert() {
-    if (mFilename.isEmpty())
-        return false;
+    if (mFilename.isEmpty()) return false;
 
     const auto& defaults = collectMetadataDefaults();
     QString cover = fetchValue(1, defaults, "cover");
@@ -30,14 +31,12 @@ bool HtmlExporter::convert() {
     QString html = convert(mNovel, mItemIds, cover, tags);
     QString title = fetchValue(0, defaults, "title");
     if (!title.isEmpty()) {
-        if (html.contains("<head>"))
-            html.replace("<head>", QString("<head><title>%1</title>").arg(title.toHtmlEscaped()));
-        else
-            html.prepend(QString("<title>%1</title>").arg(title.toHtmlEscaped()));
+        if (html.contains("<head>")) html.replace("<head>", QString("<head><title>%1</title>").arg(title.toHtmlEscaped()));
+        else html.prepend(QString("<title>%1</title>").arg(title.toHtmlEscaped()));
     }
 
     // create the <path>/<basename>
-    //            <path>/<basename>/index.html
+    //            <path>/<basename>.html
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
@@ -52,9 +51,8 @@ bool HtmlExporter::convert() {
     // <path>/<basename>/internal_<url_filename>.png and re-write html
     extracted(html, dir, mImages);
 
-    QFile file(dir + "/index" + ext);
-    if (!file.open(QIODeviceBase::WriteOnly))
-        return false;
+    QFile file(mFilename);
+    if (!file.open(QIODeviceBase::WriteOnly)) return false;
     return file.write(html.toUtf8()) != -1;
 }
 
@@ -111,10 +109,7 @@ QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString
     if (!cover.isEmpty()) html += generateImageHtml(cover);
     for (auto& id: ids) {
         Item& item = novel.findItem(id);
-        if (item.hasTag(tag[Chapter]) || item.hasTag(tag[Scene]) || item.hasTag(tag[Cover])) {
-            html += "\n" + addParagraphs(item.html());
-            continue;
-        }
+        if (item.hasTag(tag[Chapter]) || item.hasTag(tag[Scene]) || item.hasTag(tag[Cover])) html += "\n" + addParagraphs(item.html());
     }
     return html + final;
 }

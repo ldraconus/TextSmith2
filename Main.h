@@ -135,6 +135,7 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
 
+    void doAboutDialog();
     void doAboutToShowFileMenu();
     void doAboutToShowEditMenu();
     void doAboutToShowNovelMenu();
@@ -157,6 +158,7 @@ private:
     void doFocusChanged(QWidget *old, QWidget *now);
     void doFullJustify();
     void doFullScreen();
+    void doHelp();
     void doHighlight(const QString& text, qlonglong start);
     void doIndent();
     void doItalic();
@@ -246,6 +248,7 @@ public:
     Main(QApplication* app, QWidget* parent = nullptr);
     ~Main();
 
+    QString      appDir()                          { return mAppDir; }
     void         busy()                            { QApplication::setOverrideCursor(Qt::WaitCursor); }
     qlonglong    currentNode()                     { return mCurrentNode; }
     QString      docDir()                          { return mDocDir; }
@@ -326,6 +329,9 @@ public slots:
     void readToMeAction()   { doReadToMe(); }
     void spellCheck()       { doSpellcheck(); }
     void wordCountAction()  { doWordCount(); }
+
+    void aboutDialog() { doAboutDialog(); }
+    void helpDIalog()  { doHelp(); }
 
     void aboutToShowFileMenuAction()  { doAboutToShowFileMenu(); }
     void aboutToShowEditMenuAction()  { doAboutToShowEditMenu(); }
