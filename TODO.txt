@@ -1,4 +1,9 @@
-[/] Help
+[ ] The entire Help Menu needs to be implemented.
+    [ ] About
+    [ ] Help
+    [ ] Web Site
+    [ ] Scripts
+[/] Write the Documentation
     - Intro
     - Part I
     [/] Part II
@@ -7,6 +12,7 @@
     [ ] Part V
     [ ] Part VI
 [ ] Uppercase and lowercase should only be executable if text is selected ...
+[ ] Shouldn't be able to ope/close if not on an item with children ...
 [ ] Add a recent projects to the file menu
 [ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.

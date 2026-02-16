@@ -1,10 +1,9 @@
 #!/user/bin/bash
 BUILD_DIR="$1"
-echo "Build dir: $BUILD_DIR"
 BINARY_CREATOR="$2"
-echo "Binaray creator: $BINARY_CREATOR"
 WINDEPLOY="$3"
-echo "Win deploy: $WINDEPLOY"
+FROM_RPGRAM=$4
+TO_PROGRAM=$5
 mkdir -p install
 echo "Gathering build files"
 cd install
@@ -13,12 +12,12 @@ cp -ruf ../packages packages
 cp -ruf ../config config
 cp -uf ../Installer.ico config/Installer.ico
 cp -uf ../Background.png config/Background.png
-cp -uf $BUILD_DIR/TextSmith2.exe packages/com.vendor.product/data/TextSmith.exe
+cp -uf $BUILD_DIR/${FROM_PROG}.exe packages/com.vendor.product/data/${TO_PROG}.exe
 # copy documentation into data dir as well
 # copy scripts into scripts sub directory of data dir
 cd packages/com.vendor.product/data
 echo "Fetching libraries"
-$WINDEPLOY --no-translations TextSmith.exe
+$WINDEPLOY --no-translations $TO_PROG.exe
 echo "Building installer"
 cd ../../..
-$BINARY_CREATOR -c config/config.xml -p packages --offline-only TextSmithInstaller.exe
+$BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer.exe

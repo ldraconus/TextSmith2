@@ -7,6 +7,5 @@
     <Licenses>
         <License name="MIT Public License Agreement" file="license.txt" />
     </Licenses>
-    <script>installScripts.qs</script>
     <Default>true</Default>
 </Package>

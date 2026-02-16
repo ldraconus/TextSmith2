@@ -175,6 +175,8 @@ add_custom_target(Installer
                           "${CMAKE_CURRENT_BINARY_DIR}"
                           "${BINARY_CREATOR}"
                           "${WINDEPLOY}"
+                          "TextSmith2"
+                          "TextSmith"
                   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                   DEPENDS TextSmith2
 )
