@@ -165,6 +165,7 @@ private:
     void doItemChanged(QTreeWidgetItem* current);
     void doLeftJustify();
     void doLowercase();
+    void doManageScripts();
     void doMoveDown();
     void doMoveOut();
     void doMoveUp();
@@ -198,6 +199,7 @@ private:
     void doUnderline();
     void doUndo();
     void doUppercase();
+    void doWeb();
     void doWordCount();
 
     static constexpr bool NoUi = true;
@@ -330,8 +332,10 @@ public slots:
     void spellCheck()       { doSpellcheck(); }
     void wordCountAction()  { doWordCount(); }
 
-    void aboutDialog() { doAboutDialog(); }
-    void helpDIalog()  { doHelp(); }
+    void aboutDialog()   { doAboutDialog(); }
+    void helpDIalog()    { doHelp(); }
+    void web()           { doWeb(); }
+    void manageScripts() { doManageScripts(); }
 
     void aboutToShowFileMenuAction()  { doAboutToShowFileMenu(); }
     void aboutToShowEditMenuAction()  { doAboutToShowEditMenu(); }

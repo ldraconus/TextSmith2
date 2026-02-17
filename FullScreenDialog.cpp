@@ -32,10 +32,6 @@ FullScreenDialog::~FullScreenDialog() {
     delete mUi;
 }
 
-QString FullScreenDialog::html() {
-    return mUi->textEdit->toHtml();
-}
-
 void FullScreenDialog::imageFix() {
     Main::ref().removeEmptyFirstBlock(mUi->textEdit);
     mUi->textEdit->document()->setTextWidth(mUi->textEdit->viewport()->width());
@@ -54,26 +50,8 @@ qlonglong FullScreenDialog::position() {
     return mUi->textEdit->textCursor().position();
 }
 
-void FullScreenDialog::setFont(const QFont &font) {
-    mUi->textEdit->document()->setDefaultFont(font);
-}
-
-void FullScreenDialog::setHtml(const QString &html) {
-    TextEdit* text = mUi->textEdit;
-    Preferences& prefs = Main::ref().prefs();
-    QFont font(prefs.fontFamily(), prefs.fontSize());
-    QFontMetrics metrics(font);
-    int lineHeight = metrics.height();
-    int indent = 2 * lineHeight;
-    QTextBlockFormat format;
-    format.setTextIndent(indent);
-    format.setBottomMargin(lineHeight);
-    QTextCursor cursor(text->document());
-    cursor.select(QTextCursor::Document);
-    cursor.mergeBlockFormat(format);
-    text->setTextCursor(cursor);
-    text->document()->setDefaultFont(font);
-    applyNovelFormatting();
+void FullScreenDialog::setDocument(QTextDocument* doc) {
+    mUi->textEdit->setDocument(doc);
 }
 
 void FullScreenDialog::setOther(List<int>& other) {

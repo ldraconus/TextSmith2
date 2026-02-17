@@ -13,6 +13,8 @@ namespace Ui {
 class FullScreenDialog;
 }
 
+class QTextDocument;
+
 class FullScreenDialog : public QDialog
 {
     Q_OBJECT
@@ -21,11 +23,9 @@ public:
     explicit FullScreenDialog(Preferences& prefs, QWidget* parent = nullptr);
     ~FullScreenDialog();
 
-    QString    html();
     List<int>  other();
     qlonglong  position();
-    void       setFont(const QFont& font);
-    void       setHtml(const QString& html);
+    void       setDocument(QTextDocument* doc);
     void       setOther(List<int>& other);
     void       setPosition(qlonglong pos);
     void       setSoundPool(SoundPool* soundPool);

@@ -24,6 +24,7 @@
 #include <QCloseEvent>
 #include <QCompleter>
 #include <QClipboard>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -49,6 +50,7 @@
 #include <QTextToSpeech>
 #include <QThread>
 #include <QTreeWidget>
+#include <QUrl>
 #include <QWindow>
 
 Q_DECLARE_METATYPE(QTextDocument*)
@@ -61,6 +63,7 @@ Q_DECLARE_METATYPE(QTextDocument*)
 #include "ItemDescriptionDialog.h"
 #include "PageSetupDialog.h"
 #include "PreferencesDialog.h"
+#include "ScriptDialog.h"
 
 using namespace Words;
 
@@ -545,8 +548,7 @@ void Main::doFullJustify() {
 
 void Main::doFullScreen() {
     FullScreenDialog dlg(mPrefs, this);
-    dlg.setHtml(mUi->textEdit->toHtml());
-    dlg.setFont(mUi->textEdit->document()->defaultFont());
+    dlg.setDocument(mUi->textEdit->document());
     dlg.setPosition(mUi->textEdit->textCursor().position());
     if (mPrefs.typingSounds()) dlg.setSoundPool(&mSoundPool);
     auto arr = mPrefs.otherSplitter();
@@ -555,7 +557,6 @@ void Main::doFullScreen() {
     dlg.exec();
     auto other = dlg.other();
     mPrefs.setOtherSplitter(other);
-    setHtml(dlg.html());
     setPosition(dlg.position());
     doCursorPositionChanged();
 }
@@ -636,6 +637,26 @@ void Main::doLowercase() {
     replaceText(cursor, text);
     ready();
     changed();
+}
+
+void Main::doManageScripts() {
+    ScriptDialog dlg(this);
+    // get the list of active scripts
+    // get the list of available scripts
+
+    if (dlg.exec() == QDialog::Rejected) return;
+
+    // get the new list of active scripts
+    // go through the new list:
+    //  if in the old list:
+    //    add shotcut to new list
+    //    remove from old list
+    // go through old list
+    //   remove from menu
+    // go through new-list:
+    //   if no shortcut:
+    //     find available shortcut
+    //     assign to menu with shortcut
 }
 
 void Main::doMoveDown() {
@@ -1204,6 +1225,10 @@ void Main::doUppercase() {
     replaceText(cursor, text);
     ready();
     changed();
+}
+
+void Main::doWeb() {
+    QDesktopServices::openUrl(QUrl("https://my-domain/index.html"));
 }
 
 void Main::doWordCount() {
@@ -2213,6 +2238,9 @@ void Main::setupConnections() {
     connect(mUi->actionSpell_checking,   &QAction::triggered, this, &Main::spellCheck);
 
     connect(mUi->actionAbout_TextSmith, &QAction::triggered, this, &Main::aboutDialog);
+    connect(mUi->actionHelp,            &QAction::triggered, this, &Main::helpDIalog);
+    connect(mUi->actionWeb_Site,        &QAction::triggered, this, &Main::web);
+    connect(mUi->actionScripting,       &QAction::triggered, this, &Main::manageScripts);
 
     connect(mUi->newItemToolButton,    &QToolButton::clicked, this, &Main::addItemAction);
     connect(mUi->deleteItemToolButton, &QToolButton::clicked, this, &Main::removeItemAction);
@@ -2230,7 +2258,6 @@ void Main::setupConnections() {
     connect(mUi->decreaseIndentToolButton, &QToolButton::clicked, this, &Main::outdentAction);
     connect(mUi->rightJustifyToolButton,   &QToolButton::clicked, this, &Main::rightJustifyAction);
     connect(mUi->underlineToolButton,      &QToolButton::clicked, this, &Main::underlineAction);
-
 
     connect(mUi->menuFile,  &QMenu::aboutToShow, this, &Main::aboutToShowFileMenuAction);
     connect(mUi->menuEdit,  &QMenu::aboutToShow, this, &Main::aboutToShowEditMenuAction);
@@ -2398,6 +2425,11 @@ void Main::setupScripting() {
     mVm->addBuiltin("readtome",   [this](fifth::vm*) { doReadToMe(); });
     mVm->addBuiltin("spellcheck", [this](fifth::vm*) { doSpellcheck(); });
     mVm->addBuiltin("wordcount",  [this](fifth::vm*) { doWordCount(); });
+
+    mVm->addBuiltin("about",        [this](fifth::vm*) { doAboutDialog(); });
+    mVm->addBuiltin("help",         [this](fifth::vm*) { doHelp(); });
+    mVm->addBuiltin("web",          [this](fifth::vm*) { doWeb(); });
+    mVm->addBuiltin("manageScripts",[this](fifth::vm*) { doManageScripts(); });
 
     // TextSmith2 words
     mVm->addBuiltin("shortcut", [this](fifth::vm* vm) { //    shortcut -u-> // short cut is expected to be followed by code block { }

@@ -13,7 +13,8 @@ cp -ruf ../config config
 cp -uf ../Installer.ico config/Installer.ico
 cp -uf ../Background.png config/Background.png
 cp -uf $BUILD_DIR/${FROM_PROG}.exe packages/com.vendor.product/data/${TO_PROG}.exe
-# copy documentation into data dir as well
+cp -uf $BUILD_DIR/Documentation.html packages/com.vendor.product/data
+cp -ruf $BUILD_DIR/Documentation packages/com.vendor.product/data/Documentation
 # copy scripts into scripts sub directory of data dir
 cd packages/com.vendor.product/data
 echo "Fetching libraries"

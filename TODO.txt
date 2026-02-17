@@ -1,19 +1,19 @@
 [ ] The entire Help Menu needs to be implemented.
     [X] About
-    [/] Help
-    [ ] Web Site
-    [ ] Scripts
+    [X] Help
+    [X] Web Site
+    [X] Scripts
     [ ] Allow the user to turn the toolbar off (view menu)
 [/] Write the Documentation
     - Intro
     - Part I
     [/] Part II
-[ ] Fix exporters to match the margin code and looks of page setup.
+[ ] FiThe new wiping oneisx exporters to match the margin code and looks of page setup.
     [ ] Part III
     [ ] Part IV
     [ ] Part V
     [ ] Part VI
-[ ] Distraction free wipes out your edits (or doesn't get them in the first place)!
+[ ] Distraction free wipes out your edits (doesn't get them in the first place)! What you type there makes it back out tho'.
 [ ] Whoops! read to me hates images ... need to fix this, later.
 [ ] New not clearing image cache properly ...
 [ ] Uppercase and lowercase should only be executable if text is selected ...
@@ -103,101 +103,6 @@
 [X] Fix fullscreen to better follow the preferences but still look like a page of paper
 
 
-[Display tour - menus]
-
-The Menus
-There are five main menus (File, Edit, Novel, View, and Help). Let's go through them in order and describe what each one does.
-
-A quick note: TextSmith goes to great lengths to only enable menu selections that make sense at any given time. This reduces the classic "what-just-happened?" problem by preventing you from clicking things you shouldn't.
-
-The File Menu
-The File menu is where all things file-related go.
-
-New: Start a new novel. If your current novel has unsaved changes, TextSmith will ask if you want to save them, discard them, or cancel the command. (The default action is Save, of course!)
-
-Open: Open an existing novel. Just like 'New', it will ask you to save any current changes so you don't unknowingly lose your work. The document will open exactly where you left off when you last saved it.
-
-Save: Saves your work to the current file. If you've never saved it before, it will ask you for a filename. You can cancel if you change your mind, but TextSmith will remember that the document is still unsaved.
-
-Save As: Saves the novel under a brand new name.
-
-Export: Export the current novel into one of the following formats: EPub, HTML, Markdown, PDF, or RTF (most word processors like Microsoft Word and LibreOffice Writer can read RTF files).
-
-Page Setup: Set up your margins, headers, and footers for printing your documents.
-
-Exit: Leave the program. If you have unsaved changes, TextSmith will step in to keep you from losing any work before it closes.
-
-The Edit Menu
-The Edit menu is where you find typical—and sometimes not-so-typical—text editing tools.
-
-Undo: Undo the last thing you did. The program keeps track of your actions like a stack of plates, letting you undo them in the exact reverse order you did them.
-
-Redo: If you undid something you wish you hadn't (perhaps from an overzealous string of Ctrl+Z keypresses), Redo lets you walk that back, putting things back on the "stack of plates"—as long as you haven't typed anything new yet.
-
-Cut: Take the highlighted text, copy it to your paste buffer, and delete it from the editor.
-
-Copy: Same as Cut, except the highlighted text is left exactly where it is.
-
-Paste: Takes whatever is in your paste buffer (from anywhere on your computer) and plops it into TextSmith. This may involve stripping out a lot of formatting fluff if it's coming from a complex webpage or program. TextSmith does have limited image handling, so give it a try!
-
-Find & Replace: This reveals a search bar at the bottom of the display. Type what you want to find and press Return. You can easily replace the found text with whatever you type in the replace field, or even replace all occurrences at once.
-
-Find Next: If you've already searched for something, this jumps directly to the next occurrence.
-
-Font: Not exactly what you think! This simply lets you toggle Bold, Italic, and <ins>Underline</ins> on your selected text.
-
-Paragraph: Align your text (Left, Center, Right, Justify) or change the indentation (Indent, Unindent). Note: Left is sometimes called "ragged right", and Right is sometimes called "ragged left", just to confuse things.
-
-Lowercase: Change the selected text to entirely lowercase.
-
-Uppercase: Change the selected text to entirely uppercase.
-
-Preferences: Lets you set your default program settings. This includes the editor font, autosave intervals, text-to-speech voices, and more. (More on preferences later in the tour!)
-
-The Novel Menu
-This menu handles the structure and organization of your novel's items.
-
-Add Item: Adds a new item underneath your current one, allowing you to name it and assign tags.
-
-Edit Item: Allows you to change the name and tags of an existing item.
-
-Remove Item: Deletes an item. Don't worry, you can use Undo if you make a mistake. You are welcome!
-
-Move Current Item Up: Moves the current item higher up in the document tree. If it reaches the top of its current parent group, it will "pop out" and move above its parent.
-
-Move Current Item Down: Moves the item down the tree, or out of its parent group if it reaches the bottom.
-
-Move Current Item Out: For when your nested lists get too deep, this simply promotes the item directly out of its current parent folder.
-
-Open/Close Current Item: Expands the current item to see its children, or collapses it to hide them.
-
-Open All: Expands every single item in your document tree. It can be nice to see the whole structure, or it might just be overwhelming.
-
-Close All: If "Open All" was too much, this collapses everything. Take a deep breath and start opening things one at a time.
-
-The View Menu
-This menu controls how you look at your writing environment.
-
-Distraction Free (F11): This brings up the distraction-free window. I develop TextSmith on a 4K monitor (actually, it's an old TV I got for free, which is great for vision issues), so my screen has a lot of empty space. Distraction-free mode dynamically adjusts to your monitor to give you a clean slate. You can drag the margins to make it look exactly like a page, and it completely blocks out the main TextSmith window until you hit ESC or F11 to exit.
-
-Features in this mode: You can type, use basic text editing (cut, copy, paste, undo, redo, formatting), and check your word counts at the bottom of the left-hand bar. If you've enabled typing sounds in your preferences, you'll hear them here.
-
-Read To Me: Starts reading the current item out loud using your operating system's selected text-to-speech voice. (If your OS doesn't have text-to-speech installed, it won't work—I can't program that part... yet!)
-
-Word Counts: Displays your current word counts clearly in the left part of the bottom status bar so you can track your progress.
-
-Spell Checking: TextSmith only checks your spelling when you explicitly ask it to. No distracting red squiggles while you write! When activated, it will highlight unrecognized words. (Currently loaded with an English dictionary, but more can be added if there's a demand!)
-
-The Help Menu
-About TextSmith: Displays a quick blurb about the program and shows my appreciation for everyone who helped me along the way.
-
-Help: Opens this exact manual! Nice, huh?
-
-Web Site: Takes you to my website so you can grab the most current version of TextSmith.
-
-Scripting: Shows you the loaded and available scripts. These are tools you can use to automate particular tasks or add features I didn't include out of the box. (More on this in the scripting section!)
-
-
 [Quotes}
 
 Jodi Picoult: "You can always edit a bad page. You can’t edit a blank page."
@@ -230,13 +135,6 @@ Margaret Atwood: "If I waited for perfection, I would never write a word."
 "The wastebasket is a writer’s best friend." — Isaac Bashevis Singer
 "I love deadlines. I love the whooshing noise they make as they go by." — Douglas Adams (Use this one when you are running late on a promised software update—it usually gets a laugh!)
 
-
-Part I: The Philosophy
-The "One Object" Rule: Whether it's a Hero, a Castle, a Chapter, or a Scene—inside the engine, they are all just "Items."
-
-The Tree is King: The visual hierarchy is the only structure that matters.
-
-Why Tags Matter: Tags are the only way the engine knows that "Item A" is text to be printed and "Item B" is a character note to be ignored.
 
 Part II: The Writer's Interface (The "How-To")
 Creating Items: The basic building block.
