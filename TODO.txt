@@ -1,30 +1,26 @@
-[ ] The entire Help Menu needs to be implemented.
-    [X] About
-    [X] Help
-    [X] Web Site
-    [X] Scripts
-    [ ] Allow the user to turn the toolbar off (view menu)
+[ ] Allow the user to turn the toolbar off (view menu)
+[ ] Fix exporters to match the margin code and looks of page setup.
 [/] Write the Documentation
     - Intro
     - Part I
     [/] Part II
-[ ] FiThe new wiping oneisx exporters to match the margin code and looks of page setup.
     [ ] Part III
     [ ] Part IV
     [ ] Part V
     [ ] Part VI
-[ ] Distraction free wipes out your edits (doesn't get them in the first place)! What you type there makes it back out tho'.
-[ ] Whoops! read to me hates images ... need to fix this, later.
+[/] Script Manager
+[ ] Whoops! read to me broken ...
 [ ] New not clearing image cache properly ...
 [ ] Uppercase and lowercase should only be executable if text is selected ...
 [ ] Shouldn't be able to open/close if not on an item with children ...
 [ ] Add a recent projects to the file menu
 [ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
-[ ] Why does exporting always make the document think it has been changed? Fix.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] Write scripts
 [ ] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[X] Why does exporting always make the document think it has been changed? Fix. It doesn't. Moving the current item does ...
+[X] Distraction free wipes out your edits (doesn't get them in the first place)! What you type there makes it back out tho'.
 [X] Start id search in exporter from the top of the dopcument tree every time...
 [X] Well, html export of images is broken ...
 [X] Switch to a gray off mode, the bright on mode. Decided not to. used same colors, just dim and bright auto-magically
