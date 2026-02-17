@@ -285,6 +285,8 @@ void Main::doAboutToShowFileMenu() {
 }
 
 void Main::doAboutToShowNovelMenu() {
+    mUi->actionOpen_Current_Item->setEnabled(mUi->treeWidget->currentItem()->childCount() != 0);
+    mUi->actionOpen_Current_Item->setText(mUi->treeWidget->currentItem()->isExpanded() ? "Close Current Item" : "Open Current Item");
     mUi->actionRemove_Item->setEnabled(!(mUi->treeWidget->currentItem() == mUi->treeWidget->topLevelItem(0)));
     mUi->actionMove_an_Item_Up->setEnabled(!nothingAbove());
     mUi->actionMove_Current_Item_Down->setEnabled(!nothingBelow());
@@ -609,6 +611,7 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     QTextDocument* doc = mUi->treeWidget->textDocument(mCurrentNode);
     doc->setParent(nullptr);
     mUi->textEdit->setDocument(doc);
+    mUi->actionOpen_Current_Item->setText(current->isExpanded() ? "Close Current Item" : "Open Current Item");
 
     auto& item = mNovel.findItem(mCurrentNode);
     mPosition = item.position();
@@ -742,6 +745,8 @@ void Main::doNew() {
     tree->removeTextDocument(mCurrentNode);
     tree->clearTextDocuments();
     tree->setTextDocument(mCurrentNode, doc);
+    auto* edit = mUi->textEdit;
+    edit->clearInternalImages();
     clearChanged();
     update();
     mWordCount.setCurrentItem(0);
@@ -1198,6 +1203,8 @@ void Main::doToolbars() {
     bool isVisible = mUi->editToolbarFrame->isVisible();
     mUi->editToolbarFrame->setVisible(!isVisible);
     mUi->novelToolbarFrame->setVisible(!isVisible);
+    mUi->actionHide_Show_Toolbar->setText(!isVisible ? "Hide Toolbars" : "Show Toolbars");
+    mPrefs.setToolbarVisible(!isVisible);
 }
 
 void Main::doUnderline() {
@@ -2011,6 +2018,8 @@ Main::Main(QApplication* app, QWidget* parent)
     loadScripts();
     mPrefsLoaded = mPrefs.load();
     setupIcons();
+    bool isVisible = mPrefs.toolbarVisible();
+    mUi->actionHide_Show_Toolbar->setText(isVisible ? "Hide Toolbars" : "Show Toolbars");
     QFont font(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
     mPrefs.applyFontToTree(this, font);
     updateGeometry();

@@ -54,6 +54,7 @@ public:
     qlonglong   position() const          { return mPosition; }
     QString     sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
     qlonglong   theme() const             { return mTheme; }
+    bool        toolbarVisible() const    { return mToolbarVisible; }
     qreal       top()  const              { return mMargins.at(0); }
     bool        typingSounds() const      { return mTypingSounds; }
     QString     uiFontFamily() const      { return mUiFontFamily; }
@@ -77,6 +78,7 @@ public:
     void setPosition(qlonglong pos)           { mPosition = pos; }
     void setSceneTag(const QString& s)        { mSceneTag = s; }
     void setTheme(qlonglong t)                { mTheme = t; }
+    void setToolbarVisible(bool t)            { mToolbarVisible = t; }
     void setTypingSounds(bool t)              { mTypingSounds = t; }
     void setUiFontFamily(const QString& f)    { mUiFontFamily = f; }
     void setUiFontSize(qlonglong s)           { mUiFontSize = s; }
@@ -100,6 +102,7 @@ private:
     qlonglong     mPosition         { 0 };
     QString       mSceneTag         { "scene" };
     qlonglong     mTheme            { 2 };
+    bool          mToolbarVisible   { true };
     bool          mTypingSounds     { false };
     QString       mUiFontFamily     { "Segoe UI" };
     qlonglong     mUiFontSize       { 9 };
