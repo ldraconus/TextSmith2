@@ -76,7 +76,7 @@ QSplitter::handle:hover {
          <number>1</number>
         </property>
         <item>
-         <widget class="QFrame" name="frame_2">
+         <widget class="QFrame" name="novelToolbarFrame">
           <property name="contextMenuPolicy">
            <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
           </property>
@@ -290,7 +290,7 @@ QSplitter::handle:hover {
          <number>0</number>
         </property>
         <item>
-         <widget class="QFrame" name="frame_4">
+         <widget class="QFrame" name="editToolbarFrame">
           <property name="contextMenuPolicy">
            <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
           </property>
@@ -728,6 +728,7 @@ QSplitter::handle:hover {
     <addaction name="actionRead_To_Me"/>
     <addaction name="actionWord_Count"/>
     <addaction name="actionSpell_checking"/>
+    <addaction name="actionHide_Show_Toolbar"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1147,6 +1148,14 @@ QSplitter::handle:hover {
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+P</string>
+   </property>
+  </action>
+  <action name="actionHide_Show_Toolbar">
+   <property name="text">
+    <string>Hide/Show Toolbar</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+T</string>
    </property>
   </action>
  </widget>

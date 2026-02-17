@@ -1,4 +1,4 @@
-[ ] Allow the user to turn the toolbar off (view menu)
+[ ] Fix state menus (open/close item, show/hide toolbar) to change text to current action.
 [ ] Fix exporters to match the margin code and looks of page setup.
 [/] Write the Documentation
     - Intro
@@ -9,6 +9,7 @@
     [ ] Part V
     [ ] Part VI
 [/] Script Manager
+[ ] Can't cut/copy an image ...
 [ ] Whoops! read to me broken ...
 [ ] New not clearing image cache properly ...
 [ ] Uppercase and lowercase should only be executable if text is selected ...
@@ -19,6 +20,7 @@
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] Write scripts
 [ ] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[X] Allow the user to turn the toolbar off (view menu)
 [X] Why does exporting always make the document think it has been changed? Fix. It doesn't. Moving the current item does ...
 [X] Distraction free wipes out your edits (doesn't get them in the first place)! What you type there makes it back out tho'.
 [X] Start id search in exporter from the top of the dopcument tree every time...

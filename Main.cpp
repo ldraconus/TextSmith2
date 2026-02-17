@@ -1194,6 +1194,12 @@ void Main::doTextChanged() {
     changed();
 }
 
+void Main::doToolbars() {
+    bool isVisible = mUi->editToolbarFrame->isVisible();
+    mUi->editToolbarFrame->setVisible(!isVisible);
+    mUi->novelToolbarFrame->setVisible(!isVisible);
+}
+
 void Main::doUnderline() {
     auto cursor = mUi->textEdit->textCursor();
     QTextCharFormat format;
@@ -2232,10 +2238,11 @@ void Main::setupConnections() {
     connect(mUi->actionRemove_Item,            &QAction::triggered, this, &Main::removeItemAction);
 
     mUi->actionRead_To_Me->setShortcut(QKeySequence("Ctrl+Alt+R"));
-    connect(mUi->actionDistraction_Free, &QAction::triggered, this, &Main::fullScreenAction);
-    connect(mUi->actionRead_To_Me,       &QAction::triggered, this, &Main::readToMeAction);
-    connect(mUi->actionWord_Count,       &QAction::triggered, this, &Main::doWordCount);
-    connect(mUi->actionSpell_checking,   &QAction::triggered, this, &Main::spellCheck);
+    connect(mUi->actionDistraction_Free,  &QAction::triggered, this, &Main::fullScreenAction);
+    connect(mUi->actionRead_To_Me,        &QAction::triggered, this, &Main::readToMeAction);
+    connect(mUi->actionWord_Count,        &QAction::triggered, this, &Main::doWordCount);
+    connect(mUi->actionSpell_checking,    &QAction::triggered, this, &Main::spellCheck);
+    connect(mUi->actionHide_Show_Toolbar, &QAction::triggered, this, &Main::toolBars);
 
     connect(mUi->actionAbout_TextSmith, &QAction::triggered, this, &Main::aboutDialog);
     connect(mUi->actionHelp,            &QAction::triggered, this, &Main::helpDIalog);

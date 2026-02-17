@@ -196,6 +196,7 @@ private:
     void doStop(bool stopped = false);
     void doSuggestion(const QString& from, const QString& to);
     void doTextChanged();
+    void doToolbars();
     void doUnderline();
     void doUndo();
     void doUppercase();
@@ -331,6 +332,7 @@ public slots:
     void readToMeAction()   { doReadToMe(); }
     void spellCheck()       { doSpellcheck(); }
     void wordCountAction()  { doWordCount(); }
+    void toolBars()         { doToolbars(); }
 
     void aboutDialog()   { doAboutDialog(); }
     void helpDIalog()    { doHelp(); }
