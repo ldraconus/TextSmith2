@@ -8,8 +8,9 @@ Speech::Speech(QObject* parent)
     : QObject(parent) {
     // Explicitly check available engines, fallback if winrt isn't there
     // (Optional safety, but good practice)
-    if (QTextToSpeech::availableEngines().contains("winrt")) mTts = new QTextToSpeech("winrt", this);
-    else mTts = new QTextToSpeech(this);
+    //if (QTextToSpeech::availableEngines().contains("winrt")) mTts = new QTextToSpeech("winrt", this);
+    //else
+    mTts = new QTextToSpeech("sapi", this);
 
     connect(mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
         if (mPaused) return;
@@ -83,11 +84,13 @@ void Speech::speak(const QString& text) {
 }
 
 void Speech::speakNextSentence() {
+/*
     if (mNeedsPrimed) {
         mNeedsPrimed = false;
         mTts->say(" ");
         return;
     }
+*/
     if (mCurrentIndex < mSentences.size()) {
         const Sentence& data = mSentences[mCurrentIndex];
         QString sentence = data.mSentence.trimmed() + data.mPunct;

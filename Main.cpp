@@ -888,10 +888,10 @@ void Main::doPause() {
     if (!mSpeechAvailable) return;
     if (mSpeech.paused()) {
         mSpeech.play();
-        mSpeechWidget->pausePlayPushButton->setText(";");
+        mSpeechWidget->pausePlayPushButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     } else {
         mSpeech.pause();
-        mSpeechWidget->pausePlayPushButton->setText("8");
+        mSpeechWidget->pausePlayPushButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     }
 }
 
@@ -899,6 +899,9 @@ void Main::doPreferences() {
     Preferences prefs(mPrefs);
     PreferencesDialog dlg(mPrefs, this);
     if (dlg.exec() == QDialog::Rejected) mPrefs = prefs;
+    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
+    QApplication::setFont(font);
+    mUi->menubar->setFont(font);
     updateFromPrefs();
 }
 
@@ -942,7 +945,7 @@ void Main::doReadToMe() {
     if (mTextToSpeak.size() == 0) return;
 
     mSpeaking->setVisible(true);
-    mSpeechWidget->pausePlayPushButton->setText(";");
+    mSpeechWidget->pausePlayPushButton->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     mSavedCursor = cursor;
 
     mSpeech.setVoice(mPrefs.voice());
@@ -1939,7 +1942,7 @@ void Main::updateFromPrefs() {
 
     mUi->actionRead_To_Me->setEnabled(mPrefs.voice() >= 0);
     QFont uiFont(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
-    mPrefs.applyFontToTree(this, uiFont);
+    QApplication::setFont(uiFont);
     updateGeometry();
     repaint();
 
@@ -1997,7 +2000,7 @@ Main::Main(QApplication* app, QWidget* parent)
     mSoundPool.load(SoundPool::Sound::ReturnClunk, QUrl("qrc:/Sound/ReturnClunk.mp3"), 8);
     mSoundPool.load(SoundPool::Sound::MarginDing,  QUrl("qrc:/Sound/MarginDing.mp3"),  8);
 
-    QTextToSpeech* speech = new QTextToSpeech("winrt", this);
+    QTextToSpeech* speech = new QTextToSpeech("sapi", this);
     mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
     delete speech;
 
@@ -2021,7 +2024,8 @@ Main::Main(QApplication* app, QWidget* parent)
     bool isVisible = mPrefs.toolbarVisible();
     mUi->actionHide_Show_Toolbar->setText(isVisible ? "Hide Toolbars" : "Show Toolbars");
     QFont font(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
-    mPrefs.applyFontToTree(this, font);
+    QApplication::setFont(font);
+    mUi->menubar->setFont(font);
     updateGeometry();
     repaint();
 
@@ -2034,6 +2038,7 @@ Main::Main(QApplication* app, QWidget* parent)
         doNew();
         Item::resetLastID(1);
     }
+    updateFromPrefs();
     clearChanged();
 }
 

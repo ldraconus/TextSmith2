@@ -10,7 +10,7 @@ PreferencesDialog* PreferencesDialog::sPreferencesDialog = nullptr;
 PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     : QDialog(parent)
     , mPrefs(&prefs)
-    , mSpeech(new QTextToSpeech("winrt", this))
+    , mSpeech(new QTextToSpeech("sapi", this))
     , mUi(new Ui::PreferencesDialog) {
     sPreferencesDialog = this;
 
@@ -23,6 +23,9 @@ PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     autoSaveChanged(mUi->autoSaveCheckBox->checkState());
     mUi->novelFontPushButton->setFont(font);
     mUi->novelFontPushButton->setText(QString("%1:%2").arg(mPrefs->fontFamily()).arg(mPrefs->fontSize()));
+    QFont defaultFont(mPrefs->uiFontFamily(), mPrefs->uiFontSize());
+    setUiFont(defaultFont);
+    mUi->uiFontPushButton->setText(QString("%1:%2").arg(mPrefs->uiFontFamily()).arg(mPrefs->uiFontSize()));
     mUi->displayThemeComboBox->setCurrentIndex(mPrefs->theme());
     theme(mPrefs->theme());
 
@@ -115,7 +118,7 @@ void PreferencesDialog::setTextEditFont(QFont& font) {
 }
 
 void PreferencesDialog::setUiFont(QFont& font) {
-    mPrefs->applyFontToTree(this, font);
+    this->setFont(font);
 }
 
 void PreferencesDialog::setupConnections() {

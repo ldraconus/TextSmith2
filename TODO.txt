@@ -1,4 +1,5 @@
 [ ] Fix exporters to match the margin code and looks of page setup.
+[ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
 [/] Write the Documentation
     - Intro
     - Part I
@@ -9,14 +10,14 @@
     [ ] Part VI
 [/] Script Manager
 [ ] Can't cut/copy an image ...
-[ ] Whoops! read to me broken ...
 [ ] Uppercase and lowercase should only be executable if text is selected ...
 [ ] Add a recent projects to the file menu
-[ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] Write scripts
 [ ] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[X] Whoops! read to me broken ...
+[X] Implement UI font changing ... Application::setFont to the rescue ... except webding fonts ... manual resizing)
 [X] New not clearing image cache properly ...
 [X] Shouldn't be able to open/close if not on an item with children ...
 [X] Fix state menus (open/close item, show/hide toolbar) to change text to current action.

@@ -639,6 +639,9 @@ QSplitter::handle:hover {
      <height>21</height>
     </rect>
    </property>
+   <property name="nativeMenuBar">
+    <bool>false</bool>
+   </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
@@ -864,7 +867,7 @@ QSplitter::handle:hover {
   </action>
   <action name="actionPrefereces">
    <property name="text">
-    <string>Prefereces</string>
+    <string>Preferences</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+R</string>

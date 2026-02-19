@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>50</width>
-    <height>24</height>
+    <height>26</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -32,6 +32,9 @@
    <font>
     <family>Webdings</family>
    </font>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
@@ -70,6 +73,9 @@
        <bold>true</bold>
       </font>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+     </property>
      <property name="styleSheet">
       <string notr="true">#pausePlayPushButton {
     font-family: &quot;Webdings&quot;;
@@ -81,7 +87,13 @@
 }</string>
      </property>
      <property name="text">
-      <string>8</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="QIcon::ThemeIcon::MediaPlaybackPause"/>
+     </property>
+     <property name="shortcut">
+      <string>Ctrl+Alt+Space</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>
@@ -103,6 +115,9 @@
        <bold>true</bold>
       </font>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ContextMenuPolicy::NoContextMenu</enum>
+     </property>
      <property name="styleSheet">
       <string notr="true">#stopPushButton {
     font-family: &quot;Webdings&quot;;
@@ -114,10 +129,13 @@
 }</string>
      </property>
      <property name="text">
-      <string>&lt;</string>
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="QIcon::ThemeIcon::MediaPlaybackStop"/>
      </property>
      <property name="shortcut">
-      <string>Ctrl+S</string>
+      <string>Ctrl+Alt+S</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>

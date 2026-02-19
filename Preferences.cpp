@@ -57,12 +57,11 @@ constexpr auto DefaultSave           { false };
 constexpr auto DefaultSceneTag       { "scene" };
 constexpr auto DefaultSounds         { false };
 constexpr auto DefaultToolbarVisible { true };
-constexpr auto DefaultUiFont         { "Segoe UI" };
-constexpr auto DefaultUiFontSize     { 9 };
 constexpr auto DefaultTheme          { 2 };
 constexpr auto DefaultVoice          { 0 };
 
 bool Preferences::load() {
+    QFont def;
     QSettings settings(Company, Program);
     mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
@@ -88,8 +87,8 @@ bool Preferences::load() {
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
     mToolbarVisible =   settings.value(ToolbarVisible,   DefaultToolbarVisible).toBool();
     mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
-    mUiFontFamily =     settings.value(UiFontFamily,     DefaultUiFont).toString();
-    mUiFontSize =       settings.value(UiFontSize,       DefaultUiFontSize).toInt();
+    mUiFontFamily =     settings.value(UiFontFamily,     def.defaultFamily()).toString();
+    mUiFontSize =       settings.value(UiFontSize,       def.pointSize()).toInt();
     mVoice =            settings.value(Voice,            DefaultVoice).toInt();
     mWindow =           settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
@@ -104,6 +103,7 @@ QString Preferences::newPath(const QString& path) {
 }
 
 bool Preferences::read(Json5Object& obj) {
+    QFont def;
     Json5Array arr;
     if (obj.contains("v1")) {
         Json5Object prefs = Item::hasObj(obj, "options", {});
@@ -121,7 +121,7 @@ bool Preferences::read(Json5Object& obj) {
             mFontFamily = DefaultFont;
             mFontSize   = DefaultFontSize;
         }
-        font =              Item::hasStr(prefs,  "uIextFont",        DefaultUiFont + (":" + QString::number(DefaultUiFontSize)));
+        font =              Item::hasStr(prefs,  "uIextFont",        def.defaultFamily() + (":" + QString::number(def.pixelSize())));
         parts = { font.split(":") };
         if (parts.size() == 2) {
             mUiFontFamily = parts[0];
@@ -167,8 +167,8 @@ bool Preferences::read(Json5Object& obj) {
         mTheme =            Item::hasNum(obj,  Theme,            qlonglong(DefaultTheme));
         mToolbarVisible =   Item::hasBool(obj, ToolbarVisible,   DefaultToolbarVisible);
         mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
-        mUiFontFamily =     Item::hasStr(obj,  UiFontFamily,     DefaultUiFont);
-        mUiFontSize =       Item::hasNum(obj,  UiFontSize,       qlonglong(DefaultUiFontSize));
+        mUiFontFamily =     Item::hasStr(obj,  UiFontFamily,     def.defaultFamily());
+        mUiFontSize =       Item::hasNum(obj,  UiFontSize,       qlonglong(def.pointSize()));
         mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
         arr =               Item::hasArr(obj,  MainSplitter,     { });
         mMainSplitter.clear();
@@ -249,11 +249,11 @@ void Preferences::setDarkTheme() {
     QFont font = mApp->font();
     font.setBold(false);
     if (Main::ptr() != nullptr) {
+        Main::ref().ui()->menubar->setNativeMenuBar(false);
         Main::ref().ui()->treeWidget->setStyleSheet("QTreeView {\n"
                                                     "    color: white;\n"
                                                     "    background-color: #2A2A2A;\n"
-                                                    "    font-family: " + mUiFontFamily + "\n"
-                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                    "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
                                                     "}"
                                                     "QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings  {\n"
@@ -267,42 +267,42 @@ void Preferences::setDarkTheme() {
                                                     "    image: url(:/imgs/DarkOpen.png);\n"
                                                     "}");
         Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
-                                                  "    font-family: " + mUiFontFamily + "\n"
-                                                  "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                  "    font: "  + QString::number(mFontSize) + "pt \"" + mFontFamily + "\";\n" +
                                                   "    color: white;\n"
                                                   "    background-color: black;\n"
                                                   "}");
         Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
                                                  "    color: white;\n"
                                                  "    background-color: #2A2A2A"
-                                                 "    font-family: " + mUiFontFamily + "\n"
-                                                 "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                 "}"
+                                                 "QMenuBar::item {\n"
+                                                 "    color: white;\n"
+                                                 "    background: transparent;\n"
                                                  "}");
+        QFont newFont(mUiFontFamily, mUiFontSize);
+        Main::ref().ui()->menubar->setFont(newFont);
+        QApplication::setFont(newFont);
         QString menuStyle {
             "QMenu {\n"
             "    background-color: #2A2A2A;\n"
             "    color: white;\n"
             "    border: 1px solid #444;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "\n"
             "QMenu::item {\n"
             "    padding: 6px 20px;\n"
             "    background: transparent;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "\n"
             "QMenu::item:selected {\n"
             "    background: #444;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "QMenu::item:disabled {\n"
             "    color: #888;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
         };
         Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
@@ -317,8 +317,7 @@ void Preferences::setDarkTheme() {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                                "    color: white;\n"
                                                                "    background-color: black;\n"
-                                                               "    font-family: " + mUiFontFamily + "\n"
-                                                               "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                               "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
                                                                "}");
     }
     mIsDark = true;
@@ -344,20 +343,19 @@ void Preferences::setLightTheme() {
     QFont font = mApp->font();
     font.setBold(true);
     if (Main::ptr() != nullptr) {
+        Main::ref().ui()->menubar->setNativeMenuBar(false);
         Main::ref().ui()->treeWidget->setStyleSheet("QTreeView::item {\n"
                                                     "    color: black;\n"
                                                     "    background-color: #B4B4B4;\n"
                                                     "    selection-color: black;\n"
                                                     "    selection-background-color: white;\n"
-                                                    "    font-family: " + mUiFontFamily + "\n"
-                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                    "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
                                                     "}"
                                                     "QTreeView::branch:has-children:!has-siblings:closed,\n"
                                                     "QTreeView::branch:closed:has-children:has-siblings {\n"
                                                     "    border-image: none;\n"
                                                     "    image: url(:/imgs/Closed.png);\n"
-                                                    "    font-family: " + mUiFontFamily + "\n"
-                                                    "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                    "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
                                                     "}\n"
                                                     "\n"
                                                     "QTreeView::branch:open:has-children:!has-siblings,\n"
@@ -368,40 +366,40 @@ void Preferences::setLightTheme() {
         Main::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                   "    color: black;\n"
                                                   "    background-color: white;\n"
-                                                  "    font-family: " + mUiFontFamily + "\n"
-                                                  "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                  "    font: "  + QString::number(mFontSize) + "pt \"" + mFontFamily + "\";\n" +
                                                   "}");
         Main::ref().ui()->menubar->setStyleSheet("QMenuBar {\n"
-                                                 "    color: black;\n"
                                                  "    background-color: #BEBEBE;\n"
-                                                 "    font-family: " + mUiFontFamily + "\n"
-                                                 "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                 "    color: black;\n"
+                                                 "}"
+                                                 "QMenuBar::item {\n"
+                                                 "    background-color: #BEBEBE;\n"
+                                                 "    color: black;\n"
                                                  "}");
+        QFont newFont(mUiFontFamily, mUiFontSize);
+        Main::ref().ui()->menubar->setFont(newFont);
+        QApplication::setFont(newFont);
         QString menuStyle {
             "QMenu {\n"
             "    background-color: #BEBEBE;\n"
             "    color: black;\n"
             "    border: 1px solid #999;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "\n"
             "QMenu::item {\n"
             "    padding: 6px 20px;\n"
             "    background: transparent;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "\n"
             "QMenu::item:selected {\n"
             "    background: #999;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
             "QMenu::item:disabled {\n"
             "    color: #888;\n"
-            "    font-family: " + mUiFontFamily + "\n"
-            "    font-size: " + QString::number(mUiFontSize) + "\n"
+            "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
             "}\n"
         };
         Main::ref().ui()->menuFile->setStyleSheet(menuStyle);
@@ -416,8 +414,7 @@ void Preferences::setLightTheme() {
         PreferencesDialog::ref().ui()->textEdit->setStyleSheet("QTextEdit {\n"
                                                                "    color: black;\n"
                                                                "    background-color: white;\n"
-                                                               "    font-family: " + mUiFontFamily + "\n"
-                                                               "    font-size: " + QString::number(mUiFontSize) + "\n"
+                                                               "    font: "  + QString::number(mUiFontSize) + "pt \"" + mUiFontFamily + "\";\n" +
                                                                "}");
     }
     mIsDark = false;
@@ -429,8 +426,7 @@ Preferences::Preferences()
     load();
 }
 
-void Preferences::applyFontToTree(QWidget* w, const QFont& f)
-{
+void Preferences::applyFontToTree(QWidget* w, const QFont& f) {
     if (!w) return;
 
     w->setFont(f);
@@ -504,6 +500,8 @@ Json5Object Preferences::write() {
     obj[Theme] =            mTheme;
     obj[ToolbarVisible] =   mToolbarVisible;
     obj[TypingSounds] =     mTypingSounds;
+    obj[UiFontFamily] =     mUiFontFamily;
+    obj[UiFontSize] =       mUiFontSize;
     obj[Voice] =            mVoice;
     Json5Array arr;
     arr.append(qlonglong(mWindow.x()));
