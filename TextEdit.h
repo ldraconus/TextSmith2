@@ -18,9 +18,10 @@ class TextEdit: public QTextEdit {
 public:
     explicit TextEdit(QWidget* parent = nullptr);
 
-    QMap<QUrl, QImage>& internalImages()           { return mOriginals; }
-    QSet<QUrl>&         externalImageUrls()        { return mExternalUrls; }
-    void                setSoundPool(SoundPool* s) { mSoundPool = s; }
+    QMap<QUrl, QImage>& internalImages()                                  { return mOriginals; }
+    QSet<QUrl>&         externalImageUrls()                               { return mExternalUrls; }
+    void                setInternalImages(const QMap<QUrl, QImage>& imgs) { mOriginals = imgs; }
+    void                setSoundPool(SoundPool* s)                        { mSoundPool = s; }
 
     // Serialization: internal images only
     void       addInternalImage(const QUrl& url, const QImage& image, bool add = true);

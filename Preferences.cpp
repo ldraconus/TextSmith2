@@ -28,6 +28,7 @@ constexpr auto MarginBottom     { "MarginBottom" };
 constexpr auto MarginLeft       { "MarginLeft" };
 constexpr auto MarginRight      { "MarginRight" };
 constexpr auto MarginTop        { "MarginTop" };
+constexpr auto Orientation      { "Orientation" };
 constexpr auto OtherSplitter    { "OtherSplitter" };
 constexpr auto Position         { "Position" };
 constexpr auto SceneTag         { "SceneTag" };
@@ -50,6 +51,7 @@ constexpr auto DefaultMarginBottom   { 1.0 };
 constexpr auto DefaultMarginLeft     { 1.0 };
 constexpr auto DefaultMarginRight    { 1.0 };
 constexpr auto DefaultMarginTop      { 1.0 };
+constexpr auto DefaultOrientation    { QPageLayout::Portrait };
 const     auto DefaultOther          { QJsonArray() };
 constexpr auto DefaultPosition       { 0 };
 const     auto DefaultSplitter       { QJsonArray() };
@@ -80,6 +82,7 @@ bool Preferences::load() {
     mMargins.append(    settings.value(MarginRight,      DefaultMarginRight).toDouble());
     mMargins.append(    settings.value(MarginTop,        DefaultMarginTop).toDouble());
     QJsonArray other =  settings.value(OtherSplitter,    DefaultOther).toJsonArray();
+    mOrientation =      QPageLayout::Orientation(settings.value(Orientation,      DefaultOrientation).toInt());
     mOtherSplitter.clear();
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
     mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
@@ -136,6 +139,7 @@ bool Preferences::read(Json5Object& obj) {
         mChapterTag = DefaultChapterTag;
         mSceneTag = DefaultSceneTag;
         mTheme = DefaultTheme;
+        mOrientation = DefaultOrientation;
         mPosition = DefaultPosition;
         Json5Object window = Item::hasObj(obj, "windows", {});
         Json5Object mainWin = Item::hasObj(window, "mainwindow", { });
@@ -178,10 +182,11 @@ bool Preferences::read(Json5Object& obj) {
         }
         arr = Item::hasArr(obj, OtherSplitter, { });
         mMargins.clear();
-        mMargins.append(    Item::hasNum(obj, MarginBottom,      DefaultMarginBottom));
-        mMargins.append(    Item::hasNum(obj, MarginLeft,        DefaultMarginLeft));
-        mMargins.append(    Item::hasNum(obj, MarginRight,       DefaultMarginRight));
-        mMargins.append(    Item::hasNum(obj, MarginTop,         DefaultMarginTop));
+        mMargins.append(    Item::hasNum(obj, MarginBottom,            DefaultMarginBottom));
+        mMargins.append(    Item::hasNum(obj, MarginLeft,              DefaultMarginLeft));
+        mMargins.append(    Item::hasNum(obj, MarginRight,             DefaultMarginRight));
+        mMargins.append(    Item::hasNum(obj, MarginTop,               DefaultMarginTop));
+        mOrientation =      QPageLayout::Orientation(Item::hasNum(obj, Orientation, qlonglong(DefaultOrientation)));
         mOtherSplitter.clear();
         for (auto& i: arr) {
             if (!i.isNumber()) continue;
@@ -218,6 +223,7 @@ bool Preferences::save() {
     settings.setValue(MarginTop,        mMargins[Top]);
     QJsonArray otr;
     for (auto& a: mOtherSplitter) otr.append(a);
+    settings.setValue(Orientation,      mOrientation);
     settings.setValue(OtherSplitter,    otr);
     settings.setValue(Position,         mPosition);
     settings.setValue(SceneTag,         mSceneTag);
@@ -494,6 +500,7 @@ Json5Object Preferences::write() {
     obj[MarginTop] =        mMargins[Top];
     Json5Array os;
     for (const auto v: mOtherSplitter) os.append(qlonglong(v));
+    obj[Orientation] =      qlonglong(mOrientation);
     obj[OtherSplitter] =    os;
     obj[Position] =         mPosition;
     obj[SceneTag] =         mSceneTag;

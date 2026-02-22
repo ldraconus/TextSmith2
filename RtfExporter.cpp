@@ -3,7 +3,7 @@
 #include "Main.h"
 #include "ui_Main.h"
 
-using namespace Words;
+//using namespace Words;
 
 #include <QFileInfo>
 #include <QTextBlock>

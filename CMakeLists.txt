@@ -127,6 +127,7 @@ qt_add_executable(TextSmith2
     AboutDialog.h AboutDialog.cpp AboutDialog.ui
     HelpDialog.h HelpDialog.cpp HelpDialog.ui
     ScriptDialog.h ScriptDialog.cpp ScriptDialog.ui
+    PrintDialog.h PrintDialog.cpp PrintDialog.ui
 )
 
 # Link Qt + libzip

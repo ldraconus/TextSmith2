@@ -104,6 +104,7 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
                 QPageLayout::Orientation orientation = QPageLayout::Portrait;
                 if (mUi->orientationComboBox->currentIndex() == 1) orientation = QPageLayout::Landscape;
                 if (mPrinter) mPrinter->setPageOrientation(orientation);
+                mPrefs->setOrientation(orientation);
                 updatePreview();
             });
 

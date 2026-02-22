@@ -1,5 +1,5 @@
 #pragma once
-
+#include <QTextDocument>
 #include <QImage>
 #include <QMap>
 #include <QObject>
@@ -10,13 +10,15 @@
 #include <QPdfWriter>
 #include <QPrinter>
 #include <QPrinterInfo>
+#include <QTextBlock>
+#include <QTextDocumentFragment>
 #include <QUrl>
 
 #include <List.h>
 #include <Map.h>
 
 #include "Novel.h"
-#include "Words.h"
+#include "TextEdit.h"
 
 class Preferences;
 
@@ -90,7 +92,6 @@ private:
         return mPdf->pageLayout().paintRect(toPdfUnits(unit));
     }
 
-    std::tuple<qreal, qreal, QString> clampToPage(QString&, const qreal width, const qreal height);
     List<Marginal>                    parseMarginal(const QString& marginal);
     void                              printMarginal(QPainter* painter, qlonglong y, const Marginal& object);
     QString                           resolveTag(const QString& key);
@@ -149,14 +150,8 @@ public:
     }
 
     void         footer(QPainter* painter);
-    void         printCover(Item& item,
-                           bool startingPage,
-                           QSizeF& pageSize,
-                           QMarginsF& margins,
-                           QPainter* painter,
-                           std::function<void()> printer);
     void         header(QPainter* painter);
-    void         newPage(QPainter* painter, std::function<void()> printer, bool marginals = false);
+    void         page(QPainter* painter, std::function<void()> printer, bool marginals = false);
     void         outputNovel(List<qlonglong> ids,
                              const QString& chapterTag,
                              const QString& sceneTag,
@@ -165,14 +160,9 @@ public:
                              QSizeF pageSize,
                              std::function<void()> pager);
     const QSizeF pageSize(QPrinter::Unit unit) const;
-    void         printLine(QPainter* painter, List<Words::Word>& line, List<QString>& imgs, QFont& font, Words::Tags& current, qreal x, qreal at, qreal fill);
     void         printNovel();
-    void         printParagraphs(QPainter* painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, QFont& font, qreal& at, bool& startingPage,
-                                 StringList& paragraphs);
+    void         printParagraphs(QPainter* painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, qreal& at, bool& startingPage,
+                                 List<QTextBlock>& paragraphs);
 
-    static QString            createParagraph(const QString& html);
-    static StringList         createParagraphs(Item& item, bool align = WithoutAlignment);
-    static QString            fromHtml(const QString& html);
-    static StringList         mergeWordFragments(QList<Words::Word>& words);
-    static QList<Words::Word> paragraphWords(const QString& paragraph);
+    static List<QTextBlock> createParagraphs(QTextDocument* edit, Item& item, qreal scaleX, qreal scaleY, qreal lineWidth, qreal pageHeight);
 };

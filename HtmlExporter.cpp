@@ -66,7 +66,7 @@ QString HtmlExporter::addParagraphs(const QString& html) {
         auto paragraph = work.mid(pos, end - pos + 4);
         if (!paragraph.startsWith("<p style=\"-qt-paragraph-type:empty")) {
             if (!paragraphs.isEmpty()) paragraphs += "\n";
-            paragraphs += paragraph;
+            paragraphs += "        " + paragraph;
         }
         work = work.mid(end + 4);
     }
@@ -115,5 +115,5 @@ QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString
 }
 
 QString HtmlExporter::generateImageHtml(const QString& url) {
-    return "<p><img src=\"" + url + "\" alt=\"Picture\"></p>\n";
+    return "        <p><img src=\"" + url + "\" alt=\"Picture\"></p>\n";
 }

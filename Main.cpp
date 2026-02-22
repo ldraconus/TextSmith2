@@ -63,9 +63,10 @@ Q_DECLARE_METATYPE(QTextDocument*)
 #include "ItemDescriptionDialog.h"
 #include "PageSetupDialog.h"
 #include "PreferencesDialog.h"
+#include "PrintDialog.h"
 #include "ScriptDialog.h"
 
-using namespace Words;
+//using namespace Words;
 
 #include "HtmlExporter.h"
 template class Exporter<HtmlExporter>;
@@ -906,33 +907,8 @@ void Main::doPreferences() {
 }
 
 void Main::doPrint() {
-    if (mPrinter == nullptr) mPrinter = new Printer(QPrinter::HighResolution);
-    if (mPrinter == nullptr || mPrinter->qprinter() == nullptr) {
-        mMsg.Statement("Unable to talk to the printer");
-        return;
-    }
-
-    TextEdit* edit = mUi->textEdit;
-    mPrinter->setImages(edit->internalImages());
-    auto& images = edit->externalImageUrls();
-    for (const auto& url: images) mPrinter->addImage(url);
-
-    mPrinter->setIds(vectorOfIds(mUi->treeWidget->topLevelItem(0), { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() }));
-
-    mPrinter->setPrefs(&mPrefs);
-
-    QPrintPreviewDialog preview(mPrinter->qprinter(), this);
-    preview.setWindowTitle("Print Novel");
-    preview.setMinimumHeight(600); // NOLINT
-    preview.setMinimumWidth(800); // NOLINT
-    connect(&preview, &QPrintPreviewDialog::paintRequested, this,
-            [this](QPrinter* printer) {
-                if (mPrinter == nullptr) return;
-                if (mPrinter->qprinter() == nullptr) return;
-                printNovel();
-            });
-
-    preview.exec();
+    PrintDialog dlg(this);
+    dlg.exec();
 }
 
 void Main::doReadToMe() {
@@ -2575,7 +2551,9 @@ void Main::setupScripting() {
     mVm->addBuiltin("html2para", [this](fifth::vm* vm) { // id -u-> para[n] ... para[1] n
         auto& user = vm->user();
         Item& item = fifthItem(user);
-        StringList paragraphs = Printer::createParagraphs(item);
+        QTextEdit edit;
+        edit.setHtml(item.html());
+        StringList paragraphs = edit.toPlainText().split("\n", Qt::SkipEmptyParts);
         for (auto i = paragraphs.count(); i != 0; --i) user.push(paragraphs[i - 1]);
         user.push(paragraphs.count());
     });
@@ -2583,10 +2561,9 @@ void Main::setupScripting() {
         auto& user = vm->user();
         auto s = user.pop();
         auto paragraph = s.asString().str();
-        auto words = Printer::paragraphWords(paragraph);
-        auto wordList = Printer::mergeWordFragments(words);
-        for (auto i = wordList.count(); i != 0; --i) user.push(wordList[i - 1]);
-        user.push(wordList.count());
+        auto words = paragraph.split(" ", Qt::SkipEmptyParts);
+        for (auto i = words.count(); i != 0; --i) user.push(words[i - 1]);
+        user.push(words.count());
     });
     mVm->addBuiltin("split", [this](fifth::vm* vm) { // string splitBy -u-> part[n] ... part[1] n
         auto& user = vm->user();

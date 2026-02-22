@@ -1,21 +1,33 @@
+[/] PDF Export is crashing.
 [ ] Fix exporters to match the margin code and looks of page setup.
-[ ] Backspace also erases format ... same fix a return minus the 'make sure to add a blnk line'
+[/] Script Manager
+    - Dialog built
+    [ ] Fill in the scripts from the TextSmith script directory
+    [ ] Handle moving from one list to another (That's really it, the main app takes care of actually remebering this).
+    [ ] Make the main app rememebr what the scripts dialog did.
+[ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
+    same fix as a return minus the 'make sure to add a blank line'.
 [/] Write the Documentation
     - Intro
     - Part I
-    [/] Part II
-    [ ] Part III
+    - Part II
+    [/] Part III
     [ ] Part IV
     [ ] Part V
     [ ] Part VI
-[/] Script Manager
 [ ] Can't cut/copy an image ...
 [ ] Uppercase and lowercase should only be executable if text is selected ...
 [ ] Add a recent projects to the file menu
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
+[ ] add context menus to tree and text widgets
 [ ] Write scripts
-[ ] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[X] Fix print to grab the images ... none showing right now.
+[X] Fix the print dialog
+[?] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[?] Add Imports:
+[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
+[?] - snowflake import?
 [X] Whoops! read to me broken ...
 [X] Implement UI font changing ... Application::setFont to the rescue ... except webding fonts ... manual resizing)
 [X] New not clearing image cache properly ...
@@ -51,9 +63,6 @@
     - add words for /every/ action the user can do ([X] menuitem, [X] moving, [X] selecting, and [X] more basic string handling).
     - load scripts
     - add a way to bind a script to an action, and bind that to a menu or submenu, complete with shortcut while avoiding shortcurt collisions.
-[?] Add Imports:
-[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
-[?] - snowflake import?
 [X] Spellcheck
 [X] - add custom words per novel
 [X] Fix export issues
@@ -134,17 +143,6 @@ Margaret Atwood: "If I waited for perfection, I would never write a word."
 "The wastebasket is a writer’s best friend." — Isaac Bashevis Singer
 "I love deadlines. I love the whooshing noise they make as they go by." — Douglas Adams (Use this one when you are running late on a promised software update—it usually gets a laugh!)
 
-
-Part II: The Writer's Interface (The "How-To")
-Creating Items: The basic building block.
-
-Writing Content: The editor, formatting, and full-screen focus.
-
-The "Scene" Tag: Telling the compiler "This is content."
-
-The "Chapter" Tag: Telling the compiler "Start a new section."
-
-Nesting: Putting Scenes inside Chapters (visual organization vs. tag logic).
 
 Part III: The World Builder (Metadata)
 Defining Your Schema: You aren't stuck with "Character" sheets. You define "NPC," "Villain," or "MacGuffin" using your own tags.

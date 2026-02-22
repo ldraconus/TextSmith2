@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QJsonArray>
 #include <QObject>
+#include <QPageLayout>
 #include <QPalette>
 #include <QPushButton>
 #include <QRect>
@@ -50,6 +51,7 @@ public:
     QString     header() const            { return mHeader.isEmpty() ? "&&" : mHeader; }
     bool        isDarkTheme() const       { return mIsDark; }
     List<int>   mainSplitter() const      { return mMainSplitter; }
+    auto        orientation() const       { return mOrientation; }
     List<int>   otherSplitter() const     { return mOtherSplitter; }
     qlonglong   position() const          { return mPosition; }
     QString     sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
@@ -63,50 +65,52 @@ public:
     bool        wasDark() const           { return mWasDark; }
     QRect       windowLocation() const    { return mWindow; }
 
-    void setApplicaiton(QApplication* a)      { mApp = a; }
-    void setAutoSave(bool a)                  { mAutoSave = a; }
-    void setAutoSaveInterval(qlonglong i)     { mAutoSaveInterval = i; }
-    void setChapterTag(const QString& c)      { mChapterTag = c; }
-    void setCoverTag(const QString& c)        { mCoverTag = c; }
-    void setFontFamily(const QString& f)      { mFontFamily = f; }
-    void setFontSize(qlonglong s)             { mFontSize = s; }
-    void setFooter(const QString& f)          { mFooter = f; }
-    void setHeader(const QString& h)          { mHeader = h; }
-    void setMainSplitter(const List<int>& s)  { mMainSplitter = s; }
-    void setMargins(const List<qreal>& m)     { mMargins = m; }
-    void setOtherSplitter(const List<int>& s) { mOtherSplitter = s; }
-    void setPosition(qlonglong pos)           { mPosition = pos; }
-    void setSceneTag(const QString& s)        { mSceneTag = s; }
-    void setTheme(qlonglong t)                { mTheme = t; }
-    void setToolbarVisible(bool t)            { mToolbarVisible = t; }
-    void setTypingSounds(bool t)              { mTypingSounds = t; }
-    void setUiFontFamily(const QString& f)    { mUiFontFamily = f; }
-    void setUiFontSize(qlonglong s)           { mUiFontSize = s; }
-    void setVoice(qlonglong v)                { mVoice = v; }
-    void setWindowLocation(QRect r)           { mWindow = r; }
+    void setApplicaiton(QApplication* a)                  { mApp = a; }
+    void setAutoSave(bool a)                              { mAutoSave = a; }
+    void setAutoSaveInterval(qlonglong i)                 { mAutoSaveInterval = i; }
+    void setChapterTag(const QString& c)                  { mChapterTag = c; }
+    void setCoverTag(const QString& c)                    { mCoverTag = c; }
+    void setFontFamily(const QString& f)                  { mFontFamily = f; }
+    void setFontSize(qlonglong s)                         { mFontSize = s; }
+    void setFooter(const QString& f)                      { mFooter = f; }
+    void setHeader(const QString& h)                      { mHeader = h; }
+    void setMainSplitter(const List<int>& s)              { mMainSplitter = s; }
+    void setMargins(const List<qreal>& m)                 { mMargins = m; }
+    void setOrientation(const QPageLayout::Orientation o) { mOrientation = o; }
+    void setOtherSplitter(const List<int>& s)             { mOtherSplitter = s; }
+    void setPosition(qlonglong pos)                       { mPosition = pos; }
+    void setSceneTag(const QString& s)                    { mSceneTag = s; }
+    void setTheme(qlonglong t)                            { mTheme = t; }
+    void setToolbarVisible(bool t)                        { mToolbarVisible = t; }
+    void setTypingSounds(bool t)                          { mTypingSounds = t; }
+    void setUiFontFamily(const QString& f)                { mUiFontFamily = f; }
+    void setUiFontSize(qlonglong s)                       { mUiFontSize = s; }
+    void setVoice(qlonglong v)                            { mVoice = v; }
+    void setWindowLocation(QRect r)                       { mWindow = r; }
 
 private:
-    QApplication* mApp              { nullptr };
-    bool          mAutoSave         { false };
-    qlonglong     mAutoSaveInterval { 5 * 60 };
-    QString       mChapterTag       { "chapter" };
-    QString       mCoverTag         { "cover" };
-    QString       mFontFamily       { "Segoe UI" };
-    qlonglong     mFontSize         { 9 };
-    QString       mFooter           { "" };
-    QString       mHeader           { "" };
-    bool          mIsDark           { false };
-    List<int>     mMainSplitter     { };
-    List<qreal>   mMargins          { };
-    List<int>     mOtherSplitter    { };
-    qlonglong     mPosition         { 0 };
-    QString       mSceneTag         { "scene" };
-    qlonglong     mTheme            { 2 };
-    bool          mToolbarVisible   { true };
-    bool          mTypingSounds     { false };
-    QString       mUiFontFamily     { "Segoe UI" };
-    qlonglong     mUiFontSize       { 9 };
-    qlonglong     mVoice            { 0 };
-    bool          mWasDark          { false };
-    QRect         mWindow;
+    QApplication*            mApp              { nullptr };
+    bool                     mAutoSave         { false };
+    qlonglong                mAutoSaveInterval { 5 * 60 };
+    QString                  mChapterTag       { "chapter" };
+    QString                  mCoverTag         { "cover" };
+    QString                  mFontFamily       { "Segoe UI" };
+    qlonglong                mFontSize         { 9 };
+    QString                  mFooter           { "" };
+    QString                  mHeader           { "" };
+    bool                     mIsDark           { false };
+    List<int>                mMainSplitter     { };
+    List<qreal>              mMargins          { };
+    List<int>                mOtherSplitter    { };
+    QPageLayout::Orientation mOrientation      { QPageLayout::Portrait };
+    qlonglong                mPosition         { 0 };
+    QString                  mSceneTag         { "scene" };
+    qlonglong                mTheme            { 2 };
+    bool                     mToolbarVisible   { true };
+    bool                     mTypingSounds     { false };
+    QString                  mUiFontFamily     { "Segoe UI" };
+    qlonglong                mUiFontSize       { 9 };
+    qlonglong                mVoice            { 0 };
+    bool                     mWasDark          { false };
+    QRect                    mWindow;
 };
