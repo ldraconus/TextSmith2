@@ -53,6 +53,21 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
 
     mPrinter->setPrefs(mPrefs);
 
+    StringList pageSizes;
+    for (int id = QPageSize::Letter; id <= QPageSize::LastPageSize; ++id) {
+        QPageSize::PageSizeId pid = static_cast<QPageSize::PageSizeId>(id);
+        QPageSize size(pid);
+        QString name = size.name();
+        if (size.isValid() && ((name.startsWith("A") && name[1].isDigit()) ||
+                               name.startsWith("Letter") ||
+                               name.startsWith("Legal"))) pageSizes.append(size.name());
+    }
+    pageSizes.sort();
+    mUi->pageSizeComboBox->addItems(pageSizes.toQStringList());
+    mPageSize = mPrefs->pageSize();
+    mPid = mPrefs->pageSizeToPid(mPageSize);
+    mUi->pageSizeComboBox->setCurrentText(mPageSize);
+
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
     QString header = mPrefs->header();
@@ -88,16 +103,24 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     connect(mUi->printerComboBox, &QComboBox::currentIndexChanged, this,
             [this]() {
                 if (!mPrinter) return;
-                Printer* p = new Printer(mPrinterList[this->mUi->printerComboBox->currentIndex()], QPrinter::HighResolution);
+                auto info = QPrinterInfo::printerInfo(mUi->printerComboBox->currentText());
+                Printer* p = new Printer(info, QPrinter::HighResolution);
                 if (p == nullptr) return;
                 Main::ref().setPrinter(p);
-                QPrinterInfo info(*p->qprinter());
                 auto pageSize = info.defaultPageSize();
                 mPrinter->setPageSize(pageSize.id());
                 QPageLayout::Orientation orientation = QPageLayout::Portrait;
                 if (mUi->orientationComboBox->currentIndex() == 1) orientation = QPageLayout::Landscape;
                 mPrinter->setPageOrientation(orientation);
                 updatePreview();
+            });
+    connect(mUi->pageSizeComboBox, &QComboBox::currentIndexChanged, this,
+            [this]() {
+                if (!mPrinter) return;
+                if (!mPrefs) return;
+                mPageSize = mUi->pageSizeComboBox->currentText();
+                mPid = mPrefs->pageSizeToPid(mPageSize);
+                mPrefs->setPageSize(mPageSize);
             });
     connect(mUi->orientationComboBox, &QComboBox::currentIndexChanged, this,
             [this]() {

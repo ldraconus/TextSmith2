@@ -18,7 +18,6 @@
 #include <Map.h>
 
 #include "Novel.h"
-#include "TextEdit.h"
 
 class Preferences;
 
@@ -89,6 +88,7 @@ private:
     }
 
     const QRectF pdfPageRect(QPrinter::Unit unit) const {
+        if (unit == QPrinter::DevicePixel) return mPdf->pageLayout().paintRectPixels(mPdf->resolution());
         return mPdf->pageLayout().paintRect(toPdfUnits(unit));
     }
 
@@ -118,7 +118,6 @@ public:
     const QRectF             pageRect(QPrinter::Unit units) const           { return mPrinter ? mPrinter->pageRect(units) : pdfPageRect(units); }
     QPaintDevice*            paintdevice()                                  { return mPrinter ? dynamic_cast<QPaintDevice*>(mPrinter) : dynamic_cast<QPaintDevice*>(mPdf); }
     QPainter*                painter()                                      { return mPrinter ? new QPainter(mPrinter) : new QPainter(mPdf); }
-    const QRectF             paperRect(QPrinter::Unit units) const          { return mPrinter ? mPrinter->paperRect(units) : pdfPageRect(units); }
     const qlonglong          physicalDpiX() const                           { return mPrinter ? mPrinter->logicalDpiX() : mPdf->logicalDpiX(); }
     const qlonglong          physicalDpiY() const                           { return mPrinter ? mPrinter->logicalDpiY() : mPdf->logicalDpiY(); }
     Preferences*             prefs()                                        { return mPrefs; }
@@ -132,9 +131,10 @@ public:
     void                     setOutputFileName(const QString& n)            { if (mPrinter) mPrinter->setOutputFileName(n); }
     void                     setOutputFormat(QPrinter::OutputFormat f)      { if (mPrinter) mPrinter->setOutputFormat(f); }
     void                     setPageSize(QPageSize::PageSizeId mPid)        { if (mPdf) mPdf->setPageSize(mPid); }
-    void                     setPageMargins(const QMarginsF& m)             { if (mPdf) mPdf->setPageMargins(m); }
+    void                     setPageMargins(const QMarginsF& m)             { if (mPdf) mPdf->setPageMargins(m, QPageLayout::Inch); }
     void                     setPrefs(Preferences* prefs)                   { mPrefs = prefs; }
     void                     setPrinterName(const QString& p)               { if (mPrinter) mPrinter->setPrinterName(p); }
+    void                     setResolution(const int r)                     { if (mPdf) mPdf->setResolution(r); }
     void                     setTitle(const QString& title)                 { if (mPdf) mPdf->setTitle(title); }
 
     void loadfUrl(const QUrl& url) {
@@ -148,11 +148,16 @@ public:
             mImages[url] = img;
         });
     }
+    const QRectF paperRect(QPrinter::Unit units) const {
+        if (mPrinter) return mPrinter->paperRect(units);
+        if (units == QPrinter::DevicePixel) return mPdf->pageLayout().fullRectPixels(mPdf->resolution());
+        return mPdf->pageLayout().fullRect(toPdfUnits(units));
+    }
 
     void         footer(QPainter* painter);
     void         header(QPainter* painter);
     void         page(QPainter* painter, std::function<void()> printer, bool marginals = false);
-    void         outputNovel(List<qlonglong> ids,
+    bool         outputNovel(List<qlonglong> ids,
                              const QString& chapterTag,
                              const QString& sceneTag,
                              const QString& coverTag,
@@ -162,7 +167,7 @@ public:
     const QSizeF pageSize(QPrinter::Unit unit) const;
     void         printNovel();
     void         printParagraphs(QPainter* painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, qreal& at, bool& startingPage,
-                                 List<QTextBlock>& paragraphs);
+                                 List<QTextBlock>& paragraphs, bool isCover);
 
     static List<QTextBlock> createParagraphs(QTextDocument* edit, Item& item, qreal scaleX, qreal scaleY, qreal lineWidth, qreal pageHeight);
 };

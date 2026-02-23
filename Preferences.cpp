@@ -30,6 +30,7 @@ constexpr auto MarginRight      { "MarginRight" };
 constexpr auto MarginTop        { "MarginTop" };
 constexpr auto Orientation      { "Orientation" };
 constexpr auto OtherSplitter    { "OtherSplitter" };
+constexpr auto PageSize         { "PageSize" };
 constexpr auto Position         { "Position" };
 constexpr auto SceneTag         { "SceneTag" };
 constexpr auto Theme            { "Theme" };
@@ -53,6 +54,7 @@ constexpr auto DefaultMarginRight    { 1.0 };
 constexpr auto DefaultMarginTop      { 1.0 };
 constexpr auto DefaultOrientation    { QPageLayout::Portrait };
 const     auto DefaultOther          { QJsonArray() };
+constexpr auto DefaultPageSize       { "Letter" };
 constexpr auto DefaultPosition       { 0 };
 const     auto DefaultSplitter       { QJsonArray() };
 constexpr auto DefaultSave           { false };
@@ -85,6 +87,7 @@ bool Preferences::load() {
     mOrientation =      QPageLayout::Orientation(settings.value(Orientation,      DefaultOrientation).toInt());
     mOtherSplitter.clear();
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
+    mPageSize =         settings.value(PageSize,         DefaultPageSize).toString();
     mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
     mSceneTag =         settings.value(SceneTag,         DefaultSceneTag).toString();
     mTheme =            settings.value(Theme,            DefaultTheme).toInt();
@@ -103,6 +106,29 @@ QString Preferences::newPath(const QString& path) {
     QString& last = parts.last();
     last = "Lt" + last;
     return parts.join("/");
+}
+
+QPageSize::PageSizeId Preferences::pageSizeToPid(const QString& size) {
+    QPageSize::PageSizeId pid { QPageSize::Letter };
+    for (int id = 0; id <= QPageSize::LastPageSize; ++id) {
+        pid = static_cast<QPageSize::PageSizeId>(id);
+        QString name = QPageSize(pid).name();
+        if (QPageSize(pid).isValid() && ((name.startsWith("A") && name[1].isDigit()) ||
+                                         name.startsWith("Letter") ||
+                                         name.startsWith("Legal"))) {
+            if ((size == "A" && name == "A4") ||
+                (name.startsWith(size)) ||
+                (name.contains(size))) {
+                break;
+            }
+        }
+    }
+    return pid;
+}
+
+QString Preferences::pidToSize(const QPageSize::PageSizeId pid) {
+    if (pid < 0 || pid >= QPageSize::LastPageSize) return QPageSize(QPageSize::Letter).name();
+    else return QPageSize(pid).name();
 }
 
 bool Preferences::read(Json5Object& obj) {
@@ -167,6 +193,7 @@ bool Preferences::read(Json5Object& obj) {
         mFooter =           Item::hasStr(obj,  Footer,           DefaultFooter);
         mHeader =           Item::hasStr(obj,  Header,           DefaultHeader);
         mPosition =         Item::hasNum(obj,  Position,         qlonglong(DefaultPosition));
+        mPageSize =         Item::hasStr(obj,  PageSize,         DefaultPageSize);
         mSceneTag =         Item::hasStr(obj,  SceneTag,         DefaultSceneTag);
         mTheme =            Item::hasNum(obj,  Theme,            qlonglong(DefaultTheme));
         mToolbarVisible =   Item::hasBool(obj, ToolbarVisible,   DefaultToolbarVisible);
@@ -225,6 +252,7 @@ bool Preferences::save() {
     for (auto& a: mOtherSplitter) otr.append(a);
     settings.setValue(Orientation,      mOrientation);
     settings.setValue(OtherSplitter,    otr);
+    settings.setValue(PageSize,         mPageSize);
     settings.setValue(Position,         mPosition);
     settings.setValue(SceneTag,         mSceneTag);
     settings.setValue(Theme,            mTheme);
@@ -502,6 +530,7 @@ Json5Object Preferences::write() {
     for (const auto v: mOtherSplitter) os.append(qlonglong(v));
     obj[Orientation] =      qlonglong(mOrientation);
     obj[OtherSplitter] =    os;
+    obj[PageSize] =         mPageSize;
     obj[Position] =         mPosition;
     obj[SceneTag] =         mSceneTag;
     obj[Theme] =            mTheme;

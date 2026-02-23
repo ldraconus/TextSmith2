@@ -11,24 +11,35 @@
 
 void PdfExporter::render() {
     Printer* pdf = new Printer(mFilename);
+    pdf->setPrefs(&Main::ref().prefs());
 
-    QPageSize pageSz(mPid);
-    QSizeF pageSize(pageSz.sizePoints());
-    pdf->setPageSize(mPid);
-    pdf->setPageMargins({ Main::ref().prefs().margins()[Preferences::Left],  Main::ref().prefs().margins()[Preferences::Top],
-                          Main::ref().prefs().margins()[Preferences::Right], Main::ref().prefs().margins()[Preferences::Right] });
+    pdf->qpdfwriter()->setResolution(72);
+
+    auto pid = Main::ref().prefs().pageSizeToPid(Main::ref().prefs().pageSize());
+    pdf->setPageSize(pid);
+
+    QSizeF pageSize = pdf->pageSize(QPrinter::DevicePixel);;
+    pdf->setPageMargins({ 0, 0, 0, 0 });
+
     pdf->setAuthor(mAuthor);
     pdf->setTitle(mTitle);
 
-    QPainter* painter = new QPainter(dynamic_cast<QPaintDevice*>(pdf));
+    QPainter* painter = new QPainter(pdf->paintdevice());
 
-    Main::ref().setPrinter(pdf);
+    auto save = Main::ref().exchangePrinter(pdf);
+
     pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
         [this, &pdf, &painter]() {
             pdf->header(painter);
             pdf->footer(painter);
             pdf->newPage();
         });
+
+    pdf = Main::ref().exchangePrinter(save);
+
+    painter->end();
+    delete painter;
+    delete pdf;
 }
 
 bool PdfExporter::convert() {
@@ -42,25 +53,7 @@ bool PdfExporter::convert() {
 
     // Note: we are looking for matches in the base order because the matches
     // are more natural than in alphabetical order.
-    mPaperSize = fetchValue(PaperSize, defaults, "paper size");
-    QPageSize::PageSizeId pid = QPageSize::Letter;
-    for (int id = 0; id <= QPageSize::LastPageSize; ++id) {
-        pid = static_cast<QPageSize::PageSizeId>(id);
-        QString name = QPageSize(pid).name();
-        if (QPageSize(pid).isValid() && ((name.startsWith("A") && name[1].isDigit()) ||
-                                         name.startsWith("Letter") ||
-                                         name.startsWith("Legal"))) {
-            if ((mPaperSize == "A" && name == "A4") ||
-                (name.startsWith(mPaperSize)) ||
-                (name.contains(mPaperSize))) {
-                mPaperSize = name;
-                break;
-            }
-        }
-    }
-    if (pid == QPageSize::Letter) mPaperSize = QPageSize(pid).name();
 
-    StringList inputMargins { fetchValue(PaperMargins, defaults, "margins").split(",") };
     mTitle  = fetchValue(Title, defaults, "title");
     mAuthor = fetchValue(Author, defaults, "author");
 

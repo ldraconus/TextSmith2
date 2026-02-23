@@ -4,6 +4,8 @@
 
 #include <QAbstractTextDocumentLayout>
 
+#include "TextEdit.h"
+
 static constexpr auto InchesPerMeter = 39.3701;
 static constexpr auto ScreenDPI = 96.0;
 
@@ -23,10 +25,11 @@ void Printer::printNovel() {
 void Printer::printParagraphs(QPainter* painter,
                               QSizeF &pageSize,
                               std::function<void()>& newPage,
-                              QMarginsF &margins,
-                              qreal &at,
-                              bool &startingPage,
-                              List<QTextBlock>& paragraphs) {
+                              QMarginsF& margins,
+                              qreal& at,
+                              bool& startingPage,
+                              List<QTextBlock>& paragraphs,
+                              bool isCover) {
     qreal lineWidth = pageSize.width() - margins.left() - margins.right();
     qreal bottom = pageSize.height() - margins.bottom();
     qreal scaleX = physicalDpiX() / ScreenDPI;
@@ -46,6 +49,7 @@ void Printer::printParagraphs(QPainter* painter,
             QTextLine line = layout->lineAt(i);
             if (at + line.height() > bottom && !startingPage) {
                 page(painter, newPage, true);
+                if (!isCover) ++mPageNo;
                 at = margins.top();
             }
             line.draw(painter, QPointF(margins.left(), at));
@@ -94,7 +98,7 @@ void Printer::printParagraphs(QPainter* painter,
 void Printer::footer(QPainter* painter) {
     auto marginals = parseMarginal(mPrefs->footer());
     qreal bottom = mPrefs->margins()[Preferences::Bottom] * PointsPerInch * mYFactor;
-    qreal y = mPrinter->pageRect(QPrinter::Point).height() * mYFactor - bottom;
+    qreal y = pageRect(QPrinter::Point).height() * mYFactor - bottom;
     QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
     QFontMetricsF metrics(font, paintdevice());
     y -= metrics.descent();
@@ -131,14 +135,15 @@ void Printer::page(QPainter* painter,
     printer();
 }
 
-void Printer::outputNovel(List<qlonglong> ids,
+bool Printer::outputNovel(List<qlonglong> ids,
                           const QString &chapterTag,
                           const QString &sceneTag,
                           const QString &coverTag,
                           QPainter* painter,
                           QSizeF pageSize,
                           std::function<void()> newPage) {
-    if (mPrinter == nullptr) return;
+    if (mPrinter == nullptr && mPdf == nullptr) return false;
+    if (!painter->isActive()) return false;
     mXFactor = physicalDpiX() / PointsPerInch;
     mYFactor = physicalDpiX() / PointsPerInch;
 
@@ -170,7 +175,7 @@ void Printer::outputNovel(List<qlonglong> ids,
         Item& item = Main::ref().novel().findItem(id);
         if (!item.hasTag(chapterTag) && !item.hasTag(sceneTag) && !item.hasTag(coverTag)) continue;
         if (item.hasTag(chapterTag)) {
-            if (!startingPage && mPageNo != 1) {
+            if (!startingPage) {
                 page(painter, newPage, true);
                 ++mPageNo;
                 at = margins.top();
@@ -179,17 +184,12 @@ void Printer::outputNovel(List<qlonglong> ids,
         }
 
         auto paragraphs = createParagraphs(&doc, item, scaleX, scaleY, lineWidth, pageHeight);
-        printParagraphs(painter, pageSize, newPage, margins, at, startingPage, paragraphs);
-
-        if (item.hasTag(coverTag)) {
-            page(painter, newPage, false);
-            at = margins.top();
-            startingPage = true;
-            continue;
-        }
+        printParagraphs(painter, pageSize, newPage, margins, at, startingPage, paragraphs, item.hasTag(coverTag) && mPageNo == 1);
     }
 
     if (!startingPage) page(painter, newPage);
+
+    return false;
 }
 
 List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
@@ -243,8 +243,8 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
 
 void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal& object) {
     qreal left = mPrefs->margins()[Preferences::Left] * PointsPerInch * mXFactor;
-    qreal right = (mPrinter->pageRect(QPrinter::Point).width() -  mPrefs->margins()[Preferences::Right] * PointsPerInch) * mXFactor;
-    qreal center = mPrinter->pageRect(QPrinter::Point).width() * mXFactor / 2;
+    qreal right = (pageRect(QPrinter::Point).width() -  mPrefs->margins()[Preferences::Right] * PointsPerInch) * mXFactor;
+    qreal center = pageRect(QPrinter::Point).width() * mXFactor / 2;
     QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
     QFontMetricsF metrics(painter->fontMetrics());
     QString text = object.text();

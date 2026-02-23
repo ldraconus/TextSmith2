@@ -1,5 +1,4 @@
-[/] PDF Export is crashing.
-[ ] Fix exporters to match the margin code and looks of page setup.
+[ ] Fix a bug where if you just type a name into the filename field on the exporters, you get it in the app dir, not the doc dir. doc dir set there as well..
 [/] Script Manager
     - Dialog built
     [ ] Fill in the scripts from the TextSmith script directory
@@ -22,6 +21,8 @@
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] Fix exporters to match the margin code and looks of page setup.
+[X] PDF Export is crashing.
 [X] Fix print to grab the images ... none showing right now.
 [X] Fix the print dialog
 [?] Add a hollywood script writing display mode - make file menu understand we're in script mode

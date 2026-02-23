@@ -47,14 +47,17 @@ public slots:
 private:
     Ui::PageSetupDialog *mUi { nullptr };
 
-    QWidget*             mFocusWidget     { nullptr };
-    Preferences*         mPrefs;
-    QPrintPreviewWidget* mPreview         { nullptr };
-    Printer*             mPrinter         { nullptr };
-    QList<QPrinterInfo>  mPrinterList;
-    bool                 mReady           { false };
-    Printer*             mSavedPrinter    { nullptr };
-    QTimer*              mPreviewTimer    { nullptr };
+    QWidget*              mFocusWidget     { nullptr };
+    Preferences*          mPrefs           { nullptr };
+    QPrintPreviewWidget*  mPreview         { nullptr };
+    Printer*              mPrinter         { nullptr };
+    QList<QPrinterInfo>   mPrinterList;
+    bool                  mReady           { false };
+    Printer*              mSavedPrinter    { nullptr };
+    QTimer*               mPreviewTimer    { nullptr };
+    QString               mUnits           { "\"" };
+    QString               mPageSize        { "Letter / ANSI A" };
+    QPageSize::PageSizeId mPid             { QPageSize::Letter };
 
     void    checkMargins();
     void    justify(QTextEdit* edit, Qt::AlignmentFlag which);

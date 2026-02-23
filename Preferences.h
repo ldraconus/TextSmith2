@@ -27,19 +27,21 @@ public:
 
     enum class Units { Inches, Points };
 
-    void        applyFontToTree(QWidget* w, const QFont& f);
-    QString     checkPath(const QString& path, bool checked);
-    bool        isDark();
-    bool        load();
-    List<qreal> margins(Units unit = Units::Inches) const;
-    QString     newPath(const QString& path);
-    bool        read(Json5Object& obj);
-    void        resetIcons(bool isDark);
-    bool        save();
-    void        setDarkTheme();
-    void        setLightTheme();
-    void        setSystemTheme();
-    Json5Object write();
+    void                  applyFontToTree(QWidget* w, const QFont& f);
+    QString               checkPath(const QString& path, bool checked);
+    bool                  isDark();
+    bool                  load();
+    List<qreal>           margins(Units unit = Units::Inches) const;
+    QString               newPath(const QString& path);
+    QPageSize::PageSizeId pageSizeToPid(const QString& size);
+    QString               pidToSize(const QPageSize::PageSizeId pid);
+    bool                  read(Json5Object& obj);
+    void                  resetIcons(bool isDark);
+    bool                  save();
+    void                  setDarkTheme();
+    void                  setLightTheme();
+    void                  setSystemTheme();
+    Json5Object           write();
 
     bool        autoSave() const          { return mAutoSave; }
     qlonglong   autoSaveIntyerval() const { return mAutoSaveInterval; }
@@ -53,6 +55,7 @@ public:
     List<int>   mainSplitter() const      { return mMainSplitter; }
     auto        orientation() const       { return mOrientation; }
     List<int>   otherSplitter() const     { return mOtherSplitter; }
+    QString     pageSize() const          { return mPageSize; }
     qlonglong   position() const          { return mPosition; }
     QString     sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
     qlonglong   theme() const             { return mTheme; }
@@ -79,6 +82,7 @@ public:
     void setOrientation(const QPageLayout::Orientation o) { mOrientation = o; }
     void setOtherSplitter(const List<int>& s)             { mOtherSplitter = s; }
     void setPosition(qlonglong pos)                       { mPosition = pos; }
+    void setPageSize(const QString& s)                    { mPageSize = s; }
     void setSceneTag(const QString& s)                    { mSceneTag = s; }
     void setTheme(qlonglong t)                            { mTheme = t; }
     void setToolbarVisible(bool t)                        { mToolbarVisible = t; }
@@ -103,6 +107,7 @@ private:
     List<qreal>              mMargins          { };
     List<int>                mOtherSplitter    { };
     QPageLayout::Orientation mOrientation      { QPageLayout::Portrait };
+    QString                  mPageSize         { "Letter" };
     qlonglong                mPosition         { 0 };
     QString                  mSceneTag         { "scene" };
     qlonglong                mTheme            { 2 };
