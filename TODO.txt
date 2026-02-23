@@ -1,4 +1,5 @@
-[ ] Fix a bug where if you just type a name into the filename field on the exporters, you get it in the app dir, not the doc dir. doc dir set there as well..
+[/] Blank lines being destroyed in text when you leave and return to an item. Need to stop doing that.
+[ ] First line in an item is not triggereing the correct l/r/c/j highlight. Probably simple error in change item code.
 [/] Script Manager
     - Dialog built
     [ ] Fill in the scripts from the TextSmith script directory
@@ -21,6 +22,7 @@
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] Fix a bug where if you just type a name into the filename field on the exporters, you get it in the app dir, not the doc dir. doc dir set there as well.
 [X] Fix exporters to match the margin code and looks of page setup.
 [X] PDF Export is crashing.
 [X] Fix print to grab the images ... none showing right now.

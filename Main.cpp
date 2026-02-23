@@ -442,12 +442,16 @@ void Main::doExport(const QString& name) {
     if (filename.isEmpty()) {
         mMsg.Statement("Export of " + exporter->name() + " file\n requires a file name!");
         return;
+    } else {
+        QFileInfo file(filename);
+        if (file.isRelative()) {
+            filename = QDir(mDocDir).filePath(filename);
+        }
     }
     exporter->setFilename(filename);
     QFileInfo info(filename);
     filename = info.fileName();
     mDocDir = info.absolutePath();
-    exporter->setFilename(dlg.filename());
     if (!exporter->convert()) mMsg.Statement("Export of " + exporter->name() + " file\n'" + filename + "'\nFailed");
 }
 

@@ -22,7 +22,7 @@ private:
         { "author",     "Author (author:)",                     "" },
     };
 
-    void render();
+    bool render();
 
 public:
     PdfExporter(Novel& novel, const QList<qlonglong>& items)

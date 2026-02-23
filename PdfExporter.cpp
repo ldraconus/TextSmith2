@@ -9,7 +9,7 @@
 #include "Main.h"
 #include "Printer.h"
 
-void PdfExporter::render() {
+bool PdfExporter::render() {
     Printer* pdf = new Printer(mFilename);
     pdf->setPrefs(&Main::ref().prefs());
 
@@ -28,7 +28,7 @@ void PdfExporter::render() {
 
     auto save = Main::ref().exchangePrinter(pdf);
 
-    pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
+    bool result = pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
         [this, &pdf, &painter]() {
             pdf->header(painter);
             pdf->footer(painter);
@@ -40,6 +40,8 @@ void PdfExporter::render() {
     painter->end();
     delete painter;
     delete pdf;
+
+    return result;
 }
 
 bool PdfExporter::convert() {
