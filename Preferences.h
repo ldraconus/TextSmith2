@@ -11,6 +11,7 @@
 #include <Json5.h>
 #include <List.h>
 #include <Map.h>
+#include <StringList.h>
 
 class Preferences {
 public:
@@ -43,6 +44,7 @@ public:
     void                  setSystemTheme();
     Json5Object           write();
 
+    StringList  actingScripts() const     { return mActingScripts; }
     bool        autoSave() const          { return mAutoSave; }
     qlonglong   autoSaveIntyerval() const { return mAutoSaveInterval; }
     QString     chapterTag() const        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
@@ -68,6 +70,7 @@ public:
     bool        wasDark() const           { return mWasDark; }
     QRect       windowLocation() const    { return mWindow; }
 
+    void setActingSctrings(const StringList& s)           { mActingScripts = s; }
     void setApplicaiton(QApplication* a)                  { mApp = a; }
     void setAutoSave(bool a)                              { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i)                 { mAutoSaveInterval = i; }
@@ -93,6 +96,7 @@ public:
     void setWindowLocation(QRect r)                       { mWindow = r; }
 
 private:
+    StringList               mActingScripts    { "" };
     QApplication*            mApp              { nullptr };
     bool                     mAutoSave         { false };
     qlonglong                mAutoSaveInterval { 5 * 60 };

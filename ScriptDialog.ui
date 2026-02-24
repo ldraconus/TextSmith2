@@ -67,7 +67,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QListWidget" name="listWidget">
+          <widget class="QListWidget" name="availableListWidget">
            <property name="frameShape">
             <enum>QFrame::Shape::NoFrame</enum>
            </property>
@@ -108,7 +108,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QPushButton" name="allActivePushButton">
            <property name="maximumSize">
             <size>
              <width>24</width>
@@ -121,7 +121,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_2">
+          <widget class="QPushButton" name="makeActivePushButton">
            <property name="maximumSize">
             <size>
              <width>24</width>
@@ -134,7 +134,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_3">
+          <widget class="QPushButton" name="makeInactivePushButton">
            <property name="maximumSize">
             <size>
              <width>24</width>
@@ -147,7 +147,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="pushButton_4">
+          <widget class="QPushButton" name="allInactivePushButton">
            <property name="maximumSize">
             <size>
              <width>24</width>
@@ -194,7 +194,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QListWidget" name="listWidget_2">
+          <widget class="QListWidget" name="activeListWidget">
            <property name="frameShape">
             <enum>QFrame::Shape::NoFrame</enum>
            </property>
@@ -227,37 +227,6 @@
       <property name="rightMargin">
        <number>0</number>
       </property>
-      <item>
-       <widget class="QCheckBox" name="checkBox">
-        <property name="text">
-         <string>Menu item named:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Under:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBox">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>

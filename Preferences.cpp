@@ -13,6 +13,7 @@
 #include <Json5.h>
 #include <StringList.h>
 
+constexpr auto ActingScripts    { "ActingScripts" };
 constexpr auto ChapterTag       { "ChapterTag" };
 constexpr auto Company          { "SoftwareOnHand" };
 constexpr auto CoverTag         { "CoverTag" };
@@ -41,6 +42,7 @@ constexpr auto UiFontSize       { "UiFontSize" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
+const     auto DefaultActingScripts  { QJsonArray() };
 constexpr auto DefaultChapterTag     { "chapter" };
 constexpr auto DefaultCoverTag       { "cover" };
 constexpr auto DefaultFont           { "Segoe UI" };
@@ -67,36 +69,39 @@ constexpr auto DefaultVoice          { 0 };
 bool Preferences::load() {
     QFont def;
     QSettings settings(Company, Program);
-    mAutoSave =         settings.value(AutoSave,         DefaultSave).toBool();
-    mAutoSaveInterval = settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
-    mChapterTag =       settings.value(ChapterTag,       DefaultChapterTag).toString();
-    mCoverTag =         settings.value(CoverTag ,        DefaultCoverTag).toString();
-    mFontFamily =       settings.value(FontFamily,       DefaultFont).toString();
-    mFontSize =         settings.value(FontSize,         DefaultFontSize).toInt();
-    mFooter =           settings.value(Footer,           DefaultFooter).toString();
-    mHeader =           settings.value(Header,           DefaultHeader).toString();
-    QJsonArray arr =    settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
+    QJsonArray scripts = settings.value(ActingScripts, DefaultActingScripts).toJsonArray();
+    mActingScripts.clear();
+    for (const auto& script: scripts) mActingScripts.append(script.toString());
+    mAutoSave =          settings.value(AutoSave,         DefaultSave).toBool();
+    mAutoSaveInterval =  settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
+    mChapterTag =        settings.value(ChapterTag,       DefaultChapterTag).toString();
+    mCoverTag =          settings.value(CoverTag ,        DefaultCoverTag).toString();
+    mFontFamily =        settings.value(FontFamily,       DefaultFont).toString();
+    mFontSize =          settings.value(FontSize,         DefaultFontSize).toInt();
+    mFooter =            settings.value(Footer,           DefaultFooter).toString();
+    mHeader =            settings.value(Header,           DefaultHeader).toString();
+    QJsonArray arr =     settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
     mMainSplitter.clear();
     for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
     mMargins.clear();
-    mMargins.append(    settings.value(MarginBottom,     DefaultMarginBottom).toDouble());
-    mMargins.append(    settings.value(MarginLeft,       DefaultMarginLeft).toDouble());
-    mMargins.append(    settings.value(MarginRight,      DefaultMarginRight).toDouble());
-    mMargins.append(    settings.value(MarginTop,        DefaultMarginTop).toDouble());
-    QJsonArray other =  settings.value(OtherSplitter,    DefaultOther).toJsonArray();
-    mOrientation =      QPageLayout::Orientation(settings.value(Orientation,      DefaultOrientation).toInt());
+    mMargins.append(     settings.value(MarginBottom,     DefaultMarginBottom).toDouble());
+    mMargins.append(     settings.value(MarginLeft,       DefaultMarginLeft).toDouble());
+    mMargins.append(     settings.value(MarginRight,      DefaultMarginRight).toDouble());
+    mMargins.append(     settings.value(MarginTop,        DefaultMarginTop).toDouble());
+    QJsonArray other =   settings.value(OtherSplitter,    DefaultOther).toJsonArray();
+    mOrientation =       QPageLayout::Orientation(settings.value(Orientation,      DefaultOrientation).toInt());
     mOtherSplitter.clear();
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
-    mPageSize =         settings.value(PageSize,         DefaultPageSize).toString();
-    mPosition =         settings.value(Position,         DefaultPosition).toLongLong();
-    mSceneTag =         settings.value(SceneTag,         DefaultSceneTag).toString();
-    mTheme =            settings.value(Theme,            DefaultTheme).toInt();
-    mToolbarVisible =   settings.value(ToolbarVisible,   DefaultToolbarVisible).toBool();
-    mTypingSounds =     settings.value(TypingSounds,     DefaultSounds).toBool();
-    mUiFontFamily =     settings.value(UiFontFamily,     def.defaultFamily()).toString();
-    mUiFontSize =       settings.value(UiFontSize,       def.pointSize()).toInt();
-    mVoice =            settings.value(Voice,            DefaultVoice).toInt();
-    mWindow =           settings.value(WindowLoc,        { }).toRect();
+    mPageSize =          settings.value(PageSize,         DefaultPageSize).toString();
+    mPosition =          settings.value(Position,         DefaultPosition).toLongLong();
+    mSceneTag =          settings.value(SceneTag,         DefaultSceneTag).toString();
+    mTheme =             settings.value(Theme,            DefaultTheme).toInt();
+    mToolbarVisible =    settings.value(ToolbarVisible,   DefaultToolbarVisible).toBool();
+    mTypingSounds =      settings.value(TypingSounds,     DefaultSounds).toBool();
+    mUiFontFamily =      settings.value(UiFontFamily,     def.defaultFamily()).toString();
+    mUiFontSize =        settings.value(UiFontSize,       def.pointSize()).toInt();
+    mVoice =             settings.value(Voice,            DefaultVoice).toInt();
+    mWindow =            settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
     return true;
 }
@@ -162,11 +167,18 @@ bool Preferences::read(Json5Object& obj) {
             mUiFontSize   = DefaultFontSize;
         }
         mVoice =             Item::hasNum(obj,  "voice",           qlonglong(DefaultVoice));
+        mActingScripts.clear();
         mChapterTag = DefaultChapterTag;
+        mFooter = DefaultFooter;
+        mHeader = DefaultHeader;
+        mOrientation = DefaultOrientation;
+        mPageSize = DefaultPageSize;
+        mPosition = DefaultPosition;
         mSceneTag = DefaultSceneTag;
         mTheme = DefaultTheme;
-        mOrientation = DefaultOrientation;
-        mPosition = DefaultPosition;
+        mToolbarVisible = DefaultToolbarVisible;
+        mUiFontFamily = def.defaultFamily();
+        mUiFontSize = def.pointSize();
         Json5Object window = Item::hasObj(obj, "windows", {});
         Json5Object mainWin = Item::hasObj(window, "mainwindow", { });
         Json5Array arr = Item::hasArr(mainWin, "splitter", {});;
@@ -184,6 +196,9 @@ bool Preferences::read(Json5Object& obj) {
         }
         arr = Item::hasArr(obj, "windoLoc", { });
     } else {
+        auto scripts =      Item::hasArr(obj,  ActingScripts,    { });
+        mActingScripts.clear();
+        for (const auto& script: scripts) mActingScripts.append(script.toString());
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
         mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, qlonglong(DefaultInterval));
         mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
@@ -233,6 +248,9 @@ bool Preferences::read(Json5Object& obj) {
 
 bool Preferences::save() {
     QSettings settings(Company, Program);
+    QJsonArray act;
+    for (const auto& a: mActingScripts) act.append(a);
+    settings.setValue(ActingScripts,    act);
     settings.setValue(AutoSave,         mAutoSave);
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
     settings.setValue(ChapterTag,       mChapterTag);
@@ -248,9 +266,9 @@ bool Preferences::save() {
     settings.setValue(MarginLeft,       mMargins[Left]);
     settings.setValue(MarginRight,      mMargins[Right]);
     settings.setValue(MarginTop,        mMargins[Top]);
+    settings.setValue(Orientation,      mOrientation);
     QJsonArray otr;
     for (auto& a: mOtherSplitter) otr.append(a);
-    settings.setValue(Orientation,      mOrientation);
     settings.setValue(OtherSplitter,    otr);
     settings.setValue(PageSize,         mPageSize);
     settings.setValue(Position,         mPosition);
@@ -511,6 +529,9 @@ void Preferences::setSystemTheme() {
 
 Json5Object Preferences::write() {
     Json5Object obj;
+    Json5Array ac;
+    for (const auto& a: mActingScripts) ac.append(a);
+    obj[ActingScripts] =    ac;
     obj[AutoSave] =         mAutoSave;
     obj[AutoSaveInterval] = mAutoSaveInterval;
     obj[ChapterTag] =       mChapterTag;

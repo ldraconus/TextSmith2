@@ -15,7 +15,7 @@ cp -uf ../Background.png config/Background.png
 cp -uf $BUILD_DIR/${FROM_PROG}.exe packages/com.vendor.product/data/${TO_PROG}.exe
 cp -uf $BUILD_DIR/Documentation.html packages/com.vendor.product/data
 cp -ruf $BUILD_DIR/Documentation packages/com.vendor.product/data/Documentation
-# copy scripts into scripts sub directory of data dir
+cp -ruf ../scripts packages/com.ventor.product/scripts
 cd packages/com.vendor.product/data
 echo "Fetching libraries"
 $WINDEPLOY --no-translations $TO_PROG.exe

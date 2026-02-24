@@ -649,8 +649,10 @@ void Main::doLowercase() {
 
 void Main::doManageScripts() {
     ScriptDialog dlg(this);
-    // get the list of active scripts
-    // get the list of available scripts
+    dlg.setActiveScripts(mPrefs.actingScripts());
+    QDir source(mScriptsPath);
+    StringList sources { source.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
+    dlg.setAvailableScripts(sources);
 
     if (dlg.exec() == QDialog::Rejected) return;
 
@@ -1494,21 +1496,40 @@ void Main::loadImageBytesFromUrl(const QUrl& url, const QString& type, std::func
 void Main::justifyButtons() {
     auto cursor = mUi->textEdit->textCursor();
     auto block = cursor.blockFormat();
-    mUi->leftJustifyToolButton->setChecked(block.alignment() == Qt::AlignLeft);
-    setMenu(mUi->actionLeft_Justify,       block.alignment() == Qt::AlignLeft);
-    mUi->centerToolButton->setChecked(block.alignment() == Qt::AlignCenter);
-    setMenu(mUi->actionCenter,        block.alignment() == Qt::AlignCenter);
-    mUi->rightJustifyToolButton->setChecked(block.alignment() == Qt::AlignRight);
-    setMenu(mUi->actionRight_Justify,       block.alignment() == Qt::AlignRight);
-    mUi->fullJustifyToolButton->setChecked(block.alignment() == Qt::AlignJustify);
-    setMenu(mUi->actionFull_Justification, block.alignment() == Qt::AlignJustify);
+    auto align = block.alignment();
+
+    bool isCenter = align.testFlag(Qt::AlignHCenter);
+    bool isRight = align.testFlag(Qt::AlignRight) || align.testFlag(Qt::AlignTrailing);
+    bool isJustify = align.testFlag(Qt::AlignJustify);
+    bool isLeft = !(isCenter || isRight || isJustify) || align.testFlag(Qt::AlignLeft) || align.testFlag(Qt::AlignLeading);
+
+    mUi->leftJustifyToolButton->setChecked(isLeft);
+    setMenu(mUi->actionLeft_Justify,       isLeft);
+    mUi->centerToolButton->setChecked(isCenter);
+    setMenu(mUi->actionCenter,        isCenter);
+    mUi->rightJustifyToolButton->setChecked(isRight);
+    setMenu(mUi->actionRight_Justify,       isRight);
+    mUi->fullJustifyToolButton->setChecked(isJustify);
+    setMenu(mUi->actionFull_Justification, isJustify);
 }
 
 void Main::loadScripts() {
-    QString scriptsPath = mDocDir + "/TextSmith/Scripts";
-    QDir scriptDir(scriptsPath);
-    scriptDir.mkpath(scriptsPath);
+    mScriptsPath = mDocDir + "/TextSmith/Scripts";
+    QDir scriptDir(mScriptsPath);
+    scriptDir.mkpath(mScriptsPath);
     StringList scripts { scriptDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
+    std::filesystem::path toPath(mScriptsPath.toStdString());
+
+    QString sourcePath = mAppDir + "/Scripts";
+    auto acting = mPrefs.actingScripts();
+    QDir sourceDir(sourcePath);
+    StringList sources { sourceDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
+    std::filesystem::path fromPath(sourcePath.toStdString());
+
+    for (const auto& source: sources) {
+        if (!scripts.contains(source)) QFile::copy(sourcePath + "/" + source, mScriptsPath + "/" + source);
+    }
+
     for (const auto& script: scripts) {
         QFile file(script);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
@@ -1860,6 +1881,8 @@ QSize Main::scrollBarSize(QScrollBar* bar) {
 }
 
 void Main::setHtml(const QString& html) {
+    QString safeHtml = html;
+    safeHtml.replace(QRegularExpression("<p([^>]*)>\\s*<br\\s*/>\\s*</p>"), "<p\\1>&#8203;</p>");
     mUi->textEdit->setHtml(html);
     removeEmptyFirstBlock(mUi->textEdit);
 
@@ -1889,6 +1912,7 @@ void Main::setHtml(const QString& html) {
     c.setCharFormat(fmt);
     mUi->textEdit->setTextCursor(c);
     applyNovelFormatting();
+    doCursorPositionChanged();
 }
 
 void Main::setIcon(QToolButton* button, bool isChecked) {
@@ -1998,8 +2022,8 @@ Main::Main(QApplication* app, QWidget* parent)
     setupScripting();
     setupTabOrder();
 
-    loadScripts();
     mPrefsLoaded = mPrefs.load();
+    loadScripts();
     setupIcons();
     bool isVisible = mPrefs.toolbarVisible();
     mUi->actionHide_Show_Toolbar->setText(isVisible ? "Hide Toolbars" : "Show Toolbars");

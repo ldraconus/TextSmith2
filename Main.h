@@ -104,6 +104,7 @@ private:
     QTextCursor                   mSavedCursor;
     Map<QString, QString>         mSavedTags;
     std::atomic<bool>             mSaving { false };
+    QString                       mScriptsPath;
     SearchCore*                   mSearch { nullptr };
     Map<QShortcut*, fifth::value> mShortcut;
     SoundPool                     mSoundPool;
