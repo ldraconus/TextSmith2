@@ -20,6 +20,7 @@ public:
     void setAvailableScripts(const StringList& list);
 
     StringList activeScripts() const;
+    void setButtonStates();
 
 public slots:
     void activeItemClicked(QListWidgetItem*);
@@ -34,5 +35,5 @@ public slots:
 private:
     Ui::ScriptDialog *mUi;
 
-    void setButtonStates();
+    void removeItem(const QString& text);
 };

@@ -653,6 +653,7 @@ void Main::doManageScripts() {
     QDir source(mScriptsPath);
     StringList sources { source.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
     dlg.setAvailableScripts(sources);
+    dlg.setButtonStates();
 
     if (dlg.exec() == QDialog::Rejected) return;
 
@@ -1520,11 +1521,15 @@ void Main::loadScripts() {
     StringList scripts { scriptDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
     std::filesystem::path toPath(mScriptsPath.toStdString());
 
-    QString sourcePath = mAppDir + "/Scripts";
     auto acting = mPrefs.actingScripts();
+    QString sourcePath = mAppDir + "/Scripts";
     QDir sourceDir(sourcePath);
     StringList sources { sourceDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
-    std::filesystem::path fromPath(sourcePath.toStdString());
+    if (sources.empty()) {
+        sourcePath = mAppDir + "/../../Scripts";
+        QDir sourceDir(sourcePath);
+        sources = sourceDir.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name);
+    }
 
     for (const auto& source: sources) {
         if (!scripts.contains(source)) QFile::copy(sourcePath + "/" + source, mScriptsPath + "/" + source);
@@ -2013,6 +2018,7 @@ Main::Main(QApplication* app, QWidget* parent)
     QDir().mkpath(mAppDir);
     QDir().mkpath(mDocDir);
     QDir().mkpath(mDocDir + "/TextSmith");
+    QDir().mkpath(mDocDir + "/TextSmith/scripts");
     QDir().mkpath(mLocalDir);
 
     mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);

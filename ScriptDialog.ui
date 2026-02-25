@@ -81,6 +81,30 @@
       </item>
       <item>
        <widget class="QFrame" name="frame_3">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>24</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>32</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>24</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="frameShape">
          <enum>QFrame::Shape::NoFrame</enum>
         </property>
@@ -109,53 +133,101 @@
          </item>
          <item>
           <widget class="QPushButton" name="allActivePushButton">
-           <property name="maximumSize">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
             <size>
              <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
              <height>16777215</height>
             </size>
            </property>
+           <property name="baseSize">
+            <size>
+             <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="text">
-            <string>&gt;&gt;</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaSeekForward"/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="makeActivePushButton">
-           <property name="maximumSize">
+           <property name="minimumSize">
             <size>
              <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
              <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>&gt;</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaSkipForward"/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="makeInactivePushButton">
-           <property name="maximumSize">
+           <property name="minimumSize">
             <size>
              <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
              <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>&lt;</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaSkipBackward"/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="allInactivePushButton">
-           <property name="maximumSize">
+           <property name="minimumSize">
             <size>
              <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>32</width>
              <height>16777215</height>
             </size>
            </property>
            <property name="text">
-            <string>&lt;&lt;</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::MediaSeekBackward"/>
            </property>
           </widget>
          </item>

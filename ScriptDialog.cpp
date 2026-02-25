@@ -45,10 +45,10 @@ void ScriptDialog::activeItemClicked(QListWidgetItem*) {
     setButtonStates();
 }
 
+
 void ScriptDialog::activeItemDoubleClicked(QListWidgetItem*) {
     if (mUi->activeListWidget->selectedItems().count() == 0) return;
-    auto* item = mUi->activeListWidget->selectedItems()[0];
-    mUi->activeListWidget->removeItemWidget(item);
+    removeItem(mUi->activeListWidget->selectedItems()[0]->text());
     setButtonStates();
 }
 
@@ -89,10 +89,16 @@ void ScriptDialog::makeActive() {
 }
 
 void ScriptDialog::makeInactive() {
-    if (mUi->activeListWidget->selectedItems().count() == 0) return;
-    auto* text = mUi->availableListWidget->selectedItems()[0];
-    mUi->activeListWidget->removeItemWidget(text);
+    if (mUi->activeListWidget->selectedItems().count() <= 0) return;
+
+    removeItem(mUi->availableListWidget->selectedItems()[0]->text());
     setButtonStates();
+}
+
+void ScriptDialog::removeItem(const QString& text) {
+    auto active = activeScripts();
+    active.removeAll(text);
+    setActiveScripts(active);
 }
 
 void ScriptDialog::setButtonStates() {
