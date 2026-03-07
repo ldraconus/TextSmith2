@@ -4,7 +4,8 @@
 #include <QRegularExpression>
 #include <QTextBlock>
 #include <QTextCursor>
-#include <QTextEdit>
+
+#include "TextEdit.h"
 
 qsizetype Item::sNextID = 0;
 
@@ -23,7 +24,7 @@ void Item::changeFont(const QFont& font) {
 }
 
 QString Item::changeFont(const QString& html, const QFont& font) {
-    QTextEdit text;
+    TextEdit text;
     text.setHtml(html);
     QTextDocument* doc = text.document();
     QTextCursor cursor(doc);
@@ -67,7 +68,7 @@ QString Item::changeFont(const QString& html, const QFont& font) {
 }
 
 QString Item::setupHtml(const QFont& font) {
-    QTextEdit text;
+    TextEdit text;
     QFontMetrics metrics(font);
     int lineHeight = metrics.height();
     int indent = 4 * metrics.averageCharWidth();
@@ -91,7 +92,7 @@ void Item::clear() {
 }
 
 void Item::init() {
-    QTextEdit text;
+    TextEdit text;
     mHtml = text.toHtml();
 }
 
@@ -113,7 +114,7 @@ void Item::clearTag(const QString &tag) {
 }
 
 qlonglong Item::count() {
-    QTextEdit text;
+    TextEdit text;
     text.insertHtml(mHtml);
     QString plain = text.toPlainText();
     StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
@@ -251,7 +252,7 @@ void Item::move(Item&& i) {
 }
 
 void Item::newHtml(const QFont& font) {
-    QTextEdit text(nullptr);
+    TextEdit text(nullptr);
     text.setText("");
     setupHtml(font);
 
@@ -260,7 +261,7 @@ void Item::newHtml(const QFont& font) {
 }
 
 QString Item::toPlainText() {
-    QTextEdit converter;
+    TextEdit converter;
     converter.setHtml(mHtml);
     QString text = converter.toPlainText();
     return text;
@@ -317,10 +318,21 @@ void Novel::deleteItem(qlonglong id) {
 }
 
 Item& Novel::findItem(qlonglong id) {
-    static Item nil;
-    if (mItems.keys().contains(id)) {
-        return mItems[id];
+    static bool first = true;
+    static Item fake(Item::NoID);
+    if (first) {
+        first = false;
+        fake.setId(-1);
+        fake.addTag("");
+        TextEdit edit;
+        edit.setPlainText("This page intentionally left blank :-)\n\nI mean it!\n");
+        fake.setHtml(edit.toHtml());
     }
+
+    if (id == -1) return fake;
+
+    static Item nil;
+    if (mItems.keys().contains(id)) return mItems[id];
     return nil;
 }
 

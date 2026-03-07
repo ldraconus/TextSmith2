@@ -23,6 +23,7 @@ class Preferences;
 
 class Printer {
 private:
+    QTextDocument     mDoc;
     qlonglong         mId;
     List<qlonglong>   mIds;
     Map<QUrl, QImage> mImages;
@@ -92,6 +93,7 @@ private:
         return mPdf->pageLayout().paintRect(toPdfUnits(unit));
     }
 
+    QString                           nextWord(int& charFormat, const QList<QTextFragment>& fragments = { });
     List<Marginal>                    parseMarginal(const QString& marginal);
     void                              printMarginal(QPainter* painter, qlonglong y, const Marginal& object);
     QString                           resolveTag(const QString& key);
@@ -109,7 +111,7 @@ public:
     static constexpr bool  WithAlignment    { true };
     static constexpr bool  WithoutAlignment { false };
 
-    void                     addImage(const QUrl& url)                      { loadfUrl(url); }
+    void                     addImage(const QUrl& url)                      { loadUrl(url); }
     const List<qlonglong>&   ids() const                                    { return mIds; }
     const Map<QUrl, QImage>& images() const                                 { return mImages; }
     void                     newPage()                                      { if (mPrinter) mPrinter->newPage(); else mPdf->newPage(); }
@@ -137,7 +139,7 @@ public:
     void                     setResolution(const int r)                     { if (mPdf) mPdf->setResolution(r); }
     void                     setTitle(const QString& title)                 { if (mPdf) mPdf->setTitle(title); }
 
-    void loadfUrl(const QUrl& url) {
+    void loadUrl(const QUrl& url) {
         auto* nam = new QNetworkAccessManager();
         QNetworkReply* reply = nam->get(QNetworkRequest(url));
 
@@ -148,26 +150,43 @@ public:
             mImages[url] = img;
         });
     }
+
+    struct Word {
+        QString  pText;
+        int      pFormat;
+        QSize    pSize;
+    };
+
     const QRectF paperRect(QPrinter::Unit units) const {
         if (mPrinter) return mPrinter->paperRect(units);
         if (units == QPrinter::DevicePixel) return mPdf->pageLayout().fullRectPixels(mPdf->resolution());
         return mPdf->pageLayout().fullRect(toPdfUnits(units));
     }
 
+    QList<QTextBlock> createParagraphs(Item& item,
+                                       qreal scaleX,
+                                       qreal scaleY,
+                                       qreal lineWidth,
+                                       qreal pageHeight);
     void         footer(QPainter* painter);
     void         header(QPainter* painter);
-    void         page(QPainter* painter, std::function<void()> printer, bool marginals = false);
+    void         page(QPainter* painter, std::function<void(bool)> printer, bool marginals = false);
     bool         outputNovel(List<qlonglong> ids,
                              const QString& chapterTag,
                              const QString& sceneTag,
                              const QString& coverTag,
                              QPainter* painter,
                              QSizeF pageSize,
-                             std::function<void()> pager);
+                             std::function<void(bool)> pager);
     const QSizeF pageSize(QPrinter::Unit unit) const;
     void         printNovel();
-    void         printParagraphs(QPainter* painter, QSizeF& pageSize, std::function<void()>& pager, QMarginsF& margins, qreal& at, bool& startingPage,
-                                 List<QTextBlock>& paragraphs, bool isCover);
-
-    static List<QTextBlock> createParagraphs(QTextDocument* edit, Item& item, qreal scaleX, qreal scaleY, qreal lineWidth, qreal pageHeight);
+    void printParagraphs(QPainter* painter,
+                         QSizeF& pageSize,
+                         std::function<void(bool)>& pager,
+                         QMarginsF& margins,
+                         qreal& at,
+                         bool& startingPage,
+                         QList<QTextBlock>& paragraphs,
+                         bool isCover);
+    void renderLine(QPainter* painter, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left);
 };

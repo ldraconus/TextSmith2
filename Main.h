@@ -188,6 +188,7 @@ private:
     void doRightJustify();
     void doSave();
     bool doSaveAs();
+    void doSelectionChanged();
     void doSpellcheck();
     void doSpellcheckAddWord(const QString& word);
     void doSpellcheckDone();
@@ -233,6 +234,7 @@ private:
     void           save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     TreeNode       saveTree(QTreeWidgetItem* node);
     QSize          scrollBarSize(QScrollBar* bar);
+    void           selectionItems();
     void           setHtml(const QString& html);
     void           setIcon(QToolButton* button, bool isChecked);
     void           setMenu(QAction* button, bool isChecked);
@@ -354,6 +356,7 @@ public slots:
     void doubleClickAction(QTreeWidgetItem*, int)                             { doEditItem(); }
 
     void cursorPositionChanged() { doCursorPositionChanged(); }
+    void selectionChanged()      { doSelectionChanged(); }
     void textChangedAction()     { doTextChanged(); }
 
     void findChanged()                                   { doFindChanged(); }

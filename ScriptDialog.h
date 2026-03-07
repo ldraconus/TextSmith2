@@ -2,6 +2,7 @@
 
 #include <QDialog>
 
+#include <Map.h>
 #include <StringList.h>
 
 namespace Ui {
@@ -17,7 +18,7 @@ public:
     ~ScriptDialog();
 
     void setActiveScripts(const StringList& list);
-    void setAvailableScripts(const StringList& list);
+    void setAvailableScripts(const StringList& list, const Map<QString, QString>& hoveText = { });
 
     StringList activeScripts() const;
     void setButtonStates();
@@ -33,7 +34,8 @@ public slots:
     void makeInactive();
 
 private:
-    Ui::ScriptDialog *mUi;
+    Map<QString, QString> mHoverText;
+    Ui::ScriptDialog*     mUi;
 
     void removeItem(const QString& text);
 };

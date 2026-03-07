@@ -26,11 +26,6 @@ PrintDialog::PrintDialog(QWidget *parent)
     }
 
     mPrinter->setPrefs(mPrefs);
-/*
-    mPrinter->setOutputFormat(QPrinter::PdfFormat);
-    mPrinter->setOutputFileName(QDir::temp().filePath("preview.pdf"));
-    mPrinter->setPrinterName(QString());
-*/
     auto* layout = new QVBoxLayout(mUi->previewFrame);
     mUi->previewFrame->setLayout(layout);
     mPreview = new QPrintPreviewWidget(mPrinter->qprinter(), mUi->previewFrame);

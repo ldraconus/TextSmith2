@@ -2,98 +2,82 @@
 #include "ui_Main.h"
 #include "Printer.h"
 
-#include <QAbstractTextDocumentLayout>
-
 #include "TextEdit.h"
 
 static constexpr auto InchesPerMeter = 39.3701;
 static constexpr auto ScreenDPI = 96.0;
 
-void Printer::printNovel() {
-    setFullPage(true);
-    QSizeF size = pageSize(QPrinter::Point);
-    QPainter* paint = painter();
-    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), paint, size,
-                [this, &paint]() {
-                    header(paint);
-                    footer(paint);
-                    newPage();
-                });
-    delete paint;
-}
+QList<QTextBlock> Printer::createParagraphs(Item& item, qreal scaleX, qreal scaleY, qreal lineWidth, qreal pageHeight) {
+    mDoc.setHtml(item.html());
 
-void Printer::printParagraphs(QPainter* painter,
-                              QSizeF &pageSize,
-                              std::function<void()>& newPage,
-                              QMarginsF& margins,
-                              qreal& at,
-                              bool& startingPage,
-                              List<QTextBlock>& paragraphs,
-                              bool isCover) {
-    qreal lineWidth = pageSize.width() - margins.left() - margins.right();
-    qreal bottom = pageSize.height() - margins.bottom();
-    qreal scaleX = physicalDpiX() / ScreenDPI;
-    qreal scaleY = physicalDpiY() / ScreenDPI;
+    QTextCursor cursor(&mDoc);
+    cursor.movePosition(QTextCursor::Start);
 
-    for (const auto& paragraph: paragraphs) {
-        QTextLayout* layout = paragraph.layout();
-        layout->beginLayout();
-        for (; ; ) {
-            QTextLine line = layout->createLine();
-            if (!line.isValid()) break;
-            line.setLineWidth(lineWidth);
-        }
-        layout->endLayout();
+    QTextBlockFormat format;
+    format.setLineHeight(0, QTextBlockFormat::FixedHeight);
+    format.setTopMargin(0);
+    format.setBottomMargin(0);
 
-        for (auto i = 0; i < layout->lineCount(); ++i) {
-            QTextLine line = layout->lineAt(i);
-            if (at + line.height() > bottom && !startingPage) {
-                page(painter, newPage, true);
-                if (!isCover) ++mPageNo;
-                at = margins.top();
-            }
-            line.draw(painter, QPointF(margins.left(), at));
-            at += line.height();
-            startingPage = false;
+    for (QTextBlock block = mDoc.begin(); block != mDoc.end(); block = block.next()) {
+        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
+            QTextFragment fragment = it.fragment();
 
-            QTextBlock::iterator it;
-            for (it = paragraph.begin(); !it.atEnd(); ++it) {
-                QTextFragment fragment = it.fragment();
+            if (fragment.charFormat().isImageFormat()) {
+                QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
 
-                if (fragment.charFormat().isImageFormat()) {
-                    int relativePos = fragment.position() - paragraph.position();
+                QImage img;
+                if (imgFmt.name().startsWith("internal://")) {
+                    auto& images = Main::ref().ui()->textEdit->internalImages();
+                    if (images.contains(imgFmt.name())) img = images[imgFmt.name()];
+                } else img = Main::ref().ui()->textEdit->document()->resource(QTextDocument::ImageResource, QUrl(imgFmt.name())).value<QImage>();
 
-                    if (relativePos >= line.textStart() &&
-                        relativePos < line.textStart() + line.textLength()) {
+                if (img.isNull()) continue;
 
-                        QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
+                qreal origW = (imgFmt.width() > 0 ? imgFmt.width() : img.width()) * scaleX;
+                qreal origH = (imgFmt.height() > 0 ? imgFmt.height() : img.height()) * scaleY;
 
-                        // Pull the REAL image from the original UI source!
-                        QImage img;
-                        if (imgFmt.name().startsWith("internal://")) {
-                            auto& images = Main::ref().ui()->textEdit->internalImages();
-                            if (images.contains(imgFmt.name())) img = images[imgFmt.name()];
-                        } else {
-                            img = Main::ref().ui()->textEdit->document()->resource(QTextDocument::ImageResource, QUrl(imgFmt.name())).value<QImage>();
-                        }
-
-                        if (!img.isNull()) {
-                            qreal imageXOffset = line.cursorToX(relativePos);
-
-                            // Because imgFmt is logical, we MUST scale it up here to physically fill the layout hole!
-                            qreal physicalImgW = imgFmt.width() * scaleX;
-                            qreal physicalImgH = imgFmt.height() * scaleY;
-
-                            // Draw upwards from the baseline using the physical dimensions
-                            QRectF targetRect(margins.left() + imageXOffset, at - physicalImgH, physicalImgW, physicalImgH);
-                            painter->drawImage(targetRect, img);
-                        }
-                    }
+                if (origW > lineWidth) {
+                    qreal shrinkRatio = lineWidth / origW;
+                    origW = lineWidth;
+                    origH = origH * shrinkRatio;
                 }
+
+                if (origH > pageHeight) {
+                    qreal shrinkRatio = pageHeight / origH;
+                    origH = pageHeight;
+                    origW = origW * shrinkRatio;
+                }
+                QImage phantomPixel(1, 1, QImage::Format_ARGB32);
+                phantomPixel.fill(Qt::transparent);
+
+                mDoc.addResource(QTextDocument::ImageResource, QUrl(imgFmt.name()), phantomPixel);
+
+                imgFmt.setWidth(origW);
+                imgFmt.setHeight(origH);
+
+                QTextCursor cursor(&mDoc);
+                cursor.setPosition(fragment.position());
+                cursor.setPosition(fragment.position() + fragment.length(), QTextCursor::KeepAnchor);
+                cursor.setCharFormat(imgFmt);
             }
         }
     }
+
+    QList<QTextBlock> paragraphs;
+    for (QTextBlock block = mDoc.begin(); block != mDoc.end(); block = block.next()) {
+        if (!block.isValid()) continue;
+        paragraphs.append(block);
+    }
+
+    return paragraphs;
 }
+
+static constexpr int bold =      1 << 0;
+static constexpr int italic =    1 << 1;
+static constexpr int underline = 1 << 2;
+static constexpr int image =     1 << 3;
+
+static QMap<QString, QImage> lineImages;
 
 void Printer::footer(QPainter* painter) {
     auto marginals = parseMarginal(mPrefs->footer());
@@ -125,14 +109,39 @@ void Printer::header(QPainter* painter) {
     }
 }
 
-void Printer::page(QPainter* painter,
-                   std::function<void()> printer,
-                   bool marginals) {
-    if (marginals) {
-        header(painter);
-        footer(painter);
+QString Printer::nextWord(int& charFormat, const QList<QTextFragment>& newFragments) {
+    static QList<QTextFragment> fragments;
+    static QTextFragment fragment;
+    static QList<QString> words;
+
+    if (!newFragments.isEmpty()) {
+        fragments = newFragments;
+        words.clear();
     }
-    printer();
+
+    if (words.isEmpty()) {
+        fragment = { };
+        while (!fragments.isEmpty()) {
+            fragment = fragments.takeFirst();
+            if (fragment.isValid()) break;
+        }
+        if (!fragment.isValid()) return "";
+        if (fragment.charFormat().isEmpty()) return " ";
+        if (fragment.charFormat().isImageFormat()) {
+            charFormat = image;
+            QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
+            return imgFmt.name();
+        } else words = fragment.text().split(" ", Qt::KeepEmptyParts);
+
+        if (words.isEmpty()) return "";
+    }
+
+    charFormat = 0;
+    if (fragment.charFormat().fontItalic())                charFormat |= italic;
+    if (fragment.charFormat().fontUnderline())             charFormat |= underline;
+    if (fragment.charFormat().fontWeight() >= QFont::Bold) charFormat |= bold;
+
+    return words.takeFirst();
 }
 
 bool Printer::outputNovel(List<qlonglong> ids,
@@ -141,11 +150,22 @@ bool Printer::outputNovel(List<qlonglong> ids,
                           const QString &coverTag,
                           QPainter* painter,
                           QSizeF pageSize,
-                          std::function<void()> newPage) {
+                          std::function<void(bool)> finishPage) {
+    StringList chapterTags { chapterTag.split(",") };
+    chapterTags.trimmed();
+    StringList sceneTags { sceneTag.split(",") };
+    sceneTags.trimmed();
+    StringList coverTags { coverTag.split(",") };
+    coverTags.trimmed();
+
     if (mPrinter == nullptr && mPdf == nullptr) return false;
     if (!painter->isActive()) return false;
     mXFactor = physicalDpiX() / PointsPerInch;
     mYFactor = physicalDpiX() / PointsPerInch;
+
+    painter->setPen(Qt::black);
+    painter->setBackground(Qt::white);
+    painter->fillRect(paperRect(QPrinter::DevicePixel).toRect(), Qt::white);
 
     auto pointMargins = mPrefs->margins(Preferences::Units::Points);
     QMarginsF margins(pointMargins[Preferences::Left], pointMargins[Preferences::Top], pointMargins[Preferences::Right], pointMargins[Preferences::Bottom]);
@@ -167,29 +187,43 @@ bool Printer::outputNovel(List<qlonglong> ids,
     mPageNo = 1;
     bool startingPage = true;
     mIds = ids;
-    QTextDocument doc;
-    doc.documentLayout()->setPaintDevice(paintdevice());
-    doc.setTextWidth(lineWidth);
-    for (const auto& id : ids) {
+    mDoc.setTextWidth(lineWidth);
+    QFont font(Main::ref().ui()->textEdit->document()->defaultFont());
+    int size = font.pixelSize() * scaleY;
+    if (size < 1) size = font.pointSize() * mYFactor;
+    font.setPixelSize(size);
+    mDoc.setDefaultFont(font);
+    for (const auto& id: ids) {
         mId = id;
         Item& item = Main::ref().novel().findItem(id);
-        if (!item.hasTag(chapterTag) && !item.hasTag(sceneTag) && !item.hasTag(coverTag)) continue;
-        if (item.hasTag(chapterTag)) {
+        if (id != -1 && !item.hasTag(chapterTags) && !item.hasTag(sceneTags) && !item.hasTag(coverTags)) continue;
+        if (item.hasTag(chapterTags)) {
             if (!startingPage) {
-                page(painter, newPage, true);
+                page(painter, finishPage, true);
                 ++mPageNo;
                 at = margins.top();
                 startingPage = true;
             }
         }
 
-        auto paragraphs = createParagraphs(&doc, item, scaleX, scaleY, lineWidth, pageHeight);
-        printParagraphs(painter, pageSize, newPage, margins, at, startingPage, paragraphs, item.hasTag(coverTag) && mPageNo == 1);
+        auto paragraphs = createParagraphs(item, scaleX, scaleY, lineWidth, pageHeight);
+        printParagraphs(painter, pageSize, finishPage, margins, at, startingPage, paragraphs, item.hasTag(coverTags) && mPageNo == 1);
     }
 
-    if (!startingPage) page(painter, newPage);
+    if (!startingPage) page(painter, finishPage, true);
 
-    return false;
+    return true;
+}
+
+const QSizeF Printer::pageSize(QPrinter::Unit unit) const {
+    return paperRect(unit).size();
+}
+
+void Printer::page(QPainter* painter,
+                   std::function<void(bool)> finishPage,
+                   bool marginals) {
+    finishPage(marginals);
+    painter->fillRect(paperRect(QPrinter::DevicePixel).toRect(), Qt::white);
 }
 
 List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
@@ -260,6 +294,166 @@ void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal& obje
     painter->drawText(QPoint({ int(x + 0.5), int(y + 0.5) }), text);
 }
 
+void Printer::printNovel() {
+    setFullPage(true);
+    QSizeF size = pageSize(QPrinter::Point);
+    QPainter* paint = painter();
+    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), paint, size,
+                [this, &paint](bool m) {
+                    if (m) {
+                        header(paint);
+                        footer(paint);
+                    }
+                    newPage();
+                });
+    delete paint;
+}
+
+void Printer::printParagraphs(QPainter* painter,
+                              QSizeF &pageSize,
+                              std::function<void(bool)>& newPage,
+                              QMarginsF& margins,
+                              qreal& at,
+                              bool& startingPage,
+                              QList<QTextBlock>& paragraphs,
+                              bool isCover) {
+    qreal lineWidth = pageSize.width() - margins.left() - margins.right();
+    qreal bottom = pageSize.height() - margins.bottom();
+
+    QFont font = mDoc.defaultFont();
+    painter->setFont(font);
+    QFontMetrics fontMetrics(font);
+    int en = fontMetrics.horizontalAdvance("N");
+    int indent = 4 * en;
+    int baseLine = fontMetrics.descent();
+    painter->fillRect({ QPoint(0, 0), pageSize }, Qt::white);
+
+    for (auto&& paragraph: paragraphs) {
+        QList<QTextFragment> fragments;
+        for (QTextBlock::iterator it = paragraph.begin(); !it.atEnd(); ++it) fragments << it.fragment();
+
+        bool firstLineIndent = true;
+        bool fill = false;
+        auto paraFormat = paragraph.blockFormat().alignment();
+        switch(paraFormat) {
+        case Qt::AlignLeft:    firstLineIndent = true;  fill = false; break;
+        case Qt::AlignCenter:  firstLineIndent = false; fill = false; break;
+        case Qt::AlignRight:   firstLineIndent = false; fill = false; break;
+        case Qt::AlignJustify: firstLineIndent = true;  fill = true;  break;
+        }
+
+        int x = firstLineIndent ? indent : 0;
+        int lineHeight = fontMetrics.lineSpacing();
+
+        int width = 0;
+        int currentFormat = 0;
+
+        bool startLine = true;
+
+        lineImages.clear();
+        QList<Word> line;
+        QString word = nextWord(currentFormat, fragments);
+        int height = 0;
+        for (; ; ) {
+            if (at + baseLine > bottom) {
+                page(painter, newPage, !startingPage);
+                ++mPageNo;
+                startingPage = false;
+                at = margins.top();
+            }
+            if (word.isEmpty()) break;
+
+            if (currentFormat == image) {
+                if (!lineImages.contains(word)) {
+                    if (word.startsWith("internal://")) {
+                        auto& images = Main::ref().ui()->textEdit->internalImages();
+                        if (images.contains(word)) lineImages[word] = images[word];
+                    } else lineImages[word] = Main::ref().ui()->textEdit->document()->resource(QTextDocument::ImageResource, QUrl(word)).value<QImage>();
+                }
+
+                int imgHeight = lineImages[word].height();
+                int newHeight = (height > imgHeight) ? height : imgHeight;
+
+                if (lineImages[word].width() + width > lineWidth ||
+                    newHeight + at > bottom) {
+                    renderLine(painter, margins.left(), at, line, fill, paraFormat, lineWidth, margins.left());
+                    at += height;
+                    height = 0;
+                    width = 0;
+                    x = 0;
+                    line.clear();
+                    startLine = true;
+                    continue;
+                }
+
+                line.append({ word, image, lineImages[word].size() });
+                width += lineImages[word].width();
+                startLine = false;
+            } else {
+                int len = fontMetrics.horizontalAdvance(word);
+
+                if (len + width > lineWidth) {
+                    renderLine(painter, x, at, line, fill, paraFormat, lineWidth, margins.left());
+                    at += height;
+                    height = 0;
+                    line.clear();
+                    startLine = true;
+                    width = 0;
+                    x = 0;
+                    continue;
+                }
+                QSize size(len, lineHeight);
+                line.append({ word, currentFormat, size });
+                width += size.width() + (startLine ? 0: en );
+                startLine = false;
+            }
+            word = nextWord(currentFormat);
+        }
+
+        if (line.count() != 0) renderLine(painter, x, at, line, fill, paraFormat, lineWidth, margins.left());
+    }
+}
+
+void Printer::renderLine(QPainter* painter, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left) {
+    bool start = true;
+    QFont font = painter->font();
+    QFontMetrics metrics(font);
+    int space = metrics.horizontalAdvance("N");
+    int height = 0;
+    int width = 0;
+    for (auto& word: line) {
+        width = width + word.pSize.width() + ((word.pFormat != image && !start) ? space : 0);
+        if (height < word.pSize.height()) height = word.pSize.height();
+    }
+
+    if (para == Qt::AlignRight)       x = left + lineWidth - width;
+    else if (para == Qt::AlignCenter) x = left + (lineWidth - width) / 2;
+    else if (fill)                    space += (lineWidth - width) / (line.count() - 1);
+
+    start = true;
+    at += height;
+    qreal lineHeight = metrics.lineSpacing();
+    for (auto& word: line) {
+        if (word.pFormat == image) {
+            QImage img = lineImages[word.pText];
+            QSize imgSize = img.size();
+            QRect rect(QPoint(x + 0.5, at - word.pSize.height() + 0.5), imgSize);
+            painter->drawImage(rect, img);
+            start = false;
+            x += word.pSize.width();
+        } else {
+            if (!start) x += space;
+            QFont wordFont = font;
+            if (word.pFormat & bold)      font.setWeight(QFont::Bold);
+            if (word.pFormat & italic)    font.setItalic(true);
+            if (word.pFormat & underline) font.setUnderline(true);
+            start = false;
+            painter->drawText(QPoint(x + 0.5, at - lineHeight + 0.5), word.pText);
+            x += word.pSize.width();
+        }
+    }
+}
+
 QString Printer::resolveTag(const QString &key) {
     QString value;
     for (const auto& id: mIds) {
@@ -272,66 +466,4 @@ QString Printer::resolveTag(const QString &key) {
         if (mId == id) break;
     }
     return value;
-}
-
-List<QTextBlock> Printer::createParagraphs(QTextDocument* doc, Item& item, qreal scaleX, qreal scaleY, qreal lineWidth, qreal pageHeight) {
-    doc->setHtml(item.html());
-
-    qreal logicalLineWidth = lineWidth / scaleX;
-    qreal logicalPageHeight = pageHeight / scaleY;
-
-    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
-        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
-            QTextFragment fragment = it.fragment();
-
-            if (fragment.charFormat().isImageFormat()) {
-                QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
-
-                QImage img;
-                if (imgFmt.name().startsWith("internal://")) {
-                    auto& images = Main::ref().ui()->textEdit->internalImages();
-                    if (images.contains(imgFmt.name())) img = images[imgFmt.name()];
-                } else img = Main::ref().ui()->textEdit->document()->resource(QTextDocument::ImageResource, QUrl(imgFmt.name())).value<QImage>();
-
-                if (img.isNull()) continue;
-
-                qreal origW = imgFmt.width() > 0 ? imgFmt.width() : img.width();
-                qreal origH = imgFmt.height() > 0 ? imgFmt.height() : img.height();
-
-                if (origW > logicalLineWidth) {
-                    qreal shrinkRatio = logicalLineWidth / origW;
-                    origW = logicalLineWidth;
-                    origH = origH * shrinkRatio;
-                }
-
-                if (origH > logicalPageHeight) {
-                    qreal shrinkRatio = logicalPageHeight / origH;
-                    origH = logicalPageHeight;
-                    origW = origW * shrinkRatio;
-                }
-                QImage phantomPixel(1, 1, QImage::Format_ARGB32);
-                phantomPixel.fill(Qt::transparent);
-
-                doc->addResource(QTextDocument::ImageResource, QUrl(imgFmt.name()), phantomPixel);
-
-                imgFmt.setWidth(origW);
-                imgFmt.setHeight(origH);
-
-                QTextCursor cursor(doc);
-                cursor.setPosition(fragment.position());
-                cursor.setPosition(fragment.position() + fragment.length(), QTextCursor::KeepAnchor);
-                cursor.setCharFormat(imgFmt);
-            }
-        }
-    }
-
-    List<QTextBlock> paragraphs;
-    for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
-        if (block.isValid()) paragraphs.append(block);
-    }
-    return paragraphs;
-}
-
-const QSizeF Printer::pageSize(QPrinter::Unit unit) const {
-    return paperRect(unit).size();
 }

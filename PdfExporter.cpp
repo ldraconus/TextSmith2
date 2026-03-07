@@ -29,9 +29,11 @@ bool PdfExporter::render() {
     auto save = Main::ref().exchangePrinter(pdf);
 
     bool result = pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
-        [this, &pdf, &painter]() {
-            pdf->header(painter);
-            pdf->footer(painter);
+        [this, &pdf, &painter](bool m) {
+            if (m) {
+                pdf->header(painter);
+                pdf->footer(painter);
+            }
             pdf->newPage();
         });
 

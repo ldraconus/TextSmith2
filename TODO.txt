@@ -1,25 +1,28 @@
-[/] Script Manager
-    - Dialog built
-    [ ] Fill in the scripts from the TextSmith script directory
-    [ ] Handle moving from one list to another (That's really it, the main app takes care of actually remebering this).
-    [ ] Make the main app rememebr what the scripts dialog did.
 [/] Write the Documentation
     - Intro
     - Part I
     - Part II
-    [/] Part III
-    [ ] Part IV
+    - Part III
+    [/] Part IV
     [ ] Part V
     [ ] Part VI
+[ ] Ctr-Shif-P ambiguous, check to see if it's been taken over by my overlooking. It's not in the other menus ...
+[ ] The first chapter tag is not printing it's text. The scenes below it are printed, just not the text here. Probably forgot to run it in the special-case
+    handling around that.
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
-[ ] Can't cut/copy an image ...
+[ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Uppercase and lowercase should only be executable if text is selected ...
 [ ] Add a recent projects to the file menu
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] Script Manager
+    - Dialog built
+    - Fill in the scripts from the TextSmith script directory
+    - Handle moving from one list to another (That's really it, the main app takes care of actually remebering this).
+    - Make the main app rememebr what the scripts dialog did.
 [X] Blank lines being destroyed in text when you leave and return to an item. Need to stop doing that.
 [X] First line in an item is not triggereing the correct l/r/c/j highlight. Probably simple error in change item code.
 [X] Fix a bug where if you just type a name into the filename field on the exporters, you get it in the app dir, not the doc dir. doc dir set there as well.

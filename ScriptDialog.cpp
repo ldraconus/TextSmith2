@@ -25,12 +25,23 @@ void ScriptDialog::setActiveScripts(const StringList &list) {
     QListWidget* active = mUi->activeListWidget;
     active->clear();
     for (const auto& activeScript: list) active->addItem(activeScript);
+    auto num = active->count();
+    for (auto i = 0; i < num; ++i) {
+        auto* item = active->item(i);
+        if (mHoverText.contains(item->text())) item->setToolTip(mHoverText[item->text()]);
+    }
 }
 
-void ScriptDialog::setAvailableScripts(const StringList &list) {
+void ScriptDialog::setAvailableScripts(const StringList &list, const Map<QString, QString>& hoverText) {
     QListWidget* available = mUi->availableListWidget;
     available->clear();
+    mHoverText = hoverText;
     for (const auto& availableScript: list) available->addItem(availableScript);
+    auto num = available->count();
+    for (auto i = 0; i < num; ++i) {
+        auto* item = available->item(i);
+        if (hoverText.contains(item->text())) item->setToolTip(hoverText[item->text()]);
+    }
 }
 
 StringList ScriptDialog::activeScripts() const {

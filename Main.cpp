@@ -649,25 +649,32 @@ void Main::doLowercase() {
 
 void Main::doManageScripts() {
     ScriptDialog dlg(this);
-    dlg.setActiveScripts(mPrefs.actingScripts());
+
     QDir source(mScriptsPath);
     StringList sources { source.entryList({ "*.5th" }, QDir::Filter::Files, QDir::SortFlag::Name) };
-    dlg.setAvailableScripts(sources);
+    Map<QString, QString> hoverText;
+    StringList deleteAfter;
+    for (const auto& name: sources) {
+        QFile file(mScriptsPath + "/" + name);
+        if (!file.open(QIODevice::ReadOnly)) deleteAfter.append(name);
+        else {
+            QString tagLine = file.readLine();
+            if (tagLine.startsWith("//")) {
+                QString text = tagLine.mid(2).trimmed();
+                if (text.isEmpty()) deleteAfter.append(name);
+                else hoverText[name] = text;
+            } else deleteAfter.append(name);
+        }
+    }
+    for (const auto& failed: deleteAfter) sources.removeAll(failed);
+    dlg.setAvailableScripts(sources, hoverText);
+    dlg.setActiveScripts(mPrefs.actingScripts());
     dlg.setButtonStates();
 
     if (dlg.exec() == QDialog::Rejected) return;
 
-    // get the new list of active scripts
-    // go through the new list:
-    //  if in the old list:
-    //    add shotcut to new list
-    //    remove from old list
-    // go through old list
-    //   remove from menu
-    // go through new-list:
-    //   if no shortcut:
-    //     find available shortcut
-    //     assign to menu with shortcut
+    setupScripting();
+    loadScripts();
 }
 
 void Main::doMoveDown() {
@@ -1055,6 +1062,10 @@ bool Main::doSaveAs() {
     changed();
     doSave();
     return true;
+}
+
+void Main::doSelectionChanged() {
+    selectionItems();
 }
 
 void Main::doSpellcheck() {
@@ -1532,10 +1543,13 @@ void Main::loadScripts() {
     }
 
     for (const auto& source: sources) {
-        if (!scripts.contains(source)) QFile::copy(sourcePath + "/" + source, mScriptsPath + "/" + source);
+        if (!scripts.contains(source)) {
+            QFile::copy(sourcePath + "/" + source, mScriptsPath + "/" + source);
+            scripts.append(source);
+        }
     }
 
-    for (const auto& script: scripts) {
+    for (const auto& script: acting) {
         QFile file(script);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
         QByteArray data(file.readAll());
@@ -1885,6 +1899,14 @@ QSize Main::scrollBarSize(QScrollBar* bar) {
     return { handleRect.width(), handleRect.height() };
 }
 
+void Main::selectionItems() {
+    bool selectionMade = mUi->textEdit->textCursor().selectedText().length() != 0;
+    mUi->actionCopy->setEnabled(selectionMade);
+    mUi->actionCut->setEnabled(selectionMade);
+    mUi->actionLowercase->setEnabled(selectionMade);
+    mUi->actionUppercase->setEnabled(selectionMade);
+}
+
 void Main::setHtml(const QString& html) {
     QString safeHtml = html;
     safeHtml.replace(QRegularExpression("<p([^>]*)>\\s*<br\\s*/>\\s*</p>"), "<p\\1>&#8203;</p>");
@@ -2135,7 +2157,10 @@ QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& ta
     QList<qlonglong> ids;
     auto id = branch->data(0, Qt::UserRole).toLongLong();
     Item& item = mNovel.findItem(id);
-    if (usingTags.isEmpty() || item.hasTag(usingTags) || starting == StartingFlag::Starting) ids.append(id);
+
+    if (usingTags.isEmpty() || item.hasTag(usingTags)) ids.append(id);
+    else if (starting != StartingFlag::Starting) return ids;
+
     for (auto childNum = 0; childNum < branch->childCount(); ++childNum) {
         auto childItems = vectorOfIds(branch->child(childNum), usingTags, StartingFlag::Continuing);
         ids.append(childItems);
@@ -2412,6 +2437,7 @@ void Main::setupConnections() {
 }
 
 void Main::setupScripting() {
+    delete mVm;
     mVm = new fifth::vm;
     if (!mVm) return;
 
