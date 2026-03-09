@@ -18,6 +18,8 @@ QList<QTextBlock> Printer::createParagraphs(Item& item, qreal scaleX, qreal scal
     format.setTopMargin(0);
     format.setBottomMargin(0);
 
+    mParaImages.clear();
+
     for (QTextBlock block = mDoc.begin(); block != mDoc.end(); block = block.next()) {
         for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
             QTextFragment fragment = it.fragment();
@@ -47,10 +49,11 @@ QList<QTextBlock> Printer::createParagraphs(Item& item, qreal scaleX, qreal scal
                     origH = pageHeight;
                     origW = origW * shrinkRatio;
                 }
-                QImage phantomPixel(1, 1, QImage::Format_ARGB32);
-                phantomPixel.fill(Qt::transparent);
 
-                mDoc.addResource(QTextDocument::ImageResource, QUrl(imgFmt.name()), phantomPixel);
+                QImage image = img.scaled(origW, origH, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                if (!mParaImages.contains(imgFmt.name())) mParaImages[imgFmt.name()] = image;
+
+                mDoc.addResource(QTextDocument::ImageResource, QUrl(imgFmt.name()), image);
 
                 imgFmt.setWidth(origW);
                 imgFmt.setHeight(origH);
@@ -126,7 +129,11 @@ QString Printer::nextWord(int& charFormat, const QList<QTextFragment>& newFragme
             if (fragment.isValid()) break;
         }
         if (!fragment.isValid()) return "";
-        if (fragment.charFormat().isEmpty()) return " ";
+        if (fragment.charFormat().isEmpty()) {
+            // blank line?
+            charFormat = 0;
+            return "\n";
+        }
         if (fragment.charFormat().isImageFormat()) {
             charFormat = image;
             QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
@@ -141,7 +148,13 @@ QString Printer::nextWord(int& charFormat, const QList<QTextFragment>& newFragme
     if (fragment.charFormat().fontUnderline())             charFormat |= underline;
     if (fragment.charFormat().fontWeight() >= QFont::Bold) charFormat |= bold;
 
-    return words.takeFirst();
+    while (!words.isEmpty()) {
+        QString word = words.takeFirst();
+        if (word.isEmpty()) return " ";
+        else return word;
+    }
+
+    return "";
 }
 
 bool Printer::outputNovel(List<qlonglong> ids,
@@ -160,6 +173,7 @@ bool Printer::outputNovel(List<qlonglong> ids,
 
     if (mPrinter == nullptr && mPdf == nullptr) return false;
     if (!painter->isActive()) return false;
+
     mXFactor = physicalDpiX() / PointsPerInch;
     mYFactor = physicalDpiX() / PointsPerInch;
 
@@ -205,12 +219,11 @@ bool Printer::outputNovel(List<qlonglong> ids,
                 startingPage = true;
             }
         }
-
         auto paragraphs = createParagraphs(item, scaleX, scaleY, lineWidth, pageHeight);
         printParagraphs(painter, pageSize, finishPage, margins, at, startingPage, paragraphs, item.hasTag(coverTags) && mPageNo == 1);
     }
 
-    if (!startingPage) page(painter, finishPage, true);
+    if (!startingPage) page(painter, finishPage, false);
 
     return true;
 }
@@ -268,6 +281,7 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
             first = false;
         }
 
+        text.replace("\\", "");
         text.replace(QChar(0x001e), "\\");
         margin.setText(text);
     }
@@ -297,21 +311,20 @@ void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal& obje
 void Printer::printNovel() {
     setFullPage(true);
     QSizeF size = pageSize(QPrinter::Point);
-    QPainter* paint = painter();
-    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), paint, size,
-                [this, &paint](bool m) {
+    QPainter* painter = this->painter();
+    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), painter, size,
+                [this, &painter](bool m) {
                     if (m) {
-                        header(paint);
-                        footer(paint);
+                        header(painter);
+                        footer(painter);
                     }
                     newPage();
                 });
-    delete paint;
 }
 
 void Printer::printParagraphs(QPainter* painter,
                               QSizeF &pageSize,
-                              std::function<void(bool)>& newPage,
+                              std::function<void(bool)>& emitPage,
                               QMarginsF& margins,
                               qreal& at,
                               bool& startingPage,
@@ -321,14 +334,12 @@ void Printer::printParagraphs(QPainter* painter,
     qreal bottom = pageSize.height() - margins.bottom();
 
     QFont font = mDoc.defaultFont();
-    painter->setFont(font);
     QFontMetrics fontMetrics(font);
-    int en = fontMetrics.horizontalAdvance("N");
+    int en = fontMetrics.horizontalAdvance(" ");
     int indent = 4 * en;
     int baseLine = fontMetrics.descent();
-    painter->fillRect({ QPoint(0, 0), pageSize }, Qt::white);
 
-    for (auto&& paragraph: paragraphs) {
+    for (auto&& [num, paragraph]: enumerate(paragraphs)) {
         QList<QTextFragment> fragments;
         for (QTextBlock::iterator it = paragraph.begin(); !it.atEnd(); ++it) fragments << it.fragment();
 
@@ -337,12 +348,12 @@ void Printer::printParagraphs(QPainter* painter,
         auto paraFormat = paragraph.blockFormat().alignment();
         switch(paraFormat) {
         case Qt::AlignLeft:    firstLineIndent = true;  fill = false; break;
-        case Qt::AlignCenter:  firstLineIndent = false; fill = false; break;
+        case Qt::AlignHCenter: firstLineIndent = false; fill = false; break;
         case Qt::AlignRight:   firstLineIndent = false; fill = false; break;
         case Qt::AlignJustify: firstLineIndent = true;  fill = true;  break;
         }
 
-        int x = firstLineIndent ? indent : 0;
+        int x = margins.left() + (firstLineIndent ? indent : 0);
         int lineHeight = fontMetrics.lineSpacing();
 
         int width = 0;
@@ -353,36 +364,40 @@ void Printer::printParagraphs(QPainter* painter,
         lineImages.clear();
         QList<Word> line;
         QString word = nextWord(currentFormat, fragments);
-        int height = 0;
+        int height = lineHeight;
         for (; ; ) {
             if (at + baseLine > bottom) {
-                page(painter, newPage, !startingPage);
+                page(painter, emitPage, !startingPage || !isCover);
                 ++mPageNo;
                 startingPage = false;
                 at = margins.top();
             }
+            while (word == "\n") {
+                at += lineHeight;
+                if (at + baseLine > bottom) {
+                    page(painter, emitPage, !startingPage || !isCover);
+                    ++mPageNo;
+                    startingPage = false;
+                    at = margins.top();
+                }
+                word = nextWord(currentFormat);
+            }
             if (word.isEmpty()) break;
 
             if (currentFormat == image) {
-                if (!lineImages.contains(word)) {
-                    if (word.startsWith("internal://")) {
-                        auto& images = Main::ref().ui()->textEdit->internalImages();
-                        if (images.contains(word)) lineImages[word] = images[word];
-                    } else lineImages[word] = Main::ref().ui()->textEdit->document()->resource(QTextDocument::ImageResource, QUrl(word)).value<QImage>();
-                }
+                if (!lineImages.contains(word)) lineImages[word] = mParaImages[word];
 
                 int imgHeight = lineImages[word].height();
-                int newHeight = (height > imgHeight) ? height : imgHeight;
+                height = (height > imgHeight) ? height : imgHeight;
 
-                if (lineImages[word].width() + width > lineWidth ||
-                    newHeight + at > bottom) {
-                    renderLine(painter, margins.left(), at, line, fill, paraFormat, lineWidth, margins.left());
+                if (lineImages[word].width() + width > lineWidth || height + at > bottom) {
+                    renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
                     at += height;
-                    height = 0;
-                    width = 0;
-                    x = 0;
+                    height = lineHeight;
                     line.clear();
                     startLine = true;
+                    width = 0;
+                    x = margins.left();
                     continue;
                 }
 
@@ -390,18 +405,24 @@ void Printer::printParagraphs(QPainter* painter,
                 width += lineImages[word].width();
                 startLine = false;
             } else {
-                int len = fontMetrics.horizontalAdvance(word);
+                QFont wordFont = font;
+                if (currentFormat & bold)      wordFont.setWeight(QFont::Bold);
+                if (currentFormat & italic)    wordFont.setItalic(true);
+                if (currentFormat & underline) wordFont.setUnderline(true);
+                QFontMetrics metrics(wordFont);
+                int len = metrics.horizontalAdvance(word);
 
                 if (len + width > lineWidth) {
-                    renderLine(painter, x, at, line, fill, paraFormat, lineWidth, margins.left());
+                    renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
                     at += height;
-                    height = 0;
+                    height = lineHeight;
                     line.clear();
                     startLine = true;
                     width = 0;
-                    x = 0;
+                    x = margins.left();
                     continue;
                 }
+
                 QSize size(len, lineHeight);
                 line.append({ word, currentFormat, size });
                 width += size.width() + (startLine ? 0: en );
@@ -410,46 +431,59 @@ void Printer::printParagraphs(QPainter* painter,
             word = nextWord(currentFormat);
         }
 
-        if (line.count() != 0) renderLine(painter, x, at, line, fill, paraFormat, lineWidth, margins.left());
+        if (line.count() != 0) {
+            renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
+            at += height;
+        }
+        at += height;
     }
 }
 
-void Printer::renderLine(QPainter* painter, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left) {
+void Printer::renderLine(QPainter* painter, QFont font, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left) {
     bool start = true;
-    QFont font = painter->font();
-    QFontMetrics metrics(font);
-    int space = metrics.horizontalAdvance("N");
     int height = 0;
     int width = 0;
+    QFontMetrics metrics(font);
+    int space = metrics.horizontalAdvance(" ");
     for (auto& word: line) {
+        QFont wordFont = font;
+        if (word.pFormat & bold)      wordFont.setWeight(QFont::Bold);
+        if (word.pFormat & italic)    wordFont.setItalic(true);
+        if (word.pFormat & underline) wordFont.setUnderline(true);
         width = width + word.pSize.width() + ((word.pFormat != image && !start) ? space : 0);
         if (height < word.pSize.height()) height = word.pSize.height();
+        start = false;
     }
 
-    if (para == Qt::AlignRight)       x = left + lineWidth - width;
-    else if (para == Qt::AlignCenter) x = left + (lineWidth - width) / 2;
-    else if (fill)                    space += (lineWidth - width) / (line.count() - 1);
+    qreal extraSpace = 0;
+    if (para == Qt::AlignRight)        x = left + lineWidth - width;
+    else if (para == Qt::AlignHCenter) x = left + (lineWidth - width) / 2;
+    else if (fill)                     extraSpace = (lineWidth - width) / qreal(line.count() - 1);
 
+    qreal pos = x;
     start = true;
     at += height;
     qreal lineHeight = metrics.lineSpacing();
     for (auto& word: line) {
         if (word.pFormat == image) {
             QImage img = lineImages[word.pText];
-            QSize imgSize = img.size();
-            QRect rect(QPoint(x + 0.5, at - word.pSize.height() + 0.5), imgSize);
+            QSize imgSize = word.pSize;
+            QRect rect(QPoint(x + 0.5, at - imgSize.height() + 0.5), imgSize);
             painter->drawImage(rect, img);
             start = false;
-            x += word.pSize.width();
+            pos += word.pSize.width();
         } else {
-            if (!start) x += space;
             QFont wordFont = font;
-            if (word.pFormat & bold)      font.setWeight(QFont::Bold);
-            if (word.pFormat & italic)    font.setItalic(true);
-            if (word.pFormat & underline) font.setUnderline(true);
+            if (word.pFormat & bold)      wordFont.setWeight(QFont::Bold);
+            if (word.pFormat & italic)    wordFont.setItalic(true);
+            if (word.pFormat & underline) wordFont.setUnderline(true);
+            QFontMetrics metrics(wordFont);
+            qreal doSpace = space + extraSpace;
+            if (!start) pos += doSpace;
             start = false;
-            painter->drawText(QPoint(x + 0.5, at - lineHeight + 0.5), word.pText);
-            x += word.pSize.width();
+            painter->setFont(wordFont);
+            painter->drawText(QPoint(pos + 0.5, at - lineHeight + 0.5), word.pText);
+            pos += word.pSize.width();
         }
     }
 }

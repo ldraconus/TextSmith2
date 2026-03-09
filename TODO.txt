@@ -1,3 +1,4 @@
+[ ] IMages are taking twice the height they should?
 [/] Write the Documentation
     - Intro
     - Part I
@@ -7,8 +8,6 @@
     [ ] Part V
     [ ] Part VI
 [ ] Ctr-Shif-P ambiguous, check to see if it's been taken over by my overlooking. It's not in the other menus ...
-[ ] The first chapter tag is not printing it's text. The scenes below it are printed, just not the text here. Probably forgot to run it in the special-case
-    handling around that.
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
@@ -18,6 +17,8 @@
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] The first chapter tag is not printing it's text. The scenes below it are printed, just not the text here. Probably forgot to run it in the special-case
+    handling around that.
 [X] Script Manager
     - Dialog built
     - Fill in the scripts from the TextSmith script directory

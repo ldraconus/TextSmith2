@@ -23,16 +23,18 @@ class Preferences;
 
 class Printer {
 private:
-    QTextDocument     mDoc;
-    qlonglong         mId;
-    List<qlonglong>   mIds;
-    Map<QUrl, QImage> mImages;
-    qlonglong         mPageNo;
-    QPdfWriter*       mPdf     { nullptr };
-    Preferences*      mPrefs   { nullptr };
-    QPrinter*         mPrinter { nullptr };
-    qreal             mXFactor;
-    qreal             mYFactor;
+    QTextDocument        mDoc;
+    qlonglong            mId;
+    List<qlonglong>      mIds;
+    Map<QUrl, QImage>    mImages;
+    qlonglong            mPageNo;
+    QPainter*            mPainter     { nullptr };
+    Map<QString, QImage> mParaImages;
+    QPdfWriter*          mPdf         { nullptr };
+    Preferences*         mPrefs       { nullptr };
+    QPrinter*            mPrinter     { nullptr };
+    qreal                mXFactor;
+    qreal                mYFactor;
 
     class Marginal {
     public:
@@ -105,7 +107,7 @@ public:
         : mPrinter(new QPrinter(printer, mode)) { }
     Printer(const QString& filename)
         : mPdf(new QPdfWriter(filename)) { }
-    virtual ~Printer() { }
+    virtual ~Printer() { delete mPainter; }
 
     static constexpr qreal PointsPerInch    { 72.0 };
     static constexpr bool  WithAlignment    { true };
@@ -119,7 +121,7 @@ public:
                                                                               else return mPdf->pageLayout().orientation(); }
     const QRectF             pageRect(QPrinter::Unit units) const           { return mPrinter ? mPrinter->pageRect(units) : pdfPageRect(units); }
     QPaintDevice*            paintdevice()                                  { return mPrinter ? dynamic_cast<QPaintDevice*>(mPrinter) : dynamic_cast<QPaintDevice*>(mPdf); }
-    QPainter*                painter()                                      { return mPrinter ? new QPainter(mPrinter) : new QPainter(mPdf); }
+    QPainter*                painter()                                      { return mPainter ? mPainter : (mPainter = (mPrinter ? new QPainter(mPrinter) : new QPainter(mPdf))); }
     const qlonglong          physicalDpiX() const                           { return mPrinter ? mPrinter->logicalDpiX() : mPdf->logicalDpiX(); }
     const qlonglong          physicalDpiY() const                           { return mPrinter ? mPrinter->logicalDpiY() : mPdf->logicalDpiY(); }
     Preferences*             prefs()                                        { return mPrefs; }
@@ -168,25 +170,25 @@ public:
                                        qreal scaleY,
                                        qreal lineWidth,
                                        qreal pageHeight);
-    void         footer(QPainter* painter);
-    void         header(QPainter* painter);
-    void         page(QPainter* painter, std::function<void(bool)> printer, bool marginals = false);
-    bool         outputNovel(List<qlonglong> ids,
-                             const QString& chapterTag,
-                             const QString& sceneTag,
-                             const QString& coverTag,
-                             QPainter* painter,
-                             QSizeF pageSize,
-                             std::function<void(bool)> pager);
-    const QSizeF pageSize(QPrinter::Unit unit) const;
-    void         printNovel();
-    void printParagraphs(QPainter* painter,
-                         QSizeF& pageSize,
-                         std::function<void(bool)>& pager,
-                         QMarginsF& margins,
-                         qreal& at,
-                         bool& startingPage,
-                         QList<QTextBlock>& paragraphs,
-                         bool isCover);
-    void renderLine(QPainter* painter, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left);
+    void              footer(QPainter* painter);
+    void              header(QPainter* painter);
+    void              page(QPainter* painter, std::function<void(bool)> printer, bool marginals = false);
+    bool              outputNovel(List<qlonglong> ids,
+                                  const QString& chapterTag,
+                                  const QString& sceneTag,
+                                  const QString& coverTag,
+                                  QPainter* painter,
+                                  QSizeF pageSize,
+                                  std::function<void(bool)> pager);
+    const QSizeF      pageSize(QPrinter::Unit unit) const;
+    void              printNovel();
+    void              printParagraphs(QPainter* painter,
+                                      QSizeF& pageSize,
+                                      std::function<void(bool)>& pager,
+                                      QMarginsF& margins,
+                                      qreal& at,
+                                      bool& startingPage,
+                                      QList<QTextBlock>& paragraphs,
+                                      bool isCover);
+    void              renderLine(QPainter* painter, QFont font, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left);
 };
