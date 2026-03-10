@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QTextEdit>
-#include <QTextfragment>
+#include <QTextFragment>
 
 #include "Exporter.h"
 
