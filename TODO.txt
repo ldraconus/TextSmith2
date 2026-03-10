@@ -6,6 +6,7 @@
     [/] Part IV
     [ ] Part V
     [ ] Part VI
+[ ] Adapt installer to make installer on linux as well.
 [ ] Switch items removes a single leading blank line each time
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
