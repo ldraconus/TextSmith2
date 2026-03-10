@@ -35,11 +35,12 @@
 #include <QPrinter>
 #include <QPrintPreviewDialog>
 #include <QScreen>
+#include <QScrollBar>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QStandardPaths>
-#include <QScrollBar>
 #include <QStyleFactory>
+#include <QStyleHints>
 #include <QTextBlock>
 #include <QTextBlockFormat>
 #include <QTextDocumentFragment>
@@ -52,6 +53,11 @@
 #include <QTreeWidget>
 #include <QUrl>
 #include <QWindow>
+
+#ifdef Q_OS_LINUX
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusReply>
+#endif
 
 Q_DECLARE_METATYPE(QTextDocument*)
 
@@ -398,6 +404,16 @@ void Main::doCut() {
         return;
     }
 }
+
+#ifdef Q_OS_LINUX
+void Main::doDbusChanged(QString ns, QString key, QDBusVariant value) {
+    if (ns == "org.freedesktop.appearance" && key == "color-scheme") {
+        uint v = value.variant().toUInt();
+        mPrefs.setIsDark(v == 1);
+        updateFromPrefs();
+    }
+}
+#endif
 
 void Main::doEditItem() {
     Item& current = mNovel.findItem(mCurrentNode);
@@ -2024,6 +2040,18 @@ Main::Main(QApplication* app, QWidget* parent)
     , mUi(new Ui::Main) {
     sMain = this;
     mUi->setupUi(this);
+
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
+        updateFromPrefs();
+    });
+
+#if defined(Q_OS_LINUX) && QT_CONFIG(dbus)
+    QDBusConnection::sessionBus().connect(
+        "org.freedesktop.portal.Desktop",
+        "/org/freedesktop/portal/desktop",
+        "org.freedesktop.portal.Settings",
+        "SettingChanged", this, SLOT(dbusChanged(QString, QString, QDBusVariant)));
+#endif
 
     mSoundPool.load(SoundPool::Sound::KeyWhack,    QUrl("qrc:/Sound/KeyWhack.wav"),    8);
     mSoundPool.load(SoundPool::Sound::SpaceThunk,  QUrl("qrc:/Sound/SpaceThunk.mp3"),  8);

@@ -22,28 +22,35 @@ find_package(Qt6 REQUIRED COMPONENTS
     TextToSpeech
 )
 
-
-if(MSVC)
+# Include directories
+if (UNIX)
     include_directories(
-        E:/QtSource/include
-        E:/QtSource/libzip/build
-        E:/QtSource/libzip/lib
-        E:/QtSource/vcpkg/packages/hunspell_x64-windows/include
-        ${CMAKE_SOURCE_DIR}
+        /home/chris/src/include
+        /home/chris/src/TextSmith2
+        /home/chris/src/libzip/lib
+        /home/chris/src/libzip/build
     )
 else()
-    include_directories(
-        E:/QtSource/include
-        E:/QtSource/libzip/build
-        E:/QtSource/libzip/lib
-        E:/QtSource/Spelling/hunspell
-        E:/QtSource/Spelling/parsers
-        E:/QtSource/Spelling/tools
-        ${CMAKE_SOURCE_DIR}
-    )
+    if(MSVC)
+        include_directories(
+            E:/QtSource/include
+            E:/QtSource/libzip/build
+            E:/QtSource/libzip/lib
+            E:/QtSource/vcpkg/packages/hunspell_x64-windows/include
+            ${CMAKE_SOURCE_DIR}
+        )
+    else()
+        include_directories(
+            E:/QtSource/include
+            E:/QtSource/libzip/build
+            E:/QtSource/libzip/lib
+            E:/QtSource/Spelling/hunspell
+            E:/QtSource/Spelling/parsers
+            E:/QtSource/Spelling/tools
+            ${CMAKE_SOURCE_DIR}
+        )
+    endif()
 endif()
-
-# Include directories
 
 # Sources
 set(SOURCES
@@ -129,28 +136,44 @@ qt_add_executable(TextSmith2
     ScriptDialog.h ScriptDialog.cpp ScriptDialog.ui
     PrintDialog.h PrintDialog.cpp PrintDialog.ui
     scripts/tools.5th
+    .gitignore
 )
 
 # Link Qt + libzip
+if(UNIX)
 target_link_libraries(TextSmith2 PRIVATE
     Qt6::Core
+    Qt6::DBus
     Qt6::Gui
     Qt6::Widgets
     Qt6::PrintSupport
     Qt6::TextToSpeech
-    E:/QtSource/libzip/build/lib/libzip.dll.a
-    E:/QtSource/zlib-1.3.1/build/libzlib.dll.a
+    /usr/local/lib/libz.a
+    /usr/local/lib/libzip.so
+    /usr/local/lib/libhunspell-1.7.a
+    /usr/local/lib/libparsers.a
 )
-
-if(MSVC)
-    target_link_libraries(TextSmith2 PRIVATE
-        "E:/QtSource/vcpkg/installed/x64-windows/lib/hunspell-1.7.lib"
-    )
 else()
     target_link_libraries(TextSmith2 PRIVATE
-        "E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a"
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::PrintSupport
+        Qt6::TextToSpeech
+        E:/QtSource/libzip/build/lib/libzip.dll.a
+        E:/QtSource/zlib-1.3.1/build/libzlib.dll.a
     )
-endif()
+
+    if(MSVC)
+        target_link_libraries(TextSmith2 PRIVATE
+            "E:/QtSource/vcpkg/installed/x64-windows/lib/hunspell-1.7.lib"
+        )
+    else()
+        target_link_libraries(TextSmith2 PRIVATE
+            "E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a"
+        )
+    endif()
+#endif
 
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE

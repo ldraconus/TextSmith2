@@ -70,7 +70,7 @@ public:
     bool        wasDark() const           { return mWasDark; }
     QRect       windowLocation() const    { return mWindow; }
 
-    void setActingSctrings(const StringList& s)           { mActingScripts = s; }
+    void setActingScripts(const StringList& s)            { mActingScripts = s; }
     void setApplicaiton(QApplication* a)                  { mApp = a; }
     void setAutoSave(bool a)                              { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i)                 { mAutoSaveInterval = i; }
@@ -80,6 +80,7 @@ public:
     void setFontSize(qlonglong s)                         { mFontSize = s; }
     void setFooter(const QString& f)                      { mFooter = f; }
     void setHeader(const QString& h)                      { mHeader = h; }
+    void setIsDark(bool x)                                { mIsDark = x; }
     void setMainSplitter(const List<int>& s)              { mMainSplitter = s; }
     void setMargins(const List<qreal>& m)                 { mMargins = m; }
     void setOrientation(const QPageLayout::Orientation o) { mOrientation = o; }

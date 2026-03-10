@@ -6,9 +6,17 @@
 #include "ui_PreferencesDialog.h"
 
 #include <QApplication>
+#include <QGuiApplication>
+#include <QProcess>
 #include <QSettings>
 #include <QStyle>
+#include <QStyleHints>
 #include <QStyleFactory>
+
+#if defined(Q_OS_LINUX) && QT_CONFIG(dbus)
+#include <QtDBus/QDBusInterface>
+#include <QtDBus/QDBusReply>
+#endif
 
 #include <Json5.h>
 #include <StringList.h>
@@ -71,7 +79,10 @@ bool Preferences::load() {
     QSettings settings(Company, Program);
     QJsonArray scripts = settings.value(ActingScripts, DefaultActingScripts).toJsonArray();
     mActingScripts.clear();
-    for (const auto& script: scripts) mActingScripts.append(script.toString());
+    for (auto i = 0; i < scripts.count(); ++i) {
+        auto script = scripts[i];
+        mActingScripts.append(script.toString());
+    }
     mAutoSave =          settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval =  settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
     mChapterTag =        settings.value(ChapterTag,       DefaultChapterTag).toString();
@@ -502,9 +513,47 @@ QString Preferences::checkPath(const QString& path, bool checked)
 }
 
 bool Preferences::isDark() {
+#ifdef NOTDEF
     QSettings s("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
                 QSettings::NativeFormat);
     return s.value("AppsUseLightTheme", 1).toInt() == 0;
+#endif
+
+    auto scheme = QGuiApplication::styleHints()->colorScheme();
+    if (scheme != Qt::ColorScheme::Unknown)
+        return scheme == Qt::ColorScheme::Dark;
+
+#if defined(Q_OS_LINUX) && QT_CONFIG(dbus)
+    // Fallback: query XDG portal directly
+    QDBusInterface portal(
+        "org.freedesktop.portal.Desktop",
+        "/org/freedesktop/portal/desktop",
+        "org.freedesktop.portal.Settings",
+        QDBusConnection::sessionBus()
+        );
+
+    QDBusReply<QVariant> reply = portal.call(
+        "Read", "org.freedesktop.appearance", "color-scheme"
+        );
+
+    if (reply.isValid()) {
+        // Unwrap the double-wrapped variant
+        QVariant inner = qvariant_cast<QDBusVariant>(reply.value()).variant();
+        uint value = inner.toUInt();
+        // 0 = no preference, 1 = dark, 2 = light
+        if (value == 1) return true;
+        if (value == 2) return false;
+    }
+
+    // Last resort: check gsettings via process
+    QProcess p;
+    p.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
+    p.waitForFinished(1000);
+    QString out = p.readAllStandardOutput();
+    if (out.contains("dark")) return true;
+#endif
+
+    return false; // safe default
 }
 
 void Preferences::resetIcons(bool isDark) {

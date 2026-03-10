@@ -6,6 +6,10 @@
 #include <QTimer>
 #include <QToolButton>
 
+#ifdef Q_OS_LINUX
+#include <QtDBus/QDBusVariant>
+#endif
+
 #include <atomic>
 
 #include <List.h>
@@ -149,6 +153,9 @@ private:
     void doCopy();
     void doCursorPositionChanged();
     void doCut();
+#if defined(Q_OS_LINUX) && QT_CONFIG(dbus)
+    void doDbusChanged(QString ns, QString key, QDBusVariant value);
+#endif
     void doEditItem();
     void doExit();
     void doExport(const QString& name);
@@ -347,6 +354,10 @@ public slots:
     void aboutToShowNovelMenuAction() { doAboutToShowNovelMenu(); }
     void aboutToShowViewMenuAction()  { doAboutToShowViewMenu(); }
     void aboutToShowFileHelpAction()  { doAboutToShowHelpMenu(); }
+
+#if defined(Q_OS_LINUX) && QT_CONFIG(dbus)
+    void dbusChanged(QString ns, QString key, QDBusVariant value) { doDbusChanged(ns, key, value); }
+#endif
 
     void printNovel() { mPrinter->printNovel(); }
 
