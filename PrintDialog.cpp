@@ -31,29 +31,36 @@ PrintDialog::PrintDialog(QWidget *parent)
     mPreview = new QPrintPreviewWidget(mPrinter->qprinter(), mUi->previewFrame);
     layout->addWidget(mPreview);
 
-    connect(mUi->printPushButton, &QPushButton::clicked, mPreview, &QPrintPreviewWidget::print);
+    connect(mUi->printPushButton, &QPushButton::clicked, this, [this]() {
+        mUi->printPushButton->setDisabled(true);
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        mPreview->print();
+        QApplication::restoreOverrideCursor();
+        mUi->printPushButton->setEnabled(true);
+    });
 
     connect(mPreview, &QPrintPreviewWidget::paintRequested, this,
             [this](QPrinter* printer) {
-                if (mPrinter == nullptr) return;
-                if (mPrinter->qprinter() == nullptr) return;
-                Printer* savedPrinter = Main::ref().exchangePrinter(mPrinter);
+                if (mPrinter == nullptr || printer == nullptr) return;
+                Printer print(printer);
+                print.setPrefs(mPrefs);
+                auto* edit = Main::ref().ui()->textEdit;
+                print.setImages(edit->internalImages());
+                auto& images = edit->externalImageUrls();
+                for (const auto& url: images) print.addImage(url);
+                print.setIds(mPrinter->ids());
+                QPrinterInfo info(*printer);
+                auto pageSize = info.defaultPageSize();
+                print.setPageSize(pageSize.id());
+                QPageLayout::Orientation orientation = mPrefs->orientation();
+                print.setPageOrientation(orientation);
+                Printer* savedPrinter = Main::ref().exchangePrinter(&print);
                 Main::ref().printNovel();
-                mPrinter = Main::ref().exchangePrinter(savedPrinter);
+                Main::ref().exchangePrinter(savedPrinter);
             });
 
-    auto* edit = Main::ref().ui()->textEdit;
-    mPrinter->setImages(edit->internalImages());
-    auto& images = edit->externalImageUrls();
-    for (const auto& url: images) mPrinter->addImage(url);
     mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->topLevelItem(0),
                                              { mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag() }));
-
-    QPrinterInfo info(*mPrinter->qprinter());
-    auto pageSize = info.defaultPageSize();
-    mPrinter->setPageSize(pageSize.id());
-    QPageLayout::Orientation orientation = mPrefs->orientation();
-    mPrinter->setPageOrientation(orientation);
 
     updatePreview();
 

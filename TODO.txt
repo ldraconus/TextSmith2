@@ -1,4 +1,4 @@
-[ ] IMages are taking twice the height they should?
+[ ] Check save as dialog retuirn and append '.novel' if it's not there.
 [/] Write the Documentation
     - Intro
     - Part I
@@ -7,16 +7,21 @@
     [/] Part IV
     [ ] Part V
     [ ] Part VI
-[ ] Ctr-Shif-P ambiguous, check to see if it's been taken over by my overlooking. It's not in the other menus ...
+[ ] Switch items removes a single leading blank line each time
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Uppercase and lowercase should only be executable if text is selected ...
 [ ] Add a recent projects to the file menu
+    [ ] Update documetation
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] Print button on the print dialog just flat does nothing because I haven't actually set a printer, on print set it to the defaujlt printer
+[X] Ctr-Shif-P ambiguous, check to see if it's been taken over by my overlooking. It's not in the other menus ...
+[X] Images are taking twice the height they should?
+[X] Made it work on Linux
 [X] The first chapter tag is not printing it's text. The scenes below it are printed, just not the text here. Probably forgot to run it in the special-case
     handling around that.
 [X] Script Manager

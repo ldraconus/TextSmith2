@@ -2426,7 +2426,7 @@ void Main::setupConnections() {
     commandLine->hide();
     statusBar()->addPermanentWidget(commandLine);
 
-    QShortcut* paletteShortcut = new QShortcut(QKeySequence("Ctrl+Shift+P"), this);
+    QShortcut* paletteShortcut = new QShortcut(QKeySequence("Ctrl+Shift+C"), this);
     connect(paletteShortcut, &QShortcut::activated, [=]() {
         commandLine->setVisible(true);
         commandLine->setFocus();

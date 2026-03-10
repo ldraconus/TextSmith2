@@ -107,6 +107,8 @@ public:
         : mPrinter(new QPrinter(printer, mode)) { }
     Printer(const QString& filename)
         : mPdf(new QPdfWriter(filename)) { }
+    Printer(QPrinter* printer)
+        : mPrinter(printer) { }
     virtual ~Printer() { delete mPainter; }
 
     static constexpr qreal PointsPerInch    { 72.0 };

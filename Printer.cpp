@@ -434,6 +434,7 @@ void Printer::printParagraphs(QPainter* painter,
         if (line.count() != 0) {
             renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
             at += height;
+            height = lineHeight;
         }
         at += height;
     }
@@ -446,10 +447,6 @@ void Printer::renderLine(QPainter* painter, QFont font, qreal x, qreal at, QList
     QFontMetrics metrics(font);
     int space = metrics.horizontalAdvance(" ");
     for (auto& word: line) {
-        QFont wordFont = font;
-        if (word.pFormat & bold)      wordFont.setWeight(QFont::Bold);
-        if (word.pFormat & italic)    wordFont.setItalic(true);
-        if (word.pFormat & underline) wordFont.setUnderline(true);
         width = width + word.pSize.width() + ((word.pFormat != image && !start) ? space : 0);
         if (height < word.pSize.height()) height = word.pSize.height();
         start = false;
