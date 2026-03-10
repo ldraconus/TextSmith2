@@ -277,6 +277,8 @@ void Main::doAboutToShowEditMenu() {
         mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
         mUi->actionPaste->setEnabled(mUi->textEdit->canPaste());
         mUi->actionFind_Next->setEnabled(mSearch && !mSearch->text().isEmpty());
+        mUi->actionUppercase->setEnabled(mUi->textEdit->textCursor().hasSelection());
+        mUi->actionLowercase->setEnabled(mUi->textEdit->textCursor().hasSelection());
     } else {
         mUi->actionUndo->setEnabled(mUi->treeWidget->canUndo());
         mUi->actionRedo->setEnabled(mUi->treeWidget->canRedo());
@@ -284,6 +286,8 @@ void Main::doAboutToShowEditMenu() {
         mUi->actionCut->setEnabled(mUi->treeWidget->currentItem()->parent() != nullptr);
         mUi->actionPaste->setEnabled(mUi->treeWidget->canPaste());
         mUi->actionFind_Next->setEnabled(false);
+        mUi->actionUppercase->setEnabled(false);
+        mUi->actionLowercase->setEnabled(false);
     }
 }
 
