@@ -173,7 +173,7 @@ else()
             "E:/QtSource/Spelling/build/Desktop_Qt_6_10_1_MinGW_64_bit-Debug/libSpelling.a"
         )
     endif()
-#endif
+endif()
 
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE
