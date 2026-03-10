@@ -13,9 +13,10 @@
 [ ] Add a recent projects to the file menu
     [ ] Update documetation
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
-[ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
+    [ ] Update documentation
 [ ] Write scripts
+[X] Add scroll area for tags in the ItemDescriptionDialog.
 [X] Uppercase and lowercase should only be executable if text is selected ...
 [X] Check save as dialog retuirn and append '.novel' if it's not there.
 [X] Print button on the print dialog just flat does nothing because I haven't actually set a printer, on print set it to the defaujlt printer
