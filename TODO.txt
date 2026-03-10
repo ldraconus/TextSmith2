@@ -1,4 +1,3 @@
-[ ] Check save as dialog retuirn and append '.novel' if it's not there.
 [/] Write the Documentation
     - Intro
     - Part I
@@ -18,6 +17,7 @@
 [ ] Add scroll area for tags in the ItemDescriptionDialog.
 [ ] add context menus to tree and text widgets
 [ ] Write scripts
+[X] Check save as dialog retuirn and append '.novel' if it's not there.
 [X] Print button on the print dialog just flat does nothing because I haven't actually set a printer, on print set it to the defaujlt printer
 [X] Ctr-Shif-P ambiguous, check to see if it's been taken over by my overlooking. It's not in the other menus ...
 [X] Images are taking twice the height they should?

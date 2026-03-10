@@ -1074,6 +1074,7 @@ void Main::doSave() {
 bool Main::doSaveAs() {
     QString filename = QFileDialog::getSaveFileName(this, "Save the Novel as?", mDocDir, "Novels (*.novel);;All Files (*.*)");
     if (filename.isEmpty()) return false;
+    if (!filename.endsWith(".novel", Qt::CaseInsensitive)) filename.append(".novel");
     mNovel.setFilename(filename);
     changed();
     doSave();
