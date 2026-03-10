@@ -1,0 +1,60 @@
+# How to use it:
+#  Create the folders .github/workflows/ in your project root.
+#  Save this code as build.yml in that folder.
+#  git add .github/
+#  git commit -m "Add multi-platform CI build check"
+#  git push origin main
+
+name: TextSmith2 Multi-Platform Build (CMake)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure and Build (Windows)
+      shell: pwsh
+      run: |
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+        cmake --build build --config Release
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev build-essential
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        host: 'linux'
+        target: 'desktop'
+        arch: 'gcc_64'
+
+    - name: Configure and Build (Linux)
+      run: |
+        cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake --build build
