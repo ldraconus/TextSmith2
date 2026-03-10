@@ -1,9 +1,10 @@
-#!/user/bin/bash
+#!/usr/bin/env bash
 BUILD_DIR="$1"
 BINARY_CREATOR="$2"
 WINDEPLOY="$3"
-FROM_RPGRAM=$4
-TO_PROGRAM=$5
+FROM_PROG=$4
+TO_PROG=$5
+
 mkdir -p install
 echo "Gathering build files"
 cd install
@@ -12,13 +13,29 @@ cp -ruf ../packages packages
 cp -ruf ../config config
 cp -uf ../Installer.ico config/Installer.ico
 cp -uf ../Background.png config/Background.png
-cp -uf $BUILD_DIR/${FROM_PROG}.exe packages/com.vendor.product/data/${TO_PROG}.exe
+
+# Handle platform differences
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    EXE=".exe"
+    INSTALLER_EXT=".exe"
+else
+    EXE=""
+    INSTALLER_EXT=".run"
+fi
+
+cp -uf $BUILD_DIR/${FROM_PROG}${EXE} packages/com.vendor.product/data/${TO_PROG}${EXE}
 cp -uf $BUILD_DIR/Documentation.html packages/com.vendor.product/data
 cp -ruf $BUILD_DIR/Documentation packages/com.vendor.product/data/Documentation
-cp -ruf ../scripts packages/com.ventor.product/scripts
+cp -ruf ../scripts packages/com.vendor.product/scripts   # fixed typo: ventor→vendor
+
 cd packages/com.vendor.product/data
-echo "Fetching libraries"
-$WINDEPLOY --no-translations $TO_PROG.exe
+
+# windeployqt is Windows-only; Linux handles Qt libs via other means
+if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
+    echo "Fetching libraries"
+    $WINDEPLOY --no-translations ${TO_PROG}${EXE}
+fi
+
 echo "Building installer"
 cd ../../..
-$BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer.exe
+$BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer${INSTALLER_EXT}
