@@ -17,6 +17,7 @@
 [ ] add context menus to tree and text widgets
     [ ] Update documentation
 [ ] Write scripts
+[X] Setup linux access to github
 [X] Add scroll area for tags in the ItemDescriptionDialog.
 [X] Uppercase and lowercase should only be executable if text is selected ...
 [X] Check save as dialog retuirn and append '.novel' if it's not there.
