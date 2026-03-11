@@ -4,6 +4,29 @@
 
 #include <StringList.h>
 
+/*
+System-Level TTS Backends: Qt 6 on Linux relies on system TTS engines. Install one of the following:
+
+-->Festival: sudo apt install festival festvox-us-slt-hts (supports natural voices like cmu_us_slt_arctic_hts).
+
+SVOX Pico (pico2wave): sudo apt install libttspico0 libttspico-utils — lightweight and decent for basic use.
+
+espeak-ng: sudo apt install espeak-ng — modern alternative to espeak.
+
+Coqui TTS (AI-based, high quality, offline): Install via pipx install coqui-tts, then use with tts --text "Hello" --pipe_out | aplay.
+
+Verify Qt6 TTS Works: Use a minimal Qt6 C++ or Python app with QTextToSpeech. Ensure the backend is detected via QTextToSpeech.availableEngines().
+
+Note: Qt6 TTS performance on Linux is dependent on the underlying system engine.  While Qt6 has improved support, results may vary compared to Windows.
+For best results, use Coqui TTS or Festival with high-quality voices.
+
+Install the voice package directly via APT:
+
+sudo apt install festvox-us-slt-hts
+
+This package provides the high-quality HTS-based voice and integrates automatically with Festival.
+*/
+
 Speech::Speech(QObject* parent)
     : QObject(parent) {
     // Explicitly check available engines, fallback if winrt isn't there
