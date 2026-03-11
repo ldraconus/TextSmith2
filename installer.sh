@@ -8,11 +8,11 @@ TO_PROG=$5
 mkdir -p install
 echo "Gathering build files"
 cd install
-rm -rf config packages
+rm -rf  config packages
 cp -ruf ../packages packages
 cp -ruf ../config config
-cp -uf ../Installer.ico config/Installer.ico
-cp -uf ../Background.png config/Background.png
+cp -uf  ../Installer.ico config/Installer.ico
+cp -uf  ../Background.png config/Background.png
 
 # Handle platform differences
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
@@ -23,9 +23,10 @@ else
     INSTALLER_EXT=".run"
 fi
 
-cp -uf $BUILD_DIR/${FROM_PROG}${EXE} packages/com.vendor.product/data/${TO_PROG}${EXE}
-cp -uf $BUILD_DIR/Documentation.html packages/com.vendor.product/data
-cp -ruf $BUILD_DIR/Documentation packages/com.vendor.product/data/Documentation
+mkdir -p packages/com.vendor.product/data
+cp -uf  $BUILD_DIR/${FROM_PROG}${EXE} packages/com.vendor.product/data/${TO_PROG}${EXE}
+cp -uf  ../Documentation.html packages/com.vendor.product/data
+cp -ruf ../Documentation packages/com.vendor.product/data/Documentation
 cp -ruf ../scripts packages/com.vendor.product/scripts   # fixed typo: ventor→vendor
 
 cd packages/com.vendor.product/data
