@@ -17,9 +17,6 @@ public:
 
     QList<ExportMetadataField> mMetadata = {
         { "cover",   "Book Cover (cover:)",                 "" },
-        { "margins", "Paper Margins (margins: L, R, T, B)", "1\", 1\", 1\", 1\"" },
-        { "header",  "Page Header (header:)",               ">%T\\n>%L" },
-        { "footer",  "Page Footer (footer:)",               ">%#<"}
     };
 
     static constexpr auto PointsPerInch = 72.0;

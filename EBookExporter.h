@@ -16,7 +16,7 @@ private:
         { "author",    "Book Author (author:)",        "Anoonymous" },
         { "cover",     "Book Cover (cover:)",          "" },
         { "rights",    "Publication Rights (rights:)", "Public Domain" },
-        { "langauge",  "Langauge (language:)",         "en-US" },
+        { "language",  "Language (language:)",         "en-US" },
         { "publisher", "Publisher (publisher:)",       "Independent" },
         { "id",        "ISBN (id:)",                   "" },
         { "year",      "Publication Year (year:)",     "" }

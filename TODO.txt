@@ -3,10 +3,12 @@
     - Part I
     - Part II
     - Part III
-    [/] Part IV
+    - Part IV
     [ ] Part V
     [ ] Part VI
-[ ] Adapt installer to make installer on linux as well.
+[/] Adapt installer.sh to make installer on linux as well.
+[ ] Make TextSMith use the current document filename and save status on the title bar (TextSmith - <filename> [saved] <-- if saved, nothing if not. If not filename,
+    just use TextSmith alone
 [ ] Switch items removes a single leading blank line each time
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
@@ -17,6 +19,11 @@
 [ ] add context menus to tree and text widgets
     [ ] Update documentation
 [ ] Write scripts
+[?] Add a hollywood script writing display mode - make file menu understand we're in script mode
+[?] Add Imports:
+[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
+[?] - snowflake import?
+[X] Fix exporters to use the margin code and header/footers of page setup.
 [X] Setup linux access to github
 [X] Add scroll area for tags in the ItemDescriptionDialog.
 [X] Uppercase and lowercase should only be executable if text is selected ...
@@ -32,17 +39,11 @@
     - Fill in the scripts from the TextSmith script directory
     - Handle moving from one list to another (That's really it, the main app takes care of actually remebering this).
     - Make the main app rememebr what the scripts dialog did.
-[X] Blank lines being destroyed in text when you leave and return to an item. Need to stop doing that.
 [X] First line in an item is not triggereing the correct l/r/c/j highlight. Probably simple error in change item code.
 [X] Fix a bug where if you just type a name into the filename field on the exporters, you get it in the app dir, not the doc dir. doc dir set there as well.
-[X] Fix exporters to match the margin code and looks of page setup.
 [X] PDF Export is crashing.
 [X] Fix print to grab the images ... none showing right now.
 [X] Fix the print dialog
-[?] Add a hollywood script writing display mode - make file menu understand we're in script mode
-[?] Add Imports:
-[?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
-[?] - snowflake import?
 [X] Whoops! read to me broken ...
 [X] Implement UI font changing ... Application::setFont to the rescue ... except webding fonts ... manual resizing)
 [X] New not clearing image cache properly ...

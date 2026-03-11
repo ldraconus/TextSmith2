@@ -131,8 +131,8 @@ private:
 
     static Main* sMain;
 
-    void       changed()      { mNovel.change(); }
-    void       clearChanged() { mNovel.noChanges(); }
+    void       changed()      { mNovel.change();    setTitle(); }
+    void       clearChanged() { mNovel.noChanges(); setTitle(); }
     void       doNothing()    { }
     bool       isChanged()    { return mNovel.isChanged(); }
     fifth::vm* vm()           { return mVm; }
@@ -246,13 +246,14 @@ private:
     void           setIcon(QToolButton* button, bool isChecked);
     void           setMenu(QAction* button, bool isChecked);
     void           setPosition(qlonglong pos);
+    void           setTitle();
     void           setupActions();
     void           setupConnections();
-    void           setupScripting();
     void           setupIcons();
+    void           setupScripting();
     void           setupTabOrder();
     qlonglong      skipSpaces(const QString& str, qlonglong pos);;
-    void           update();
+    void           update(bool unchanged = false);
     void           updateFromPrefs();
     void           updateHtml();
     void           workTree(QTreeWidgetItem* item, bool expand);

@@ -325,9 +325,9 @@ namespace fifth {
 
       void push(value v)        { mCode.push_back(instruction(v)); }
       void call(exe e)          { mCode.push_back(instruction(e)); }
-      void indirect()           { mCode.push_back(instruction(int(0))); }
+      void indirect()           { mCode.push_back(instruction(nullptr)); }
 
-      str   disassemble(vm* v);
+      str  disassemble(vm* v);
 
     private:
       std::vector<instruction> mCode;

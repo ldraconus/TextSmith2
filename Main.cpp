@@ -874,7 +874,7 @@ void Main::loadFile(const QString& filename) {
         for (auto& id: ids) mState[id.toInt()] = state;
     }
 
-    update();
+    update(true);
     doCursorPositionChanged();
     auto total = mNovel.countAll();
     mWordCount.setSinceLastCounted(0);
@@ -1066,6 +1066,8 @@ void Main::doRightJustify() {
 }
 
 void Main::doSave() {
+    if (!mNovel.isChanged()) return;
+
     if (mSaving.exchange(true)) return;
 
     mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
@@ -1894,6 +1896,7 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     if (!mNovel.save() && !noUi) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
                                          [this]() { doNothing(); },
                                          "Something unexpected has happened");
+    else setTitle();
 }
 
 TreeNode Main::saveTree(QTreeWidgetItem* node) {
@@ -1977,7 +1980,17 @@ void Main::setPosition(qlonglong pos) {
     mUi->textEdit->setTextCursor(cursor);
 }
 
-void Main::update() { // new, open
+void Main::setTitle() {
+    QString title = "TextSmith";
+    if (!mNovel.filename().isEmpty()) {
+        QFileInfo info(mNovel.filename());
+        title += " - " + info.fileName();
+        if (!mNovel.isChanged()) title += " [Saved]";
+    }
+    setWindowTitle(title);
+}
+
+void Main::update(bool unchanged) { // new, open
     QTreeWidget* tree = mUi->treeWidget;
     tree->clear();
     buildTree(mNovel.branches(), nullptr, mState);
@@ -1986,6 +1999,7 @@ void Main::update() { // new, open
     updateFromPrefs();
 
     mUi->textEdit->setFocus();
+    if (unchanged) clearChanged();
 }
 
 void Main::updateFromPrefs() {
