@@ -33,7 +33,7 @@ Speech::Speech(QObject* parent)
     // (Optional safety, but good practice)
     //if (QTextToSpeech::availableEngines().contains("winrt")) mTts = new QTextToSpeech("winrt", this);
     //else
-    mTts = new QTextToSpeech("sapi", this);
+    mTts = textEngine(this);
 
     connect(mTts, &QTextToSpeech::stateChanged, this, [this](QTextToSpeech::State state) {
         if (mPaused) return;
@@ -106,6 +106,13 @@ void Speech::speak(const QString& text) {
     speakNextSentence();
 }
 
+bool Speech::speechAvailable(QObject* ths) {
+    auto speech = textEngine(ths);
+    bool available = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
+    delete speech;
+    return available;
+}
+
 void Speech::speakNextSentence() {
 /*
     if (mNeedsPrimed) {
@@ -121,6 +128,14 @@ void Speech::speakNextSentence() {
         mTts->say(sentence);
         ++mCurrentIndex;
     }
+}
+
+QTextToSpeech *Speech::textEngine(QObject* ths) {
+#ifdef Q_OS_WIN
+    return new QTextToSpeech("sapi", ths);
+#else
+    return new QTextToSpeech("", ths);
+#endif
 }
 
 void Speech::highlightSentence(const Sentence &sentence) {

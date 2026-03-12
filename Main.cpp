@@ -2078,9 +2078,7 @@ Main::Main(QApplication* app, QWidget* parent)
     mSoundPool.load(SoundPool::Sound::ReturnClunk, QUrl("qrc:/Sound/ReturnClunk.mp3"), 8);
     mSoundPool.load(SoundPool::Sound::MarginDing,  QUrl("qrc:/Sound/MarginDing.mp3"),  8);
 
-    QTextToSpeech* speech = new QTextToSpeech("sapi", this);
-    mSpeechAvailable = !(speech == nullptr || speech->state() == QTextToSpeech::Error || speech->availableVoices().isEmpty());
-    delete speech;
+    mSpeechAvailable = Speech::speechAvailable(this);
 
     mCurrentNode = mNovel.root();
 

@@ -19,6 +19,8 @@ public:
     void setVoice(const qlonglong voice);
     void speak(const QString& text);
 
+    static bool speechAvailable(QObject* ths);
+
 public slots:
     void stop();
 
@@ -45,4 +47,6 @@ private:
     void extractSentences(const QString& text);
     void highlightSentence(const Sentence& sentence);
     void speakNextSentence();
+
+    static QTextToSpeech* textEngine(QObject* ths);
 };
