@@ -37,7 +37,8 @@ if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
     $WINDEPLOY --no-translations ${TO_PROG}${EXE}
 else
     echo "Confiuring linux post install"
-    cp installScript.js.linux installScript.js
+    cp ../../../../TextSmithIcon.png .
+    cp ../meta/nstallScript.js.linux ../meta/installScript.js
 fi
 
 echo "Building installer"
