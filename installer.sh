@@ -36,6 +36,7 @@ if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
     echo "Fetching libraries"
     $WINDEPLOY --no-translations ${TO_PROG}${EXE}
 else
+    echo "Confiuring linux post install"
     cp installScript.js.linux installScript.js
 fi
 
