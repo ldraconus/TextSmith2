@@ -8,4 +8,5 @@
         <License name="MIT Public License Agreement" file="license.txt" />
     </Licenses>
     <Default>true</Default>
+    <InstallScript>installScript.js</InstallScript>
 </Package>

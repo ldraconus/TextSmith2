@@ -27,7 +27,7 @@ mkdir -p packages/com.vendor.product/data
 cp -uf  $BUILD_DIR/${FROM_PROG}${EXE} packages/com.vendor.product/data/${TO_PROG}${EXE}
 cp -uf  ../Documentation.html packages/com.vendor.product/data
 cp -ruf ../Documentation packages/com.vendor.product/data/Documentation
-cp -ruf ../scripts packages/com.vendor.product/scripts   # fixed typo: ventor→vendor
+cp -ruf ../scripts packages/com.vendor.product/idata/scripts   # fixed typo: ventor→vendor
 
 cd packages/com.vendor.product/data
 
@@ -35,6 +35,8 @@ cd packages/com.vendor.product/data
 if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
     echo "Fetching libraries"
     $WINDEPLOY --no-translations ${TO_PROG}${EXE}
+else
+    cp installScript.js.linux installScript.js
 fi
 
 echo "Building installer"
