@@ -1,0 +1,27 @@
+function Component()
+{
+    component.loaded.connect(this, Component.prototype.componentLoaded);
+}
+
+Component.prototype.componentLoaded = function()
+{
+    // runs when component loads
+}
+
+Component.prototype.createOperations = function()
+{
+    component.createOperations(); // run default operations first
+
+    if (systemInfo.productType === "ubuntu" || 
+        systemInfo.productType === "zorin") {
+        component.addOperation("CreateDesktopEntry",
+            "@HomeDir@/.local/share/applications/TextSmith.desktop",
+            "Type=Application\n" +
+            "Name=MyApp\n" +
+            "Exec=@TargetDir@/TextSmith\n" +
+            "Icon=@TargetDir@/TextSmith.png\n" +
+            "Categories=Office;\n" +
+            "Terminal=false\n"
+        );
+    }
+}
