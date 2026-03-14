@@ -723,7 +723,7 @@ namespace fifth {
    * word: [-->]
    * user: b a s --->
    *
-   * Store a in previously creted bag s at a
+   * Store b in previously creted bag s at a
    **/
   void rsetBag(vm* v) {
     stack& user = v->user();

@@ -40,9 +40,12 @@ constexpr auto MarginTop        { "MarginTop" };
 constexpr auto Orientation      { "Orientation" };
 constexpr auto OtherSplitter    { "OtherSplitter" };
 constexpr auto PageSize         { "PageSize" };
+constexpr auto Path             { "Path" };
 constexpr auto Position         { "Position" };
+constexpr auto RecentNovels     { "RecentNovels" };
 constexpr auto SceneTag         { "SceneTag" };
 constexpr auto Theme            { "Theme" };
+constexpr auto Title            { "Title" };
 constexpr auto ToolbarVisible   { "ToolbarVisible" };
 constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto UiFontFamily     { "UiFontFasmily" };
@@ -66,6 +69,7 @@ constexpr auto DefaultOrientation    { QPageLayout::Portrait };
 const     auto DefaultOther          { QJsonArray() };
 constexpr auto DefaultPageSize       { "Letter" };
 constexpr auto DefaultPosition       { 0 };
+const     auto DefaultRecentNovels   { QJsonArray() };
 const     auto DefaultSplitter       { QJsonArray() };
 constexpr auto DefaultSave           { false };
 constexpr auto DefaultSceneTag       { "scene" };
@@ -100,11 +104,18 @@ bool Preferences::load() {
     mMargins.append(     settings.value(MarginRight,      DefaultMarginRight).toDouble());
     mMargins.append(     settings.value(MarginTop,        DefaultMarginTop).toDouble());
     QJsonArray other =   settings.value(OtherSplitter,    DefaultOther).toJsonArray();
-    mOrientation =       QPageLayout::Orientation(settings.value(Orientation,      DefaultOrientation).toInt());
     mOtherSplitter.clear();
+    mOrientation =       QPageLayout::Orientation(settings.value(Orientation, DefaultOrientation).toInt());
     for (auto i = 0; i < other.size(); ++i) mOtherSplitter.append(qlonglong(other[i].toInt(-1)));
     mPageSize =          settings.value(PageSize,         DefaultPageSize).toString();
     mPosition =          settings.value(Position,         DefaultPosition).toLongLong();
+    QJsonArray recent =  settings.value(RecentNovels,     DefaultRecentNovels).toJsonArray();
+    mRecentNovels.clear();
+    for (auto&& novel: recent) {
+        if (!novel.isObject()) continue;
+        QJsonObject recentNovel = novel.toObject();
+        if (recentNovel.contains(Title) && recentNovel.contains(Path)) addNovel(recentNovel[Title].toString(), recentNovel[Path].toString());
+    }
     mSceneTag =          settings.value(SceneTag,         DefaultSceneTag).toString();
     mTheme =             settings.value(Theme,            DefaultTheme).toInt();
     mToolbarVisible =    settings.value(ToolbarVisible,   DefaultToolbarVisible).toBool();
@@ -140,6 +151,13 @@ QPageSize::PageSizeId Preferences::pageSizeToPid(const QString& size) {
         }
     }
     return pid;
+}
+
+QString Preferences::novelPath(const QString& title) {
+    for (const auto& novel: mRecentNovels) {
+        if (novel.sTitle == title) return novel.sPath;
+    }
+    return "";
 }
 
 QString Preferences::pidToSize(const QPageSize::PageSizeId pid) {
@@ -179,6 +197,7 @@ bool Preferences::read(Json5Object& obj) {
         }
         mVoice =             Item::hasNum(obj,  "voice",           qlonglong(DefaultVoice));
         mActingScripts.clear();
+        mRecentNovels.clear();
         mChapterTag = DefaultChapterTag;
         mFooter = DefaultFooter;
         mHeader = DefaultHeader;
@@ -233,17 +252,24 @@ bool Preferences::read(Json5Object& obj) {
             if (!i.isNumber()) continue;
             mMainSplitter.append(i.toInt());
         }
-        arr = Item::hasArr(obj, OtherSplitter, { });
         mMargins.clear();
         mMargins.append(    Item::hasNum(obj, MarginBottom,            DefaultMarginBottom));
         mMargins.append(    Item::hasNum(obj, MarginLeft,              DefaultMarginLeft));
         mMargins.append(    Item::hasNum(obj, MarginRight,             DefaultMarginRight));
         mMargins.append(    Item::hasNum(obj, MarginTop,               DefaultMarginTop));
         mOrientation =      QPageLayout::Orientation(Item::hasNum(obj, Orientation, qlonglong(DefaultOrientation)));
+        arr =               Item::hasArr(obj, OtherSplitter, { });
         mOtherSplitter.clear();
         for (auto& i: arr) {
             if (!i.isNumber()) continue;
             mOtherSplitter.append(i.toInt());
+        }
+        arr =               Item::hasArr(obj, RecentNovels,     { });
+        mRecentNovels.clear();
+        for (auto&& i: arr) {
+            if (!i.isObject()) continue;
+            Json5Object obj = i.toObject();
+            if (obj.contains(Title) && obj.contains(Path)) addNovel(obj[Title].toString(), obj[Path].toString());
         }
         arr =               Item::hasArr(obj,  WindowLoc,        { });
     }
@@ -283,6 +309,14 @@ bool Preferences::save() {
     settings.setValue(OtherSplitter,    otr);
     settings.setValue(PageSize,         mPageSize);
     settings.setValue(Position,         mPosition);
+    QJsonArray rnv;
+    for (auto& nvl: mRecentNovels) {
+        QJsonObject obj;
+        obj[Title] = nvl.sTitle;
+        obj[Path] = nvl.sPath;
+        rnv.append(obj);
+    }
+    settings.setValue(RecentNovels,     rnv);
     settings.setValue(SceneTag,         mSceneTag);
     settings.setValue(Theme,            mTheme);
     settings.setValue(ToolbarVisible,   mToolbarVisible);
@@ -489,6 +523,11 @@ Preferences::Preferences()
     load();
 }
 
+void Preferences::addNovel(const Recent& novel) {
+    mRecentNovels.remove(novel);
+    mRecentNovels.insert(0, novel);
+}
+
 void Preferences::applyFontToTree(QWidget* w, const QFont& f) {
     if (!w) return;
 
@@ -513,12 +552,6 @@ QString Preferences::checkPath(const QString& path, bool checked)
 }
 
 bool Preferences::isDark() {
-#ifdef NOTDEF
-    QSettings s("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                QSettings::NativeFormat);
-    return s.value("AppsUseLightTheme", 1).toInt() == 0;
-#endif
-
     auto scheme = QGuiApplication::styleHints()->colorScheme();
     if (scheme != Qt::ColorScheme::Unknown)
         return scheme == Qt::ColorScheme::Dark;
@@ -544,7 +577,9 @@ bool Preferences::isDark() {
         if (value == 1) return true;
         if (value == 2) return false;
     }
+#endif
 
+#if defined(Q_OS_LINUX)
     // Last resort: check gsettings via process
     QProcess p;
     p.start("gsettings", {"get", "org.gnome.desktop.interface", "color-scheme"});
@@ -578,6 +613,7 @@ void Preferences::setSystemTheme() {
 
 Json5Object Preferences::write() {
     Json5Object obj;
+
     Json5Array ac;
     for (const auto& a: mActingScripts) ac.append(a);
     obj[ActingScripts] =    ac;
@@ -602,6 +638,14 @@ Json5Object Preferences::write() {
     obj[OtherSplitter] =    os;
     obj[PageSize] =         mPageSize;
     obj[Position] =         mPosition;
+    Json5Array rnv;
+    for (const auto& nvl: mRecentNovels) {
+        Json5Object obj;
+        obj[Title] = nvl.sTitle;
+        obj[Path] = nvl.sPath;
+        rnv.append(obj);
+    }
+    obj[RecentNovels] =     rnv;
     obj[SceneTag] =         mSceneTag;
     obj[Theme] =            mTheme;
     obj[ToolbarVisible] =   mToolbarVisible;

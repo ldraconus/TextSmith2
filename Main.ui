@@ -646,8 +646,15 @@ QSplitter::handle:hover {
     <property name="title">
      <string>File</string>
     </property>
+    <widget class="QMenu" name="menu_Recent_Novels">
+     <property name="title">
+      <string>&amp;Recent Novels</string>
+     </property>
+     <addaction name="action_Clear_Recent_Novels"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="menu_Recent_Novels"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
@@ -1159,6 +1166,14 @@ QSplitter::handle:hover {
    </property>
    <property name="shortcut">
     <string>Alt+T</string>
+   </property>
+  </action>
+  <action name="action_Clear_Recent_Novels">
+   <property name="text">
+    <string>&amp;Clear Recent Novels</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
  </widget>

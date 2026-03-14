@@ -101,15 +101,28 @@ QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString
                    "                object-fit: contain;\n"
                    "                display: block;\n"
                    "            }\n"
+                   "            hr {\n"
+                   "                border: none\n"
+                   "                border-top: 2px solid #333;\n"
+                   "                margin: 3em 0;\n"
+                   "            }\n"
                    "        </style>\n"
                    "    </head>\n"
                    "    <body style=\" font-family:'Segoe UI'; font-size:14pt; font-weight:400; font-style:normal;\">\n";
     QString final = "    </body>\n"
                     "</html>";
     if (!cover.isEmpty()) html += generateImageHtml(cover);
+    StringList chapterTags = tag[Chapter].trimmed().split(",");
+    StringList sceneTags = tag[Scene].trimmed().split(",");
+    StringList coverTags = tag[Cover].trimmed().split(",");
+    bool canSeparate = false;
     for (auto& id: ids) {
         Item& item = novel.findItem(id);
-        if (item.hasTag(tag[Chapter]) || item.hasTag(tag[Scene]) || item.hasTag(tag[Cover])) html += "\n" + addParagraphs(item.html());
+        if (item.hasTag(chapterTags) && canSeparate) html += "<hr>\n";
+        if (item.hasTag(chapterTags) || item.hasTag(sceneTags) || item.hasTag(coverTags)) {
+            html += "\n" + addParagraphs(item.html());
+            canSeparate = true;
+        }
     }
     return html + final;
 }

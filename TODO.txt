@@ -1,28 +1,30 @@
+[ ] Save isn't working the first time you hit Ctrl+S. Drop down menu, save and something gets set correctly. Look into it.
 [/] Write the Documentation
     - Intro
     - Part I
     - Part II
     - Part III
     - Part IV
-    [ ] Part V
-    [ ] Part VI
-[/] Adapt installer.sh to make installer on linux as well.
-[ ] Make TextSMith use the current document filename and save status on the title bar (TextSmith - <filename> [saved] <-- if saved, nothing if not. If not filename,
-    just use TextSmith alone
+    - Part V
+    [/] Part VI
+    [ ] Export in html to source directory
+[/] Add a recent novels to the file menu
+    [ ] Update documetation
+[ ] Add context menus to tree and text widgets
+    [ ] Update documentation
 [ ] Switch items removes a single leading blank line each time
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
-[ ] Add a recent projects to the file menu
-    [ ] Update documetation
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
-[ ] add context menus to tree and text widgets
-    [ ] Update documentation
 [ ] Write scripts
 [?] Add a hollywood script writing display mode - make file menu understand we're in script mode
 [?] Add Imports:
 [?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
 [?] - snowflake import?
+[X] Make TextSMith use the current document filename and save status on the title bar (TextSmith - <filename> [saved] <-- if saved, nothing if not. If not filename,
+    just use TextSmith alone
+[X] Adapt installer.sh to make installer on linux as well.
 [X] Fix exporters to use the margin code and header/footers of page setup.
 [X] Setup linux access to github
 [X] Add scroll area for tags in the ItemDescriptionDialog.

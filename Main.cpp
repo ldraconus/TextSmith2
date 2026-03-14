@@ -283,7 +283,7 @@ void Main::doAboutToShowEditMenu() {
         mUi->actionUndo->setEnabled(mUi->treeWidget->canUndo());
         mUi->actionRedo->setEnabled(mUi->treeWidget->canRedo());
         mUi->actionCopy->setEnabled(true);
-        mUi->actionCut->setEnabled(mUi->treeWidget->currentItem()->parent() != nullptr);
+        mUi->actionCut->setEnabled(mUi->treeWidget->currentItem() && mUi->treeWidget->currentItem()->parent());
         mUi->actionPaste->setEnabled(mUi->treeWidget->canPaste());
         mUi->actionFind_Next->setEnabled(false);
         mUi->actionUppercase->setEnabled(false);
@@ -296,8 +296,8 @@ void Main::doAboutToShowFileMenu() {
 }
 
 void Main::doAboutToShowNovelMenu() {
-    mUi->actionOpen_Current_Item->setEnabled(mUi->treeWidget->currentItem()->childCount() != 0);
-    mUi->actionOpen_Current_Item->setText(mUi->treeWidget->currentItem()->isExpanded() ? "Close Current Item" : "Open Current Item");
+    mUi->actionOpen_Current_Item->setEnabled(mUi->treeWidget->currentItem() && mUi->treeWidget->currentItem()->childCount() != 0);
+    mUi->actionOpen_Current_Item->setText((mUi->treeWidget->currentItem() && mUi->treeWidget->currentItem()->isExpanded()) ? "Close Current Item" : "Open Current Item");
     mUi->actionRemove_Item->setEnabled(!(mUi->treeWidget->currentItem() == mUi->treeWidget->topLevelItem(0)));
     mUi->actionMove_an_Item_Up->setEnabled(!nothingAbove());
     mUi->actionMove_Current_Item_Down->setEnabled(!nothingBelow());
@@ -814,6 +814,7 @@ void Main::doOpen() {
     loadFile(filename);
 }
 
+//  open needs to preserve the recent file list (save, then restore after file loaded, add the opened novel to it).
 void Main::loadFile(const QString& filename) {
     QFileInfo info(filename);
     mDocDir = info.absolutePath();
@@ -827,6 +828,7 @@ void Main::loadFile(const QString& filename) {
     mNovel.open();
     mUi->treeWidget->clearUndo();
     Json5Object obj = mNovel.extra();
+    auto savedRecents = mPrefs.recentNovels();
     if (obj.contains("Prefs")) {
         Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
         mPrefs.read(prefs);
@@ -873,6 +875,9 @@ void Main::loadFile(const QString& filename) {
         Json5Array ids = Item::hasArr(obj, "Ids", {});
         for (auto& id: ids) mState[id.toInt()] = state;
     }
+
+    mPrefs.setRecentNovels(savedRecents);
+    mPrefs.addNovel(info.baseName() + ".novel", filename);
 
     update(true);
     doCursorPositionChanged();
@@ -1849,12 +1854,14 @@ void Main::removeEmptyFirstBlock(TextEdit* text) {
     if (trulyEmpty) c.deleteChar();
 }
 
+// save needs to add the novel to the recent novel list (in case it's new and just saved, if it exists, this is a no-op).
 void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi) {
     if ((novel.filename().isEmpty() && noUi) || !novel.isChanged()) return;
     if (mNovel.filename().isEmpty() && !doSaveAs()) return;
     QFileInfo info(mNovel.filename());
     QString name = info.fileName();
     mDocDir = info.absolutePath();
+    mPrefs.addNovel(name, mNovel.filename());
     Json5Object extra;
     extra["Current"] = mCurrentNode;
     extra["Position"] = qlonglong(pos);
@@ -2088,12 +2095,12 @@ Main::Main(QApplication* app, QWidget* parent)
     QDir().mkpath(mDocDir + "/TextSmith/scripts");
     QDir().mkpath(mLocalDir);
 
-    mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
-
     setupActions();
     setupConnections();
     setupScripting();
     setupTabOrder();
+
+    mUi->actionRead_To_Me->setEnabled(mSpeechAvailable);
 
     mPrefsLoaded = mPrefs.load();
     loadScripts();
@@ -2105,6 +2112,11 @@ Main::Main(QApplication* app, QWidget* parent)
     mUi->menubar->setFont(font);
     updateGeometry();
     repaint();
+
+    emit mUi->menuFile->aboutToShow();
+    emit mUi->menuEdit->aboutToShow();
+    emit mUi->menuNovel->aboutToShow();
+    emit mUi->menuView->aboutToShow();
 
     mUi->treeWidget->setColumnCount(1);
     mUi->textEdit->setTabChangesFocus(true);
@@ -2286,6 +2298,31 @@ void Main::setupConnections() {
     connect(mUi->actionPrint,      &QAction::triggered, this, &Main::printAction);
     connect(mUi->actionSave,       &QAction::triggered, this, &Main::saveAction);
     connect(mUi->actionSave_As,    &QAction::triggered, this, &Main::saveAsAction);
+
+    // Note: we remeber /all/ of the novels worked on, we just delete the ones that have been delete and suddenly you can see older novels!
+    auto* recentMenu = mUi->menu_Recent_Novels;
+    auto recent = mPrefs.recentNovels();
+    List<Preferences::Recent> gone;
+    int count = 0;
+    for (const auto& novel: recent) {
+        QFileInfo info(novel.sPath);
+        if (!info.exists()) {
+            gone.append(novel);
+            continue;
+        }
+        if (count >= 10) continue;
+        QAction* act = recentMenu->addAction(novel.sTitle);
+        ++count;
+        act->setShortcut(QKeySequence("Ctrl+" + QString::number((count == 10) ? 0 : count)));
+        act->setShortcutContext(Qt::ApplicationShortcut);
+
+        connect(act, &QAction::triggered, this, [this, novel]() {
+            loadFile(novel.sPath);
+        });
+    }
+    for (const auto& file: gone) recent.remove(file);
+    mPrefs.setRecentNovels(recent);
+
     QMenu* exportMenu = new QMenu("Export", this);
     mUi->actionExport->setMenu(exportMenu);
 
@@ -2296,6 +2333,7 @@ void Main::setupConnections() {
         QAction* act = exportMenu->addAction(info);
         QString key = findKey(keysUsed, info);
         if (!key.isEmpty()) act->setShortcut(QKeySequence("Ctrl+E, Ctrl+" + key));
+        act->setShortcutContext(Qt::ApplicationShortcut);
 
         connect(act, &QAction::triggered, this, [this, info]() {
             doExport(info);
