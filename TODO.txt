@@ -1,6 +1,4 @@
 [/] Search isn't ;-)
-[/] Really big items don't show everything past a certain point. Select all, cut, then paste fixes it.
-    Change loading/storing to a document block/fragment myself. Sigh. This is going to be a lot of work.
 [/] Write the Documentation
     - Intro
     - Part I
@@ -21,10 +19,13 @@
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Write scripts
+[X] Broke image display ... whoops
 [?] Add a hollywood script writing display mode - make file menu understand we're in script mode
 [?] Add Imports:
 [?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
 [?] - snowflake import?
+[X] Really big items don't show everything past a certain point. Select all, cut, then paste fixes it.
+    Change loading/storing to a document block/fragment myself. Sigh. This is going to be a lot of work.
 [X] Switch items removes a single leading blank line each time
 [X] Save isn't working the first time you hit Ctrl+S. Drop down menu, save and something gets set correctly. Look into it.
 [X] Make TextSMith use the current document filename and save status on the title bar (TextSmith - <filename> [saved] <-- if saved, nothing if not. If not filename,

@@ -88,6 +88,13 @@ template class Exporter<RtfExporter>;
 constexpr qlonglong Second = 1000;
 Main* Main::sMain = nullptr;
 
+#ifdef QT_DEBUG
+static constexpr auto saveCompression = Json5Object::HumanReadable;
+#else
+static constexpr auto saveCompression = Json5Object::Compress;
+#endif
+
+
 class EditItemCommand
     : public QUndoCommand {
 public:
@@ -657,19 +664,22 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     mUi->textEdit->setDocument(doc);
 
     /* this is a hack! */
-    QClipboard* clipboard = QApplication::clipboard();
-    QMimeData* save = copyMimeData(clipboard->mimeData());
 
     QApplication::processEvents();
     mUi->textEdit->setUpdatesEnabled(false);
-    mUi->textEdit->selectAll();
-    QApplication::processEvents();
-    mUi->textEdit->cut();
-    QApplication::processEvents();
-    mUi->textEdit->paste();
-    mUi->textEdit->setUpdatesEnabled(true);
 
-    clipboard->setMimeData(save);
+    mUi->textEdit->selectAll();
+    if (mUi->textEdit->textCursor().selectedText().length()) {
+        QClipboard* clipboard = QApplication::clipboard();
+        QMimeData* save = copyMimeData(clipboard->mimeData());
+        QApplication::processEvents();
+        mUi->textEdit->cut();
+        QApplication::processEvents();
+        mUi->textEdit->paste();
+        clipboard->setMimeData(save);
+    }
+
+    mUi->textEdit->setUpdatesEnabled(true);
     /* end of hack */
 
     mPosition = item.position();
@@ -862,12 +872,12 @@ void Main::loadFile(const QString& filename) {
     mUi->treeWidget->clearUndo();
     Json5Object obj = mNovel.extra();
     auto savedRecents = mPrefs.recentNovels();
-    if (obj.contains("Prefs")) {
-        Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
+    if (obj.contains(Novel::Prefs)) {
+        Json5Object prefs = Item::hasObj(obj, Novel::Prefs, {} );
         mPrefs.read(prefs);
-        mCurrentNode = Item::hasNum(obj, "Current", qlonglong(-1));
-        mPosition = Item::hasNum(obj, "Position", qlonglong(0));
-        Json5Array array = Item::hasArr(obj, "State");
+        mCurrentNode = Item::hasNum(obj, Novel::Current, qlonglong(-1));
+        mPosition = Item::hasNum(obj, Novel::Position, qlonglong(0));
+        Json5Array array = Item::hasArr(obj, Novel::State);
         mState.clear();
         for (auto& state: array) {
             if (!state.isArray()) continue;
@@ -876,14 +886,14 @@ void Main::loadFile(const QString& filename) {
             bool expanded = Item::hasBool(item, 1);
             mState[id] = expanded;
         }
-        Json5Array images = Item::hasArr(obj, "Images",{});
+        Json5Array images = Item::hasArr(obj, Novel::Images, {});
         mImageStore.clear();
         for (auto& obj: images) {
             if (!obj.isObject()) continue;
             Json5Object image = obj.toObject();
-            QString url = Item::hasStr(image, "url", {});
+            QString url = Item::hasStr(image, { Novel::V1Url, Novel::Url }, {});
             if (url.isEmpty()) continue;
-            QString str = Item::hasStr(image, "data", {});
+            QString str = Item::hasStr(image, { Novel::V1Data, Novel::Data }, {});
             if (str.isEmpty()) continue;
             QByteArray data = QByteArray::fromBase64(str.toUtf8());
             if (data.isEmpty()) continue;
@@ -893,19 +903,19 @@ void Main::loadFile(const QString& filename) {
             mImageStore[url] = img;
             mUi->textEdit->addInternalImage(url, img, false);
         }
-        Json5Array words = Item::hasArr(obj, "Dictionary");
+        Json5Array words = Item::hasArr(obj, Novel::Dictionary);
         for (auto i = 0; i < words.size(); ++i) {
             QString word = Item::hasStr(words, i, "");
             if (!word.isEmpty()) mSpelling.addWord(word);
         }
-    } else if (obj.contains("v1")) {
-        Json5Object prefs = Item::hasObj(obj, "Prefs", {} );
+    } else if (obj.contains(Novel::V1)) {
+        Json5Object prefs = Item::hasObj(obj, Novel::Prefs, {} );
         mPrefs.read(prefs);
         mCurrentNode = mNovel.root();
         mPosition = 0;
         mState.clear();
-        bool state = Item::hasBool(obj, "State", false);
-        Json5Array ids = Item::hasArr(obj, "Ids", {});
+        bool state = Item::hasBool(obj, Novel::State, false);
+        Json5Array ids = Item::hasArr(obj, Novel::Ids, {});
         for (auto& id: ids) mState[id.toInt()] = state;
     }
 
@@ -1410,18 +1420,19 @@ void Main::applyNovelFormatting() {
 void Main::buildTree(const TreeNode& branch, QTreeWidgetItem* itemBranch, Map<qlonglong, bool>& byId) {
     auto twItem = new QTreeWidgetItem();
     auto& item = mNovel.findItem(branch.id());
-    QTextDocument* doc = new QTextDocument();
-    registerImages(item.html(), doc);
-    doc->setParent(nullptr);
+    auto* doc = item.doc();
+    // TBDEL QTextDocument* doc = new QTextDocument();
+    // TBDEL registerImages(item.html(), doc);
+    // TBDEL doc->setParent(nullptr);
     auto tree = mUi->treeWidget;
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
-    tree->setTextDocument(branch.id(), doc);
+    // TBDEL tree->setTextDocument(branch.id(), doc);
 
     if (itemBranch == nullptr) {
-        doc->setParent(nullptr);
+        // TBDEL doc->setParent(nullptr);
         mUi->textEdit->setDocument(doc);
-        mUi->treeWidget->addTopLevelItem(twItem);
+        tree->addTopLevelItem(twItem);
     } else itemBranch->addChild(twItem);
 
     const auto& children = const_cast<TreeNode&>(branch).branches();
@@ -1893,10 +1904,10 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     mDocDir = info.absolutePath();
     mPrefs.addNovel(name, mNovel.filename());
     Json5Object extra;
-    extra["Current"] = mCurrentNode;
-    extra["Position"] = qlonglong(pos);
+    extra[Novel::Current] = mCurrentNode;
+    extra[Novel::Position] = qlonglong(pos);
     mPrefs.setWindowLocation(geom);
-    extra["Prefs"] = mPrefs.write();
+    extra[Novel::Prefs] = mPrefs.write();
     mState = byId;
     Json5Array state;
     for (const auto& idState: byId) {
@@ -1912,27 +1923,29 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     for (auto i = 0; i < keys.count(); ++i) {
         auto& key = keys[i];
         Json5Object obj;
-        obj["url"] = key.toString();
+        obj[Novel::Url] = key.toString();
         QImage& img = images[key];
         QByteArray bytes;
         QBuffer buffer(&bytes);
         buffer.open(QIODevice::WriteOnly);
         img.save(&buffer, "PNG");
         buffer.close();
-        obj["data"] = QString(bytes.toBase64());
+        obj[Novel::Data] = QString(bytes.toBase64());
         arr.append(obj);
     }
-    extra["Images"] = arr;
+    extra[Novel::Images] = arr;
     StringList dictionary = mSpelling.words();
     Json5Array words;
     for (const auto& word: dictionary) words.append(word);
-    extra["Dictionary"] = words;
+    extra[Novel::Dictionary] = words;
     mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
-    if (!mNovel.save() && !noUi) mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
-                                         [this]() { doNothing(); },
-                                         "Something unexpected has happened");
+    if (!mNovel.save(saveCompression) && !noUi) {
+        mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
+                [this]() { doNothing(); },
+                "Something unexpected has happened");
+    }
     else setTitle();
 }
 
@@ -2200,7 +2213,7 @@ void Main::changeNovelFont(const QFont& font) {
 void Main::setupHtml(TextEdit& text) {
     Preferences& prefs = Main::ref().prefs();
     QFont font(prefs.fontFamily(), prefs.fontSize());
-    QString html = Item::setupHtml(font);
+    QString html = Item::setupDocument(font);
     text.document()->setDefaultFont(font);
     text.document()->setHtml(html);
 }
@@ -2323,6 +2336,7 @@ void Main::setupConnections() {
     connect(mUi->actionSave_As,    &QAction::triggered, this, &Main::saveAsAction);
 
     // Note: we remeber /all/ of the novels worked on, we just delete the ones that have been delete and suddenly you can see older novels!
+    mUi->action_Clear_Recent_Novels->setShortcut(QKeySequence("Alt+C,Alt+R"));
     connect(mUi->action_Clear_Recent_Novels, &QAction::triggered, this, &Main::clearRecentNovels);
     auto* recentMenu = mUi->menu_Recent_Novels;
     auto recent = mPrefs.recentNovels();

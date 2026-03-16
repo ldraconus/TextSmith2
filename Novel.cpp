@@ -7,7 +7,8 @@
 
 #include "Main.h"
 
-qsizetype Item::sNextID = 0;
+qsizetype            Item::sNextID = 0;
+Map<QString, QImage> Item::sImages;
 
 Item::Item(bool noId)
     : mCount(0)
@@ -66,7 +67,7 @@ QString Item::changeFont(QTextDocument* doc, const QFont& font) {
     return doc->toHtml();
 }
 
-QString Item::setupHtml(const QFont& font, QTextDocument* doc) {
+QString Item::setupDocument(const QFont& font, QTextDocument* doc) {
     TextEdit text;
     if (doc == nullptr) doc = text.document();
     QFontMetrics metrics(font);
@@ -140,7 +141,12 @@ bool Item::fromDocArray(Json5Array &arr){
                         QString imageId = hasStr(obj, Novel::Image, "");
                         QTextImageFormat imgFmt;
                         imgFmt.setName(imageId);
+                        auto height = hasNum(obj, Novel::Height, qlonglong(-1));
+                        auto width = hasNum(obj, Novel::Width, qlonglong(-1));
+                        if (height != -1) imgFmt.setHeight(height);
+                        if (width != -1) imgFmt.setWidth(width);
                         cursor.insertImage(imgFmt);
+                        if (imageId.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, imageId, sImages[imageId]);
                     } else {
                         QString text = hasStr(obj, Novel::Text, "");
                         charFormat = fromTextCharFormatObject(obj);
@@ -157,6 +163,9 @@ bool Item::fromDocObject(Json5Object &obj) {
     delete mDoc;
     mDoc = new QTextDocument();
     mDoc->setParent(nullptr);
+    Preferences* prefs = &Main::ref().prefs();
+    QFont font(prefs->fontFamily(), prefs->fontSize());
+    mDoc->setDefaultFont(font);
     Json5Array doc = hasArr(obj, Novel::NakedDoc);
     if (!fromDocArray(doc)) {
         delete mDoc;
@@ -199,6 +208,7 @@ void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
         if (!branch.isEmpty()) tree.addBranch(branch);
     }
     Novel::ref().addItem(node);
+    loadInternalImages();
 }
 
 bool Item::hasTag(const StringList& tags) const {
@@ -206,6 +216,20 @@ bool Item::hasTag(const StringList& tags) const {
         if (hasTag(tag)) return true;
     }
     return false;
+}
+
+void Item::loadInternalImages() {
+    for (QTextBlock block = mDoc->begin(); block != mDoc->end(); block = block.next()) {
+        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
+            QTextFragment fragment = it.fragment();
+            if (fragment.charFormat().isImageFormat()) {
+                QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
+                QString url = imgFmt.name();
+                if (url.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, url, sImages[url]);
+            }
+        }
+    }
+
 }
 
 Json5Object Item::toObject() {
@@ -226,6 +250,8 @@ Json5Object Item::toObject() {
             if (fragment.charFormat().isImageFormat()) {
                 QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
                 frag[Novel::Image] = imgFmt.name();
+                frag[Novel::Width] = imgFmt.width();
+                frag[Novel::Height] = imgFmt.height();
             } else {
                 auto fragCharFormat = fragment.charFormat();
                 toTextCharFormat(frag, fragCharFormat);
@@ -253,8 +279,22 @@ Json5Array Item::hasArr(Json5Object& obj, const QString& str, const Json5Array& 
     return def;
 }
 
+Json5Array Item::hasArr(Json5Object& obj, const StringList& strs, const Json5Array& def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::Array)) return obj[str].toArray();
+    }
+    return def;
+}
+
 bool Item::hasBool(Json5Object& obj, const QString& str, bool def) {
     if (valid(obj, str, Json5::Boolean)) return obj[str].toBoolean();
+    return def;
+}
+
+bool Item::hasBool(Json5Object& obj, const StringList& strs, bool def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::Boolean)) return obj[str].toBoolean();
+    }
     return def;
 }
 
@@ -268,8 +308,22 @@ qsizetype Item::hasNum(Json5Object& obj, const QString& str, const qsizetype def
     return def;
 }
 
+qsizetype Item::hasNum(Json5Object& obj, const StringList& strs, const qsizetype def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::Number)) return obj[str].toInt(def);
+    }
+    return def;
+}
+
 double Item::hasNum(Json5Object& obj, const QString& str, const double def) {
     if (valid(obj, str, Json5::Number)) return obj[str].toReal(def);
+    return def;
+}
+
+double Item::hasNum(Json5Object& obj, const StringList& strs, const double def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::Number)) return obj[str].toReal(def);
+    }
     return def;
 }
 
@@ -291,11 +345,18 @@ Json5Object Item::hasObj(Json5Object& obj, const QString& str, const Json5Object
 
 QString Item::hasStr(Json5Object& obj, const QString& str, const QString& def) {
     if (valid(obj, str, Json5::String)) return obj[str].toString(def);
-    else return def;
+    return def;
 }
 
 QString Item::hasStr(Json5Array& arr, const qsizetype idx, const QString& def) {
     if (arr.count() > idx && idx >= 0 && arr[idx].isString()) return arr[idx].toString(def);
+    return def;
+}
+
+QString Item::hasStr(Json5Object& obj, const StringList& strs, const QString& def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::String)) return obj[str].toString(def);
+    }
     return def;
 }
 
@@ -312,7 +373,11 @@ bool Item::fromObject(Json5Object& obj) {
     QString html = hasStr(obj, Novel::Html);
     mDoc = new QTextDocument();
     mDoc->setParent(nullptr);
+    Preferences* prefs = &Main::ref().prefs();
+    QFont font({ prefs->fontFamily() }, prefs->fontSize());
+    mDoc->setDefaultFont(font);
     mDoc->setHtml(html);
+
     mPosition =    hasNum(obj, Novel::Position, 0.0);
     auto id =      hasNum(obj, Novel::Id,       qlonglong(0));
     mName =        hasStr(obj, Novel::Name);
@@ -327,6 +392,7 @@ bool Item::fromObject(Json5Object& obj) {
         mTags.append(tag);
     }
     Novel::ref().addItem(*this);
+    loadInternalImages();
     return true;
 }
 
@@ -375,7 +441,7 @@ void Item::move(Item&& i) {
 void Item::setDocumentFont(const QFont& font) {
     TextEdit text(nullptr);
     text.setText("");
-    setupHtml(font);
+    setupDocument(font);
 
     // don't need this?
     // mHtml = text.toHtml();
@@ -491,12 +557,12 @@ bool Novel::open() {
     return true;
 }
 
-bool Novel::save() {
+bool Novel::save(bool compress) {
     if (mFilename.isEmpty()) return false;
     auto obj = toObject();
     Json5Document doc;
     doc.setTop(obj);
-    if (bool success = doc.write(mFilename); success) noChanges();
+    if (bool success = doc.write(mFilename, compress); success) noChanges();
     else return false;
     return true;
 }
@@ -654,8 +720,30 @@ void Novel::setupScripting(fifth::vm* vm) {
 bool Novel::fromObject(Json5Object& obj) {
     mFilename = Item::hasStr(obj, Filename, "");
     mExtra =    Item::hasObj(obj, Extra, {});
+    // ok, since we nede images per document, not per file now since document central now,
+    // need to grab the images and put them someplace safe until each image is loaded
+    // in the appropriate document.
+    auto images = Item::hasArr(mExtra, Images, {});
+    Item::sImages.clear();
+    for (auto& obj: images) {
+        if (!obj.isObject()) continue;
+        Json5Object image = obj.toObject();
+        QString url = Item::hasStr(image, { V1Url, Url }, {});
+        if (url.isEmpty()) continue;
+        QString str = Item::hasStr(image, { V1Data, Data }, {});
+        if (str.isEmpty()) continue;
+        QByteArray data = QByteArray::fromBase64(str.toUtf8());
+        if (data.isEmpty()) continue;
+        QImage img;
+        img.loadFromData(data);
+        if (img.isNull()) continue;
+        Item::sImages[url] = img;
+    }
+
+    // load images into Item::sImages;
     mItems.clear();
     mRoot =     Item::hasNum(obj, Root, qlonglong(0));
+
     Json5Object items = Item::hasObj(obj, Items, {});
     for (auto& node: items) {
         if (!node.second.isObject()) continue;
@@ -670,6 +758,7 @@ bool Novel::fromObject(Json5Object& obj) {
         mBranches = tree;
     }
     countAll();
+    Item::sImages.clear();
     return true;
 }
 
@@ -689,6 +778,10 @@ bool Novel::fromV1Object(Json5Object& obj) {
     mBranches = tree;
     countAll();
     return true;
+}
+
+void Novel::saveImages(Json5Object& obj) {
+
 }
 
 TreeNode::TreeNode(Json5Object& obj) {

@@ -83,6 +83,7 @@ public:
     QTextCharFormat  fromTextCharFormatObject(Json5Object& obj);
     void             fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     bool             hasTag(const StringList& tags) const;
+    void             loadInternalImages();
     void             setDocumentFont(const QFont& font);
     QString          toPlainText();
     void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
@@ -91,21 +92,28 @@ public:
     virtual Json5Object toObject();
 
     static QString changeFont(QTextDocument* doc, const QFont& font);
-    static QString setupHtml(const QFont& font, QTextDocument* doc = nullptr);
+    static QString setupDocument(const QFont& font, QTextDocument* doc = nullptr);
 
     static auto getNextID()                  { return sNextID; }
     static void resetLastID(qlonglong i = 0) { sNextID = i; }
 
-    static Json5Array  hasArr(Json5Object& obj,  const QString&  str, const Json5Array&  def = { });
-    static bool        hasBool(Json5Object& obj, const QString&  str, bool               def = false);
-    static bool        hasBool(Json5Array& obj,  const qsizetype idx, bool               def = false);
-    static qsizetype   hasNum(Json5Object& obj,  const QString&  str, const qsizetype    def = 0);
-    static double      hasNum(Json5Object& obj,  const QString& str,  const double       def = 0.0);
-    static qsizetype   hasNum(Json5Array& arr,   const qsizetype idx, const qsizetype    def = 0);
-    static double      hasNum(Json5Array& arr,   const qsizetype idx, const double       def = 0.0);
-    static Json5Object hasObj(Json5Object& obj,  const QString&  str, const Json5Object& def = { });
-    static QString     hasStr(Json5Object& obj,  const QString&  str, const QString&     def = "");
-    static QString     hasStr(Json5Array& arr,   const qsizetype idx, const QString&     def = "");
+    static Json5Array  hasArr(Json5Object& obj,  const QString&    str,  const Json5Array&  def = { });
+    static Json5Array  hasArr(Json5Object& obj,  const StringList& strs, const Json5Array&  def = { });
+    static bool        hasBool(Json5Object& obj, const QString&    str,  bool               def = false);
+    static bool        hasBool(Json5Object& obj, const StringList& strs, bool               def = { });
+    static bool        hasBool(Json5Array& obj,  const qsizetype   idx,  bool               def = false);
+    static qsizetype   hasNum(Json5Object& obj,  const QString&    str,  const qsizetype    def = 0);
+    static qsizetype   hasNum(Json5Object& obj,  const StringList& strs, const qsizetype    def = 0);
+    static double      hasNum(Json5Object& obj,  const QString&    str,  const double       def = 0.0);
+    static double      hasNum(Json5Object& obj,  const StringList& strs, const double       def = 0.0);
+    static qsizetype   hasNum(Json5Array& arr,   const qsizetype   idx,  const qsizetype    def = 0);
+    static double      hasNum(Json5Array& arr,   const qsizetype   idx,  const double       def = 0.0);
+    static Json5Object hasObj(Json5Object& obj,  const QString&    str,  const Json5Object& def = { });
+    static QString     hasStr(Json5Object& obj,  const QString&    str,  const QString&     def = "");
+    static QString     hasStr(Json5Array& arr,   const qsizetype   idx,  const QString&     def = "");
+    static QString     hasStr(Json5Object& obj,  const StringList& strs, const QString&     def = "");
+
+    static Map<QString, QImage> sImages;
 
 protected:
     void copy(const Item& i);
@@ -130,38 +138,49 @@ public:
     Novel(Json5Object obj);
     Novel(const QString& filename);
 
-    static constexpr auto Alignment = "Alignment";
-    static constexpr auto BranchId  = "Id";
-    static constexpr auto Branches  = "Branches";
-    static constexpr auto Bold      = "Bold";
-    static constexpr auto Children  = "children";
-    static constexpr auto Doc       = "doc";
-    static constexpr auto Document  = "document";
-    static constexpr auto Extra     = "Extra";
-    static constexpr auto Filename  = "Filename";
-    static constexpr auto Fragments = "Fragments";
-    static constexpr auto Html      = "HTML";
-    static constexpr auto Id        = "ID";
-    static constexpr auto Image     = "Image";
-    static constexpr auto Indent    = "Indent";
-    static constexpr auto Italic    = "Italic";
-    static constexpr auto Items     = "Items";
-    static constexpr auto NakedDoc  = "Document";
-    static constexpr auto Name      = "Name";
-    static constexpr auto Options   = "options";
-    static constexpr auto Position  = "Position";
-    static constexpr auto Root      = "Root";
-    static constexpr auto Tags      = "Tags";
-    static constexpr auto Text      = "Text";
-    static constexpr auto Underline = "Underline";
-    static constexpr auto V1        = "v1";
-    static constexpr auto V1Id      = "id";
-    static constexpr auto V1Root    = "root";
-    static constexpr auto V1Tags    = "tags";
-    static constexpr auto V1Name    = "name";
-    static constexpr auto Windows   = "windows";
+    static constexpr auto Alignment  = "Alignment";
+    static constexpr auto BranchId   = "Id";
+    static constexpr auto Branches   = "Branches";
+    static constexpr auto Bold       = "Bold";
+    static constexpr auto Children   = "children";
+    static constexpr auto Current    = "Current";
+    static constexpr auto Data       = "Data";
+    static constexpr auto Dictionary = "Dictionary";
+    static constexpr auto Doc        = "doc";
+    static constexpr auto Document   = "document";
+    static constexpr auto Extra      = "Extra";
+    static constexpr auto Filename   = "Filename";
+    static constexpr auto Fragments  = "Fragments";
+    static constexpr auto Height     = "Height";
+    static constexpr auto Html       = "HTML";
+    static constexpr auto Id         = "ID";
+    static constexpr auto Ids        = "Ids";
+    static constexpr auto Image      = "Image";
+    static constexpr auto Images     = "Images";
+    static constexpr auto Indent     = "Indent";
+    static constexpr auto Italic     = "Italic";
+    static constexpr auto Items      = "Items";
+    static constexpr auto NakedDoc   = "Document";
+    static constexpr auto Name       = "Name";
+    static constexpr auto Options    = "options";
+    static constexpr auto Position   = "Position";
+    static constexpr auto Prefs      = "Prefs";
+    static constexpr auto Root       = "Root";
+    static constexpr auto State      = "State";
+    static constexpr auto Tags       = "Tags";
+    static constexpr auto Text       = "Text";
+    static constexpr auto Underline  = "Underline";
+    static constexpr auto Url        = "Url";
+    static constexpr auto V1         = "v1";
+    static constexpr auto V1Data     = "data";
+    static constexpr auto V1Id       = "id";
+    static constexpr auto V1Name     = "name";
+    static constexpr auto V1Root     = "root";
+    static constexpr auto V1Tags     = "tags";
+    static constexpr auto V1Url      = "url";
+    static constexpr auto Width      = "Width";
+    static constexpr auto Windows    = "windows";
 
-    Json5Object toObject();
     void        addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
     TreeNode    branches()                     { return mBranches; }
     void        change()                       { mChanged = true; }
@@ -176,16 +195,17 @@ public:
     void        setExtra(Json5Object& obj)     { mExtra = obj; change(); }
     void        setFilename(const QString& f)  { mFilename = f; change(); }
 
-    void      changeFont(const QFont& font);
-    qlonglong countAll();
-    void      deleteItem(qlonglong id);
-    Item&     fifthItem(fifth::stack& user);
-    Item&     findItem(qlonglong id);
-    void      init();
-    bool      open();
-    bool      save();
-    void      setHtml(qlonglong node, const QString& html);
-    void      setupScripting(fifth::vm* vm);
+    void        changeFont(const QFont& font);
+    qlonglong   countAll();
+    void        deleteItem(qlonglong id);
+    Item&       fifthItem(fifth::stack& user);
+    Item&       findItem(qlonglong id);
+    void        init();
+    bool        open();
+    bool        save(bool compress = Json5Object::HumanReadable);
+    void        setHtml(qlonglong node, const QString& html);
+    void        setupScripting(fifth::vm* vm);
+    Json5Object toObject();
 
     static Novel* ptr() { return sNovel; }
     static Novel& ref() { return *ptr(); }
@@ -200,6 +220,7 @@ private:
 
     bool fromObject(Json5Object& obj);
     bool fromV1Object(Json5Object& obj);
+    void saveImages(Json5Object& obj);
 
     static Novel* sNovel;
 };
