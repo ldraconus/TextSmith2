@@ -1,4 +1,6 @@
-[ ] Save isn't working the first time you hit Ctrl+S. Drop down menu, save and something gets set correctly. Look into it.
+[/] Search isn't ;-)
+[/] Really big items don't show everything past a certain point. Select all, cut, then paste fixes it.
+    Change loading/storing to a document block/fragment myself. Sigh. This is going to be a lot of work.
 [/] Write the Documentation
     - Intro
     - Part I
@@ -6,13 +8,14 @@
     - Part III
     - Part IV
     - Part V
-    [/] Part VI
+    - Part VI
     [ ] Export in html to source directory
 [/] Add a recent novels to the file menu
+    - Documents added to menu
+    - Need a clear recents option in the menu
     [ ] Update documetation
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
-[ ] Switch items removes a single leading blank line each time
 [ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     same fix as a return minus the 'make sure to add a blank line'.
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
@@ -22,6 +25,8 @@
 [?] Add Imports:
 [?] - text file (add to the current document under the current branch named base filename, /maybe/ look for chapter tag)
 [?] - snowflake import?
+[X] Switch items removes a single leading blank line each time
+[X] Save isn't working the first time you hit Ctrl+S. Drop down menu, save and something gets set correctly. Look into it.
 [X] Make TextSMith use the current document filename and save status on the title bar (TextSmith - <filename> [saved] <-- if saved, nothing if not. If not filename,
     just use TextSmith alone
 [X] Adapt installer.sh to make installer on linux as well.

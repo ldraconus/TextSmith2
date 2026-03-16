@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QString>
+#include <QTextBlockFormat>
+#include <QTextDocument>
 
 #include "5th.h"
 
@@ -50,11 +52,12 @@ public:
     virtual void clear();
     virtual void init();
 
-    auto html()             { return mHtml; }
-    auto id() const         { return mID; }
-    auto name() const       { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
-    auto position() const   { return mPosition; }
-    void setId(qlonglong i) { mID = i++; if (i > sNextID) sNextID = i; }
+    auto* doc() const        { return mDoc; }
+    auto  html() const       { return mDoc->toHtml(); }
+    auto  id() const         { return mID; }
+    auto  name() const       { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
+    auto  position() const   { return mPosition; }
+    void  setId(qlonglong i) { mID = i++; if (i > sNextID) sNextID = i; }
 
     void addTag(const QString& tag)       { if (!hasTag(tag)) { mTags.append(tag); } }
     void removeTag(const QString& tag)    { if (hasTag(tag)) { mTags.removeAll(tag, Qt::CaseInsensitive); } }
@@ -62,26 +65,33 @@ public:
     void setTags(const StringList& tags)  { mTags = tags; }
     StringList tags() const               { return mTags; }
 
-    bool isNull() const  { return mName.isEmpty() && mHtml.isEmpty(); }
+    bool isNull() const  { return mName.isEmpty() && mDoc == nullptr; }
 
-    void setHtml(const QString& h) { mHtml = h; count(); }
+    void setDoc(QTextDocument* d)  { mDoc = d; }
+    void setHtml(const QString& h) { mDoc->setHtml(h); count(); }
     void setName(const QString& n) { mName = n; }
     void setPosition(qlonglong p)  { mPosition = p; }
 
-    void      buildTree(Json5Object& obj, TreeNode& current);
-    void      changeFont(const QFont& font);
-    void      clearTag(const QString& tag);
-    qlonglong count();
-    bool      fromObject(Json5Object& obj);
-    void      fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
-    bool      hasTag(const StringList& tags) const;
-    void      newHtml(const QFont& font);
-    QString   toPlainText();
+    void             buildTree(Json5Object& obj, TreeNode& current);
+    void             changeFont(const QFont& font);
+    void             clearTag(const QString& tag);
+    qlonglong        count();
+    bool             fromDocArray(Json5Array& arr);
+    bool             fromDocObject(Json5Object& obj);
+    bool             fromObject(Json5Object& obj);
+    QTextBlockFormat fromTextBlockFormatObject(Json5Object& obj);
+    QTextCharFormat  fromTextCharFormatObject(Json5Object& obj);
+    void             fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
+    bool             hasTag(const StringList& tags) const;
+    void             setDocumentFont(const QFont& font);
+    QString          toPlainText();
+    void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
+    void             toTextCharFormat(Json5Object &obj, QTextCharFormat& format);
 
     virtual Json5Object toObject();
 
-    static QString changeFont(const QString& html, const QFont& font);
-    static QString setupHtml(const QFont& font);
+    static QString changeFont(QTextDocument* doc, const QFont& font);
+    static QString setupHtml(const QFont& font, QTextDocument* doc = nullptr);
 
     static auto getNextID()                  { return sNextID; }
     static void resetLastID(qlonglong i = 0) { sNextID = i; }
@@ -105,8 +115,8 @@ protected:
 
 private:
     qlonglong               mCount;
-    QString                 mHtml;
-    qsizetype               mID { -1 };
+    QTextDocument*          mDoc      { nullptr };
+    qsizetype               mID       { -1 };
     QString                 mName;
     qlonglong               mPosition { 0 };
     StringList              mTags;
@@ -120,27 +130,36 @@ public:
     Novel(Json5Object obj);
     Novel(const QString& filename);
 
-    static constexpr auto BranchId = "Id";
-    static constexpr auto Branches = "Branches";
-    static constexpr auto Children = "children";
-    static constexpr auto Doc      = "doc";
-    static constexpr auto Document = "document";
-    static constexpr auto Extra    = "Extra";
-    static constexpr auto Filename = "Filename";
-    static constexpr auto Html     = "HTML";
-    static constexpr auto Id       = "ID";
-    static constexpr auto Items    = "Items";
-    static constexpr auto Name     = "Name";
-    static constexpr auto Options  = "options";
-    static constexpr auto Position = "Position";
-    static constexpr auto Root     = "Root";
-    static constexpr auto Tags     = "Tags";
-    static constexpr auto V1       = "v1";
-    static constexpr auto V1Id     = "id";
-    static constexpr auto V1Root   = "root";
-    static constexpr auto V1Tags   = "tags";
-    static constexpr auto V1Name   = "name";
-    static constexpr auto Windows  = "windows";
+    static constexpr auto Alignment = "Alignment";
+    static constexpr auto BranchId  = "Id";
+    static constexpr auto Branches  = "Branches";
+    static constexpr auto Bold      = "Bold";
+    static constexpr auto Children  = "children";
+    static constexpr auto Doc       = "doc";
+    static constexpr auto Document  = "document";
+    static constexpr auto Extra     = "Extra";
+    static constexpr auto Filename  = "Filename";
+    static constexpr auto Fragments = "Fragments";
+    static constexpr auto Html      = "HTML";
+    static constexpr auto Id        = "ID";
+    static constexpr auto Image     = "Image";
+    static constexpr auto Indent    = "Indent";
+    static constexpr auto Italic    = "Italic";
+    static constexpr auto Items     = "Items";
+    static constexpr auto NakedDoc  = "Document";
+    static constexpr auto Name      = "Name";
+    static constexpr auto Options   = "options";
+    static constexpr auto Position  = "Position";
+    static constexpr auto Root      = "Root";
+    static constexpr auto Tags      = "Tags";
+    static constexpr auto Text      = "Text";
+    static constexpr auto Underline = "Underline";
+    static constexpr auto V1        = "v1";
+    static constexpr auto V1Id      = "id";
+    static constexpr auto V1Root    = "root";
+    static constexpr auto V1Tags    = "tags";
+    static constexpr auto V1Name    = "name";
+    static constexpr auto Windows   = "windows";
 
     Json5Object toObject();
     void        addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }

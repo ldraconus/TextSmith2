@@ -314,18 +314,15 @@ void Main::doAboutToShowHelpMenu() {
 
 void Main::doAddItem() {
     Item item;
-    item.newHtml(mUi->textEdit->document()->defaultFont());
+    item.setDocumentFont(mUi->textEdit->document()->defaultFont());
     item.setName("");
     ItemDescriptionDialog dlg(&item, this);
     if (dlg.exec() == QDialog::Rejected) return;
     mNovel.addItem(item);
     QTreeWidgetItem* branch = mUi->treeWidget->currentItem();
     auto twItem = new QTreeWidgetItem;
-    QTextDocument* doc = new QTextDocument();
-    doc->setParent(nullptr);
     twItem->setText(0, item.name());
     twItem->setData(0, Qt::UserRole, item.id());
-    mUi->treeWidget->setTextDocument(item.id(), doc);
     mUi->treeWidget->saveUndo(new InsertItemCommand(mUi->treeWidget, branch, branch->childCount(), twItem, item));
     branch->addChild(twItem);
     branch->setExpanded(true);
@@ -357,6 +354,18 @@ void Main::doCenterJustify() {
     mUi->textEdit->setTextCursor(cursor);
     justifyButtons();
     changed();
+}
+
+void Main::doClearRecentNovels() {
+    auto recents = mPrefs.recentNovels();
+    recents.clear();
+    mPrefs.setRecentNovels(recents);
+    QMenu* recentMenu = mUi->menu_Recent_Novels;
+    auto actions = recentMenu->actions();
+    QAction* clearAction = mUi->action_Clear_Recent_Novels;
+    for (auto&& action: actions) {
+        if (action != clearAction) recentMenu->removeAction(action);
+    }
 }
 
 void Main::doCloseAll() {
@@ -625,22 +634,47 @@ void Main::doItalic() {
     changed();
 }
 
+QMimeData* Main::copyMimeData(const QMimeData* src) {
+    QMimeData* copy = new QMimeData();
+    StringList formats { src->formats() };
+    for (const auto& format: formats) {
+        QByteArray data = src->data(format);
+        copy->setData(format, data);
+    }
+    return copy;
+}
+
 void Main::doItemChanged(QTreeWidgetItem* current) {
     if (current == nullptr) return;
+
     auto& oldItem = mNovel.findItem(mCurrentNode);
-    QString html = mUi->textEdit->toHtml();
-    oldItem.setHtml(html);
     oldItem.count();
     oldItem.setPosition(mUi->textEdit->textCursor().position());
-    mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
-    QTextDocument* doc = mUi->treeWidget->textDocument(mCurrentNode);
-    doc->setParent(nullptr);
-    mUi->textEdit->setDocument(doc);
-    mUi->actionOpen_Current_Item->setText(current->isExpanded() ? "Close Current Item" : "Open Current Item");
 
-    auto& item = mNovel.findItem(mCurrentNode);
+    mCurrentNode = current->data(0, Qt::UserRole).toLongLong();
+    Item& item = mNovel.findItem(mCurrentNode);
+    QTextDocument* doc = item.doc();
+    mUi->textEdit->setDocument(doc);
+
+    /* this is a hack! */
+    QClipboard* clipboard = QApplication::clipboard();
+    QMimeData* save = copyMimeData(clipboard->mimeData());
+
+    QApplication::processEvents();
+    mUi->textEdit->setUpdatesEnabled(false);
+    mUi->textEdit->selectAll();
+    QApplication::processEvents();
+    mUi->textEdit->cut();
+    QApplication::processEvents();
+    mUi->textEdit->paste();
+    mUi->textEdit->setUpdatesEnabled(true);
+
+    clipboard->setMimeData(save);
+    /* end of hack */
+
     mPosition = item.position();
-    setHtml(item.html());
+
+    mUi->actionOpen_Current_Item->setText(current->isExpanded() ? "Close Current Item" : "Open Current Item");
 
     doCursorPositionChanged();
     changed();
@@ -776,11 +810,10 @@ void Main::doNew() {
     mCurrentNode = mNovel.root();
     auto* tree = mUi->treeWidget;
     tree->clearUndo();
-    auto* doc = tree->textDocument(mCurrentNode);
-    tree->removeTextDocument(mCurrentNode);
-    tree->clearTextDocuments();
-    tree->setTextDocument(mCurrentNode, doc);
+    Item& item = mNovel.findItem(mCurrentNode);
+    auto* doc = item.doc();
     auto* edit = mUi->textEdit;
+    edit->setDocument(doc);
     edit->clearInternalImages();
     clearChanged();
     update();
@@ -939,9 +972,6 @@ void Main::doPreferences() {
     Preferences prefs(mPrefs);
     PreferencesDialog dlg(mPrefs, this);
     if (dlg.exec() == QDialog::Rejected) mPrefs = prefs;
-    QFont font(mPrefs.fontFamily(), mPrefs.fontSize());
-    QApplication::setFont(font);
-    mUi->menubar->setFont(font);
     updateFromPrefs();
 }
 
@@ -1075,7 +1105,7 @@ void Main::doSave() {
 
     if (mSaving.exchange(true)) return;
 
-    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
+//    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
     Map<qlonglong, bool> byId;
     mapTree(byId, mUi->treeWidget->topLevelItem(0));
     save(mNovel, byId, mUi->textEdit->textCursor().position(), geometry());
@@ -1938,11 +1968,9 @@ void Main::selectionItems() {
     mUi->actionUppercase->setEnabled(selectionMade);
 }
 
-void Main::setHtml(const QString& html) {
-    QString safeHtml = html;
-    safeHtml.replace(QRegularExpression("<p([^>]*)>\\s*<br\\s*/>\\s*</p>"), "<p\\1>&#8203;</p>");
-    mUi->textEdit->setHtml(html);
-    removeEmptyFirstBlock(mUi->textEdit);
+void Main::setDoc(qlonglong id) {
+    Item& item = mNovel.findItem(id);
+    mUi->textEdit->setDocument(item.doc());
 
     mUi->textEdit->document()->setTextWidth(mUi->textEdit->viewport()->width());
     mUi->textEdit->document()->documentLayout()->update();
@@ -1992,8 +2020,9 @@ void Main::setTitle() {
     if (!mNovel.filename().isEmpty()) {
         QFileInfo info(mNovel.filename());
         title += " - " + info.fileName();
-        if (!mNovel.isChanged()) title += " [Saved]";
     }
+    if (!mNovel.isChanged()) title += " [Saved]";
+    mUi->actionSave->setEnabled(mNovel.isChanged());
     setWindowTitle(title);
 }
 
@@ -2002,7 +2031,7 @@ void Main::update(bool unchanged) { // new, open
     tree->clear();
     buildTree(mNovel.branches(), nullptr, mState);
     mImageStore.clear();
-    updateHtml();
+    updateDocument();
     updateFromPrefs();
 
     mUi->textEdit->setFocus();
@@ -2016,6 +2045,7 @@ void Main::updateFromPrefs() {
     mUi->actionRead_To_Me->setEnabled(mPrefs.voice() >= 0);
     QFont uiFont(mPrefs.uiFontFamily(), mPrefs.uiFontSize());
     QApplication::setFont(uiFont);
+    mUi->menubar->setFont(uiFont);
     updateGeometry();
     repaint();
 
@@ -2040,13 +2070,12 @@ void Main::updateFromPrefs() {
     }
 }
 
-void Main:: updateHtml() { // update, and post-fullscreen
+void Main::updateDocument() { // update, and post-fullscreen
     QTreeWidget* tree = mUi->treeWidget;
     QTreeWidgetItem* branch = findItem(tree->topLevelItem(0), mCurrentNode);
     if (branch != nullptr) {
         Item& item = mNovel.findItem(mCurrentNode);
-        setHtml(item.html());
-
+        mUi->textEdit->setDocument(item.doc());
         tree->setCurrentItem(branch);
     }
 }
@@ -2113,11 +2142,6 @@ Main::Main(QApplication* app, QWidget* parent)
     updateGeometry();
     repaint();
 
-    emit mUi->menuFile->aboutToShow();
-    emit mUi->menuEdit->aboutToShow();
-    emit mUi->menuNovel->aboutToShow();
-    emit mUi->menuView->aboutToShow();
-
     mUi->treeWidget->setColumnCount(1);
     mUi->textEdit->setTabChangesFocus(true);
 
@@ -2179,7 +2203,6 @@ void Main::setupHtml(TextEdit& text) {
     QString html = Item::setupHtml(font);
     text.document()->setDefaultFont(font);
     text.document()->setHtml(html);
-//    applyNovelFormatting();
 }
 
 Json5Object Main::treeOfItems(QTreeWidgetItem* branch) {
@@ -2300,6 +2323,7 @@ void Main::setupConnections() {
     connect(mUi->actionSave_As,    &QAction::triggered, this, &Main::saveAsAction);
 
     // Note: we remeber /all/ of the novels worked on, we just delete the ones that have been delete and suddenly you can see older novels!
+    connect(mUi->action_Clear_Recent_Novels, &QAction::triggered, this, &Main::clearRecentNovels);
     auto* recentMenu = mUi->menu_Recent_Novels;
     auto recent = mPrefs.recentNovels();
     List<Preferences::Recent> gone;
@@ -2310,9 +2334,8 @@ void Main::setupConnections() {
             gone.append(novel);
             continue;
         }
-        if (count >= 10) continue;
+        if (count++ >= 10) continue;
         QAction* act = recentMenu->addAction(novel.sTitle);
-        ++count;
         act->setShortcut(QKeySequence("Ctrl+" + QString::number((count == 10) ? 0 : count)));
         act->setShortcutContext(Qt::ApplicationShortcut);
 
@@ -2891,7 +2914,7 @@ qlonglong Main::skipSpaces(const QString& str, qlonglong pos) {
 
 void Main::changeDocumentFont(QTextDocument* doc, const QFont& font) {
     QString html = doc->toHtml();
-    html = Item::changeFont(html, font);
+    html = Item::changeFont(doc, font);
     doc->setHtml(html);
     Main::ref().ui()->textEdit->setWrapMargin();
 }

@@ -35,6 +35,9 @@ protected:
     Novel&  mNovel;
     QString mSearchString;
 
+    virtual void buildResults(const QString& ref) { }
+    virtual void buildResults(qlonglong id) { }
+
 public:
     static constexpr bool CaseInsensitive    = true;
     static constexpr bool NotCaseInsensitive = false;
@@ -49,7 +52,7 @@ public:
 
     virtual const NovelPosition findNext() = 0;
 
-    void setText(const QString& s) { mSearchString = s; }
+    void setText(const QString& s) { mSearchString = s; buildResults(s); }
 
     QString text() const { return mSearchString; }
 };
@@ -65,7 +68,7 @@ protected:
     void setBegin(qlonglong b) { mBegin = b; }
     void setEnd(qlonglong e)   { mEnd = e; }
 
-    void buildResults(const QString& text);
+    void buildResults(const QString& text) override;
 
 public:
     SearchSelection() = delete;
@@ -94,7 +97,7 @@ protected:
     List<qlonglong> mResults;
     qlonglong       mBranchIndex;
 
-    void buildResults(qlonglong id);
+    void buildResults(qlonglong id) override;
     void flattenTree(QTreeWidgetItem* tree, qlonglong id);
 
 public:

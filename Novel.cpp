@@ -5,28 +5,27 @@
 #include <QTextBlock>
 #include <QTextCursor>
 
-#include "TextEdit.h"
+#include "Main.h"
 
 qsizetype Item::sNextID = 0;
 
 Item::Item(bool noId)
     : mCount(0)
-    , mID(noId ? sNextID : sNextID++) {
+    , mID(noId ? sNextID : sNextID++)
+    , mDoc(new QTextDocument()) {
 }
 
 Item::Item(Json5Object& obj)
     : mCount(0) {
-    fromObject(obj);
+    if (obj.contains(Novel::NakedDoc)) fromDocObject(obj);
+    else fromObject(obj);
 }
 
 void Item::changeFont(const QFont& font) {
-    mHtml = changeFont(mHtml, font);
+    mDoc->setHtml(changeFont(mDoc, font));
 }
 
-QString Item::changeFont(const QString& html, const QFont& font) {
-    TextEdit text;
-    text.setHtml(html);
-    QTextDocument* doc = text.document();
+QString Item::changeFont(QTextDocument* doc, const QFont& font) {
     QTextCursor cursor(doc);
 
     struct Range {
@@ -64,27 +63,28 @@ QString Item::changeFont(const QString& html, const QFont& font) {
         cursor.mergeCharFormat(fmt);
     }
 
-    return text.toHtml();
+    return doc->toHtml();
 }
 
-QString Item::setupHtml(const QFont& font) {
+QString Item::setupHtml(const QFont& font, QTextDocument* doc) {
     TextEdit text;
+    if (doc == nullptr) doc = text.document();
     QFontMetrics metrics(font);
     int lineHeight = metrics.height();
     int indent = 4 * metrics.averageCharWidth();
     QTextBlockFormat format;
     format.setTextIndent(indent);
     format.setBottomMargin(lineHeight);
-    QTextCursor cursor(text.document());
+    QTextCursor cursor(doc);
     cursor.select(QTextCursor::Document);
     cursor.mergeBlockFormat(format);
-    text.setTextCursor(cursor);
-    return text.document()->toHtml();
+    QString html = doc->toHtml();
+    return html;
 }
 
 void Item::clear() {
     mCount = 0;
-    mHtml.clear();
+    mDoc = nullptr;
     mID = 0;
     mName.clear();
     mTags.clear();
@@ -92,8 +92,7 @@ void Item::clear() {
 }
 
 void Item::init() {
-    TextEdit text;
-    mHtml = text.toHtml();
+    mDoc->setHtml("");
 }
 
 void Item::buildTree(Json5Object& obj, TreeNode& current) {
@@ -114,11 +113,70 @@ void Item::clearTag(const QString &tag) {
 }
 
 qlonglong Item::count() {
-    TextEdit text;
-    text.insertHtml(mHtml);
-    QString plain = text.toPlainText();
+    QString plain = mDoc->toPlainText();
     StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
     return mCount = words.count();
+}
+
+bool Item::fromDocArray(Json5Array &arr){
+    QTextCursor cursor(mDoc);
+    bool first = true;
+    for (auto& blk: arr) {
+        if (blk.isObject()) {
+            Json5Object obj = blk.toObject();
+            QTextBlockFormat format = fromTextBlockFormatObject(obj);
+            QTextCharFormat charFormat = fromTextCharFormatObject(obj);
+            cursor.movePosition(QTextCursor::End);
+            if (first) {
+                first = false;
+                cursor.setBlockFormat(format);
+                cursor.setBlockCharFormat(charFormat);
+            } else cursor.insertBlock(format, charFormat);
+            Json5Array fragments = hasArr(obj, Novel::Fragments, { });
+            for (auto& fragment: fragments) {
+                if (fragment.isObject()) {
+                    obj = fragment.toObject();
+                    if (obj.contains("Image")) {
+                        QString imageId = hasStr(obj, Novel::Image, "");
+                        QTextImageFormat imgFmt;
+                        imgFmt.setName(imageId);
+                        cursor.insertImage(imgFmt);
+                    } else {
+                        QString text = hasStr(obj, Novel::Text, "");
+                        charFormat = fromTextCharFormatObject(obj);
+                        cursor.insertText(text, charFormat);
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool Item::fromDocObject(Json5Object &obj) {
+    delete mDoc;
+    mDoc = new QTextDocument();
+    mDoc->setParent(nullptr);
+    Json5Array doc = hasArr(obj, Novel::NakedDoc);
+    if (!fromDocArray(doc)) {
+        delete mDoc;
+        return false;
+    }
+    mPosition = hasNum(obj, Novel::Position, 0.0);
+    auto id =   hasNum(obj, Novel::Id,       qlonglong(0));
+    mName =     hasStr(obj, Novel::Name);
+
+    setId(id);
+    if (mName.isEmpty()) mName = name();
+
+    Json5Array tags = hasArr(obj, Novel::Tags, {});
+    for (qsizetype i = 0; i < tags.count(); ++i) {
+        QString tag = hasStr(tags, i, "");
+        if (tag.isEmpty()) continue;
+        mTags.append(tag);
+    }
+    Novel::ref().addItem(*this);
+    return true;
 }
 
 void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
@@ -152,7 +210,35 @@ bool Item::hasTag(const StringList& tags) const {
 
 Json5Object Item::toObject() {
     Json5Object obj;
-    obj[Novel::Html] =     mHtml;
+
+    Json5Array doc;
+    for (QTextBlock block = mDoc->begin(); block != mDoc->end(); block = block.next()) {
+        Json5Object blk;
+        auto format = block.blockFormat();
+        toTextBlockFormat(blk, format);
+        auto charFormat = block.charFormat();
+        toTextCharFormat(blk, charFormat);
+        Json5Array fragments;
+        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
+            QTextFragment fragment = it.fragment();
+            Json5Object frag;
+
+            if (fragment.charFormat().isImageFormat()) {
+                QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
+                frag[Novel::Image] = imgFmt.name();
+            } else {
+                auto fragCharFormat = fragment.charFormat();
+                toTextCharFormat(frag, fragCharFormat);
+                frag[Novel::Text] = fragment.text();
+            }
+
+            fragments.append(frag);
+        }
+        blk[Novel::Fragments] = fragments;
+        doc.append(blk);
+    }
+
+    obj[Novel::NakedDoc] = doc;
     obj[Novel::Position] = mPosition;
     obj[Novel::Id] =       mID;
     obj[Novel::Name] =     mName;
@@ -215,7 +301,7 @@ QString Item::hasStr(Json5Array& arr, const qsizetype idx, const QString& def) {
 
 void Item::copy(const Item& i) {
     mCount = i.mCount;
-    mHtml = i.mHtml;
+    mDoc = i.mDoc;
     mID = i.mID;
     mName = i.mName;
     mPosition = i.mPosition;
@@ -223,10 +309,13 @@ void Item::copy(const Item& i) {
 }
 
 bool Item::fromObject(Json5Object& obj) {
-    mHtml =     hasStr(obj, Novel::Html);
-    mPosition = hasNum(obj, Novel::Position, 0.0);
-    auto id =   hasNum(obj, Novel::Id,       qlonglong(0));
-    mName =     hasStr(obj, Novel::Name);
+    QString html = hasStr(obj, Novel::Html);
+    mDoc = new QTextDocument();
+    mDoc->setParent(nullptr);
+    mDoc->setHtml(html);
+    mPosition =    hasNum(obj, Novel::Position, 0.0);
+    auto id =      hasNum(obj, Novel::Id,       qlonglong(0));
+    mName =        hasStr(obj, Novel::Name);
 
     setId(id);
     if (mName.isEmpty()) mName = name();
@@ -241,30 +330,72 @@ bool Item::fromObject(Json5Object& obj) {
     return true;
 }
 
+QTextBlockFormat Item::fromTextBlockFormatObject(Json5Object &obj) {
+    QTextBlockFormat format;
+    Preferences* prefs = &Main::ref().prefs();
+    QFont font(prefs->fontFamily(), prefs->fontSize());
+    QFontMetrics metrics(font);
+    int lineHeight =  metrics.lineSpacing();
+    int paraIndent =  4 * metrics.averageCharWidth();
+    auto alignment =  hasNum(obj, Novel::Alignment,  qlonglong(0));
+    auto indent =     hasNum(obj, Novel::Indent,     qlonglong(0));
+    if (alignment == 0) alignment = Qt::AlignLeft;
+    format.setAlignment(Qt::Alignment(int(alignment)));
+    format.setBottomMargin(lineHeight);
+    format.setTextIndent(paraIndent);
+    format.setIndent(indent);
+    return format;
+}
+
+QTextCharFormat Item::fromTextCharFormatObject(Json5Object &obj) {
+    QTextCharFormat format;
+    Preferences* prefs = &Main::ref().prefs();
+    format.setFontFamilies({ prefs->fontFamily() });
+    format.setFontPointSize(prefs->fontSize());
+    bool bold =      hasBool(obj, Novel::Bold,      false);
+    bool italic =    hasBool(obj, Novel::Italic,    false);
+    bool underline = hasBool(obj, Novel::Underline, false);
+    if (bold) format.setFontWeight(QFont::Bold);
+    else format.setFontWeight(QFont::Normal);
+    format.setFontItalic(italic);
+    format.setFontUnderline(underline);
+    return format;
+}
+
 void Item::move(Item&& i) {
     copy(i);
     i.mCount = 0;
-    i.mHtml.clear();
+    i.mDoc = nullptr;
     i.mID = 0;
     i.mName.clear();
     i.mPosition = 0;;
     i.mTags.clear();
 }
 
-void Item::newHtml(const QFont& font) {
+void Item::setDocumentFont(const QFont& font) {
     TextEdit text(nullptr);
     text.setText("");
     setupHtml(font);
 
-    mHtml = text.toHtml();
+    // don't need this?
+    // mHtml = text.toHtml();
     mCount = 0;
 }
 
 QString Item::toPlainText() {
-    TextEdit converter;
-    converter.setHtml(mHtml);
-    QString text = converter.toPlainText();
+    QString text = mDoc->toPlainText();
     return text;
+}
+
+void Item::toTextBlockFormat(Json5Object &obj, QTextBlockFormat &format) {
+    obj[Novel::Alignment] = qlonglong(format.alignment());
+    obj[Novel::Indent] = qlonglong(format.indent());
+}
+
+void Item::toTextCharFormat(Json5Object &obj, QTextCharFormat& format) {
+    if (format.fontWeight() >= QFont::Bold) obj[Novel::Bold] =      true;
+    if (format.fontItalic())                obj[Novel::Italic] =    true;
+    if (format.fontUnderline())             obj[Novel::Underline] = true;
 }
 
 Novel* Novel::sNovel = nullptr;

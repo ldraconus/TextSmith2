@@ -37,6 +37,7 @@ namespace Ui {
 QT_END_NAMESPACE
 
 class QCompleter;
+class QMimeData;
 class QPdfWriter;
 class QPrinter;
 class QTextDocument;
@@ -149,6 +150,7 @@ private:
     void doAddItem();
     void doBold();
     void doCenterJustify();
+    void doClearRecentNovels();
     void doCloseAll();
     void doCopy();
     void doCursorPositionChanged();
@@ -221,6 +223,7 @@ private:
     void           buildTreeMimeData(const QList<QTreeWidgetItem*>& item, QMimeData* mimeData);
     bool           canPasteMimeData(const QMimeData* mimeData);
     QString        checked(const QString& path);
+    QMimeData*     copyMimeData(const QMimeData* src);
     void           copyTreeItem();
     QIcon          createResponsiveIcon(const QString &path, int targetSize);
     void           cutTreeItem();
@@ -242,7 +245,7 @@ private:
     TreeNode       saveTree(QTreeWidgetItem* node);
     QSize          scrollBarSize(QScrollBar* bar);
     void           selectionItems();
-    void           setHtml(const QString& html);
+    void           setDoc(qlonglong id);
     void           setIcon(QToolButton* button, bool isChecked);
     void           setMenu(QAction* button, bool isChecked);
     void           setPosition(qlonglong pos);
@@ -255,7 +258,7 @@ private:
     qlonglong      skipSpaces(const QString& str, qlonglong pos);;
     void           update(bool unchanged = false);
     void           updateFromPrefs();
-    void           updateHtml();
+    void           updateDocument();
     void           workTree(QTreeWidgetItem* item, bool expand);
 
 public:
@@ -302,13 +305,14 @@ public:
     static StringList splitToList(const QString& tag);
 
 public slots:
-    void exitAction()   { doExit(); }
-    void newAction()    { doNew(); }
-    void openAction()   { doOpen(); }
-    void pageSetup()    { doPageSetup(); }
-    void printAction()  { doPrint(); }
-    void saveAction()   { doSave(); }
-    void saveAsAction() { doSaveAs(); }
+    void clearRecentNovels() { doClearRecentNovels(); }
+    void exitAction()        { doExit(); }
+    void newAction()         { doNew(); }
+    void openAction()        { doOpen(); }
+    void pageSetup()         { doPageSetup(); }
+    void printAction()       { doPrint(); }
+    void saveAction()        { doSave(); }
+    void saveAsAction()      { doSaveAs(); }
 
     void boldAction()          { doBold(); }
     void centerJustifyAction() { doCenterJustify(); }
