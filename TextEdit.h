@@ -52,13 +52,20 @@ private:
     SoundPool*         mSoundPool =         nullptr;
     int                mWrapMarginPx =      0;
 
-    int  contentMaxWidth() const;
-    void insertExternalUrlImage(const QUrl& url);
-    void insertInternalImage(const QImage& image);
-    void insertLocalImage(const QString& localFilePath);
-    QUrl makeInternalUrl();
-    void resizeImagesToFit();
-    void scheduleResize();
+    int              contentMaxWidth() const;
+    void             fromJson(const QJsonDocument& document);
+    QTextBlockFormat fromTextBlockFormatObject(QJsonObject &obj);
+    QTextCharFormat  fromTextCharFormatObject(QJsonObject &obj);
+    void             insertExternalUrlImage(const QUrl& url);
+    void             insertInternalImage(const QImage& image);
+    void             insertLocalImage(const QString& localFilePath);
+    QUrl             makeInternalUrl();
+    void             resizeImagesToFit();
+    void             scheduleResize();
+    QJsonObject      serializeInteralImageToJson(const QUrl& url, const QImage& img);
+    QJsonDocument    toJson(const QTextCursor& selection) const;
+    void             toTextBlockFormat(QJsonObject& obj, const QTextBlockFormat format) const;
+    void             toTextCharFormat(QJsonObject& obj, const QTextCharFormat format) const;
 
     static QByteArray imageToPngBytes(const QImage& img);
 };

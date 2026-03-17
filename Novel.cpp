@@ -453,12 +453,12 @@ QString Item::toPlainText() {
     return text;
 }
 
-void Item::toTextBlockFormat(Json5Object &obj, QTextBlockFormat &format) {
+void Item::toTextBlockFormat(Json5Object& obj, QTextBlockFormat& format) {
     obj[Novel::Alignment] = qlonglong(format.alignment());
     obj[Novel::Indent] = qlonglong(format.indent());
 }
 
-void Item::toTextCharFormat(Json5Object &obj, QTextCharFormat& format) {
+void Item::toTextCharFormat(Json5Object& obj, QTextCharFormat& format) {
     if (format.fontWeight() >= QFont::Bold) obj[Novel::Bold] =      true;
     if (format.fontItalic())                obj[Novel::Italic] =    true;
     if (format.fontUnderline())             obj[Novel::Underline] = true;

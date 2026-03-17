@@ -28,11 +28,20 @@ TextEdit::TextEdit(QWidget* parent)
     // Default margin is fine; you can tweak per your layout
 }
 
+static constexpr auto TextSmith2MimeData = "x-TextSmith2-json";
+
 void TextEdit::insertFromMimeData(const QMimeData *source) {
     ReentryGuard guard(mReentry);
     if (guard.active() || mInserting || mResizing) return; // guard against re-entry
 
     if (!source) return;
+
+    if (source->hasFormat(TextSmith2MimeData)) {
+        QByteArray data(source->data(TextSmith2MimeData));
+        QJsonDocument doc(QJsonDocument::fromJson(data));
+        fromJson(doc);
+        return;
+    }
 
     if (source->hasImage()) {
         QImage img = qvariant_cast<QImage>(source->imageData());
@@ -167,7 +176,7 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
             mSoundPool->play(SoundPool::Sound::ReturnRoll);
             {
                 QRect r = cursorRect();
-                if (r.left() > r.size().width()) mSoundPool->playDelayed(SoundPool::Sound::ReturnClunk, 80);
+                if (r.left() < r.size().width()) mSoundPool->playDelayed(SoundPool::Sound::ReturnClunk, 80);
             }
             break;
 
@@ -216,7 +225,8 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
 
     if (key->key() == Qt::Key_Backspace) {
         QTextCursor cursor = textCursor();
-        if (cursor.positionInBlock() == 0 && cursor.positionInBlock() != 0) {
+        if (cursor.position() == 0) return;
+        if (cursor.positionInBlock() == 0) {
             cursor.setPosition(cursor.position() - 1);
             setTextCursor(cursor);
             QKeyEvent* myKey = new QKeyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
@@ -358,6 +368,151 @@ void TextEdit::scheduleResize() {
     QTimer::singleShot(0, this, [this]{ resizeImagesToFit(); });
 }
 
+static constexpr auto Alignment = "Alignment";
+static constexpr auto Blocks =    "Blocks";
+static constexpr auto Bold =      "Bold";
+static constexpr auto Default =   "Default";
+static constexpr auto FontName =  "FontName";
+static constexpr auto FontSize =  "FontSize";
+static constexpr auto Format =    "Format";
+static constexpr auto Height =    "Height";
+static constexpr auto Image =     "Image";
+static constexpr auto Images =    "Images";
+static constexpr auto Indent =    "Indent";
+static constexpr auto Italic =    "Italic";
+static constexpr auto Name =      "Name";
+static constexpr auto Text =      "Text";
+static constexpr auto Underline = "Underline";
+static constexpr auto Width =     "Width";
+
+QTextBlockFormat TextEdit::fromTextBlockFormatObject(QJsonObject &obj) {
+    QTextBlockFormat format;
+    QFontMetrics metrics(font());
+    int lineHeight = metrics.lineSpacing();
+    int paraIndent = 4 * metrics.averageCharWidth();
+    format.setBottomMargin(lineHeight);
+    format.setTextIndent(paraIndent);
+    if (obj.contains(Alignment) && obj[Alignment].isDouble()) {
+        auto alignment = obj[Alignment].toInt();
+        if (alignment == 0) alignment = Qt::AlignLeft;
+        format.setAlignment(Qt::Alignment(int(alignment)));
+    }
+    if (obj.contains(Indent) && obj[Indent].isDouble()) format.setIndent(obj[Indent].toInt());
+    return format;
+}
+
+QTextCharFormat TextEdit::fromTextCharFormatObject(QJsonObject &obj) {
+    QTextCharFormat format;
+    format.setFontFamilies(font().families());
+    format.setFontPointSize(font().pointSize());
+    if (obj.contains(Bold) &&      obj[Bold].isBool() &&      obj[Bold].toBool())      format.setFontWeight(QFont::Bold);
+    if (obj.contains(Italic) &&    obj[Italic].isBool() &&    obj[Italic].toBool())    format.setFontItalic(obj[Italic].toBool());
+    if (obj.contains(Underline) && obj[Underline].isBool() && obj[Underline].toBool()) format.setFontUnderline(obj[Underline].toBool());
+    return format;
+}
+
+void TextEdit::toTextBlockFormat(QJsonObject& obj, const QTextBlockFormat format) const {
+    obj[Alignment] = int(format.alignment());
+    obj[Indent] =    int(format.indent());
+}
+
+void TextEdit::toTextCharFormat(QJsonObject& obj, const QTextCharFormat format) const {
+    if (format.fontWeight() >= QFont::Bold) obj[Bold] =      true;
+    if (format.fontItalic())                obj[Italic] =    true;
+    if (format.fontUnderline())             obj[Underline] = true;
+}
+
+static QTextBlock::iterator findFragment(QTextBlock& blk, int pos) {
+    for (auto frag = blk.begin(); frag != blk.end(); ++frag) {
+        auto fragment = frag.fragment();
+        if (fragment.contains(pos)) return frag;
+    }
+    return blk.end();
+}
+
+void TextEdit::fromJson(const QJsonDocument& doc) {
+    QTextCursor cursor = textCursor();
+    auto* document = cursor.document();
+    int pos = cursor.position();
+    if (!doc.isObject()) return;
+    QJsonObject top = doc.object();
+    if (!top.contains(Images) && top[Images].isArray())
+    cursor.beginEditBlock();
+    QJsonArray images;
+    if (cursor.atBlockStart()) cursor.insertBlock();
+    QTextBlock blk = document->findBlock(pos);
+    cursor.endEditBlock();
+}
+
+QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
+    QJsonDocument doc;
+    QJsonObject data;
+
+    auto* document = selection.document();
+    int pos = selection.selectionStart();
+    int endPos = selection.selectionEnd();
+    QTextBlock startBlock = document->findBlock(pos);
+    QTextBlock endBlock = document->findBlock(endPos);
+    QTextBlock block = startBlock;
+    QJsonArray slctBlks;
+    QTextBlock::iterator fragment = findFragment(startBlock, pos);
+    QStringList images;
+    for (; ; ) {
+        QJsonObject blk;
+        toTextBlockFormat(blk, block.blockFormat());
+        toTextCharFormat(blk, block.charFormat());
+        QJsonArray fragments;
+        QTextFragment frag = fragment.fragment();
+        while (fragment != block.end()) {
+            QJsonObject frgmnt;
+            if (frag.charFormat().isImageFormat()) {
+                QTextImageFormat imgFmt = frag.charFormat().toImageFormat();
+                QString name = imgFmt.name();
+                frgmnt[Image] = name;
+                images.append(name);
+                frgmnt[Width] = imgFmt.width();
+                frgmnt[Height] = imgFmt.height();
+            } else {
+                QString text = frag.text();
+                if (frag.contains(endPos)) text = text.left(endPos - frag.position());
+                if (frag.contains(pos)) text = text.mid(frag.position() - pos);
+                frgmnt[Text] = text;
+                toTextCharFormat(frgmnt, frag.charFormat());
+            }
+            fragments.append(frgmnt);
+            if (frag.contains(endPos)) break;
+            ++fragment;
+            frag = fragment.fragment();
+        }
+        slctBlks.append(blk);
+        if (block.blockNumber() == endBlock.blockNumber()) break;
+        block = block.next();
+        fragment = block.begin();
+        pos = fragment.fragment().position();
+    }
+    data[Blocks] = slctBlks;
+
+    QJsonArray slctImgs;
+    for (auto&& name: images) {
+        if (name.startsWith("internal://")) {
+            QJsonObject img;
+            img[Name] = name;
+            QImage image = mOriginals[name];
+            QByteArray bytes;
+            QBuffer buffer(&bytes);
+            buffer.open(QIODevice::WriteOnly);
+            image.save(&buffer, "PNG");
+            buffer.close();
+            img[Image] = QString(bytes.toBase64());
+            slctImgs.append(img);
+        } else slctImgs.append(name);
+    }
+    data[Images] = slctImgs;
+
+    doc.setObject(data);
+    return doc;
+}
+
 void TextEdit::resizeImagesToFit() {
     if (mResizing || mInserting) return;
     mResizing = true;
@@ -470,20 +625,24 @@ QJsonArray TextEdit::serializeExternalImagesToJson() {
     return arr;
 }
 
+QJsonObject TextEdit::serializeInteralImageToJson(const QUrl& url, const QImage& img) {
+    const QByteArray png = imageToPngBytes(img);
+    QJsonObject obj;
+    obj["url"] = url.toString();
+    obj["mime"] = "image/png";
+    obj["data"] = QString::fromLatin1(png.toBase64());
+    obj["width"] = img.width();
+    obj["height"] = img.height();
+    return obj;
+}
+
 QJsonArray TextEdit::serializeInternalImagesToJson() {
     QJsonArray arr;
     for (auto it = internalImages().begin(); it != internalImages().end(); ++it) {
         const QUrl url = it.key();
         const QImage img = it.value();
-        const QByteArray png = imageToPngBytes(img);
 
-        QJsonObject obj;
-        obj["url"] = url.toString();
-        obj["mime"] = "image/png";
-        obj["data"] = QString::fromLatin1(png.toBase64());
-        obj["width"] = img.width();
-        obj["height"] = img.height();
-        arr.push_back(obj);
+        arr.push_back(serializeInteralImageToJson(url, img));
     }
     return arr;
 }
@@ -521,6 +680,7 @@ void TextEdit::removeInternalImage(const QUrl& url) {
 }
 
 bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
+    if (source && (source->hasFormat("x-TextSmith2-json"))) return true;
     if (source && (source->hasHtml() || source->hasText())) return true;
     if (source && (source->hasImage() || source->hasUrls())) return true;
     return QTextEdit::canInsertFromMimeData(source);
@@ -529,8 +689,11 @@ bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
 QMimeData* TextEdit::createMimeDataFromSelection() const {
     QMimeData* mime = new QMimeData();
 
+    QJsonDocument json = toJson(textCursor());
     QString html = textCursor().selection().toHtml();
     QString text = textCursor().selection().toPlainText();
+
+    if (!json.isEmpty()) mime->setData("x-TextSmith2-json", json.toJson());
 
     if (!html.isEmpty()) mime->setHtml(html);
 

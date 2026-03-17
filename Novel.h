@@ -87,7 +87,7 @@ public:
     void             setDocumentFont(const QFont& font);
     QString          toPlainText();
     void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
-    void             toTextCharFormat(Json5Object &obj, QTextCharFormat& format);
+    void             toTextCharFormat(Json5Object& obj, QTextCharFormat& format);
 
     virtual Json5Object toObject();
 
