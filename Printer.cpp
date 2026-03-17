@@ -369,7 +369,7 @@ void Printer::printParagraphs(QPainter* painter,
             if (at + baseLine > bottom) {
                 page(painter, emitPage, !startingPage || !isCover);
                 ++mPageNo;
-                startingPage = false;
+                startingPage = true;
                 at = margins.top();
             }
             while (word == "\n") {
@@ -398,6 +398,7 @@ void Printer::printParagraphs(QPainter* painter,
                     startLine = true;
                     width = 0;
                     x = margins.left();
+                    startingPage = false;
                     continue;
                 }
 
@@ -420,6 +421,7 @@ void Printer::printParagraphs(QPainter* painter,
                     startLine = true;
                     width = 0;
                     x = margins.left();
+                    startingPage = false;
                     continue;
                 }
 
@@ -435,6 +437,7 @@ void Printer::printParagraphs(QPainter* painter,
             renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
             at += height;
             height = lineHeight;
+            startingPage = false;
         }
         at += height;
     }
