@@ -197,6 +197,8 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         }
     }
 
+    bool myKey  = false;
+
     if (key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter) {
         QTextCursor cursor = textCursor();
         int oldBlockNumber = cursor.blockNumber();
@@ -221,6 +223,15 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         }
 
         return;
+    } else if (key->key() == Qt::Key_Backspace) {
+        auto cursor = textCursor();
+        if (cursor.position() == 0) return; // eat the keypress
+        if (cursor.atBlockStart() && cursor.selectedText().length() == 0) {
+            cursor.setPosition(cursor.position() - 1);
+            setTextCursor(cursor);
+            key = new QKeyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
+            myKey = true;
+        }
     }
 
     if (key->key() == Qt::Key_Backspace) {
@@ -234,6 +245,8 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
             delete myKey;
         } else QTextEdit::keyPressEvent(key);
     } else QTextEdit::keyPressEvent(key);
+
+    if (myKey) delete key;
 
     // Margin wrap detection
     if (mSoundPool) {

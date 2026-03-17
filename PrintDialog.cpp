@@ -37,6 +37,7 @@ PrintDialog::PrintDialog(QWidget *parent)
         mPreview->print();
         QApplication::restoreOverrideCursor();
         mUi->printPushButton->setEnabled(true);
+        accept();
     });
 
     connect(mPreview, &QPrintPreviewWidget::paintRequested, this,

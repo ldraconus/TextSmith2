@@ -27,7 +27,7 @@ mkdir -p packages/com.vendor.product/data
 cp -uf  $BUILD_DIR/${FROM_PROG}${EXE} packages/com.vendor.product/data/${TO_PROG}${EXE}
 cp -uf  ../Documentation.html packages/com.vendor.product/data
 cp -ruf ../Documentation packages/com.vendor.product/data/Documentation
-cp -ruf ../scripts packages/com.vendor.product/idata/scripts   # fixed typo: ventor→vendor
+cp -ruf ../scripts packages/com.vendor.product/data/scripts   # fixed typo: ventor→vendor
 
 cd packages/com.vendor.product/data
 
@@ -38,7 +38,7 @@ if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
 else
     echo "Confiuring linux post install"
     cp ../../../../TextSmithIcon.png .
-    cp ../meta/nstallScript.js.linux ../meta/installScript.js
+    cp ../meta/installScripts.qs.linux ../meta/installScripts.qs
 fi
 
 echo "Building installer"

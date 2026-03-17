@@ -221,6 +221,12 @@ bool Printer::outputNovel(List<qlonglong> ids,
         }
         auto paragraphs = createParagraphs(item, scaleX, scaleY, lineWidth, pageHeight);
         printParagraphs(painter, pageSize, finishPage, margins, at, startingPage, paragraphs, item.hasTag(coverTags) && mPageNo == 1);
+        if (item.hasTag(coverTags) && startingPage && mPageNo == 1) {
+            ++mPageNo;
+            at = margins.top();
+            startingPage = true;
+            page(painter, finishPage, true);
+        }
     }
 
     if (!startingPage) page(painter, finishPage, false);
@@ -405,6 +411,7 @@ void Printer::printParagraphs(QPainter* painter,
                 line.append({ word, image, lineImages[word].size() });
                 width += lineImages[word].width();
                 startLine = false;
+                startingPage = false;
             } else {
                 QFont wordFont = font;
                 if (currentFormat & bold)      wordFont.setWeight(QFont::Bold);

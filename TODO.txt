@@ -1,3 +1,4 @@
+[ ] Paste sometimes honors center & indent and other times not. Figure it out, fix it. Probably need textsmith specific clipboard.
 [/] Search isn't ;-)
 [/] Write the Documentation
     - Intro
@@ -14,11 +15,13 @@
     [ ] Update documetation
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
-[ ] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
-    same fix as a return minus the 'make sure to add a blank line'.
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Write scripts
+[X] Print does't want to do cover smaller than page followed by chapter correctly
+[X] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
+    Backspace should move back a character (if possible, else do nothing), then DEL
+[X] Print needs to close the dialog, show a printing one, and then close that when the entire file has reached the printer
 [X] Broke image display ... whoops
 [?] Add a hollywood script writing display mode - make file menu understand we're in script mode
 [?] Add Imports:
