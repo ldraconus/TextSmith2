@@ -388,6 +388,7 @@ static constexpr auto Default =   "Default";
 static constexpr auto FontName =  "FontName";
 static constexpr auto FontSize =  "FontSize";
 static constexpr auto Format =    "Format";
+static constexpr auto Fragments = "Fragments";
 static constexpr auto Height =    "Height";
 static constexpr auto Image =     "Image";
 static constexpr auto Images =    "Images";
@@ -449,11 +450,73 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
     int pos = cursor.position();
     if (!doc.isObject()) return;
     QJsonObject top = doc.object();
-    if (!top.contains(Images) && top[Images].isArray())
+    if (!top.contains(Images) || !top[Images].isArray()) return;
+    if (!top.contains(Blocks) || !top[Blocks].isArray()) return;
     cursor.beginEditBlock();
     QJsonArray images;
+    QMap<QUrl, QUrl> in2Internal;
+    for (auto&& image: images) {
+        if (!image.isObject()) continue;
+        QJsonObject img = image.toObject();
+        if (!img.contains(Name) || !img[Name].isString()) continue;
+        QString name = img[Name].toString();
+        if (name.isEmpty()) continue;
+        QUrl in(name);
+        if (!img.contains(Image) || !img[Image].isString()) continue;
+        QString str = img[Image].toString();
+        if (str.isEmpty()) continue;
+        QByteArray data = QByteArray::fromBase64(str.toUtf8());
+        if (data.isEmpty()) continue;
+        QImage pic;
+        pic.loadFromData(data);
+        if (pic.isNull()) continue;
+        const QUrl url = makeInternalUrl();
+        in2Internal[in] = url;
+        addInternalImage(url, pic, true);
+    }
+
     if (cursor.atBlockStart()) cursor.insertBlock();
-    QTextBlock blk = document->findBlock(pos);
+    QJsonArray paragraphs = top[Blocks].toArray();;
+    bool first = true;
+    for (auto&& paragraph: paragraphs) {
+        if (!paragraph.isObject()) return;
+        QTextBlock block = document->findBlock(pos);
+        QJsonObject blk = paragraph.toObject();
+        QTextBlockFormat format = fromTextBlockFormatObject(blk);
+        QTextCharFormat charFormat = fromTextCharFormatObject(blk);
+        if (first) {
+            first = false;
+            cursor.setBlockFormat(format);
+            cursor.setBlockCharFormat(charFormat);
+        } else cursor.insertBlock(format, charFormat);
+        if (!blk.contains(Fragments) || !blk[Fragments].isArray()) continue;
+        QJsonArray fragments = blk[Fragments].toArray();
+        for (auto&& fragment: fragments) {
+            if (fragment.isObject()) {
+                QJsonObject frag = fragment.toObject();
+                if (frag.contains(Image)) {
+                    if (frag[Image].isString()) continue;
+                    QString id = frag[Image].toString();
+                    if (!in2Internal.contains(QUrl(id))) continue;
+                    QTextImageFormat imgFmt;
+                    imgFmt.setName(in2Internal[QUrl(id)].toString());
+                    int height = -1;
+                    if (frag.contains(Height) && frag[Height].isDouble()) height = frag[Height].toInt();
+                    int width = -1;
+                    if (frag.contains(Width) && frag[Width].isDouble()) width = frag[Width].toInt();
+                    if (height != -1) imgFmt.setHeight(height);
+                    if (width != -1) imgFmt.setWidth(width);
+                    cursor.insertImage(imgFmt);
+                } else {
+                    if (!frag.contains(Text) || !frag[Text].isString()) continue;
+                    QString text = frag[Text].toString();
+                    charFormat = fromTextCharFormatObject(frag);
+                    cursor.insertText(text, charFormat);
+                }
+            }
+        }
+    }
+
     cursor.endEditBlock();
 }
 
@@ -497,6 +560,7 @@ QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
             ++fragment;
             frag = fragment.fragment();
         }
+        blk[Fragments] = fargments;
         slctBlks.append(blk);
         if (block.blockNumber() == endBlock.blockNumber()) break;
         block = block.next();
