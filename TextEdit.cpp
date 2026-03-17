@@ -214,8 +214,16 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         return;
     }
 
-    // Let QTextEdit do its normal behavior
-    QTextEdit::keyPressEvent(key);
+    if (key->key() == Qt::Key_Backspace) {
+        QTextCursor cursor = textCursor();
+        if (cursor.positionInBlock() == 0 && cursor.positionInBlock() != 0) {
+            cursor.setPosition(cursor.position() - 1);
+            setTextCursor(cursor);
+            QKeyEvent* myKey = new QKeyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
+            QTextEdit::keyPressEvent(myKey);
+            delete myKey;
+        } else QTextEdit::keyPressEvent(key);
+    } else QTextEdit::keyPressEvent(key);
 
     // Margin wrap detection
     if (mSoundPool) {
