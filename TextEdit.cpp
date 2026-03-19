@@ -197,14 +197,16 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         }
     }
 
-    bool myKey  = false;
-
     if (key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter) {
         QTextCursor cursor = textCursor();
         int oldBlockNumber = cursor.blockNumber();
         QTextBlockFormat currentFmt = cursor.blockFormat();
 
-        QTextEdit::keyPressEvent(key);
+        if (key->modifiers() != Qt::NoModifier) {
+            QKeyEvent* myKey = new QKeyEvent(QEvent::KeyPress, key->key(), Qt::NoModifier);
+            QTextEdit::keyPressEvent(myKey);
+            delete myKey;
+        } else QTextEdit::keyPressEvent(key);
 
         QTextCursor newCursor = textCursor();
         int newBlockNumber = newCursor.blockNumber();
@@ -225,19 +227,8 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         return;
     } else if (key->key() == Qt::Key_Backspace) {
         auto cursor = textCursor();
-        if (cursor.position() == 0) return; // eat the keypress
-        if (cursor.atBlockStart() && cursor.selectedText().length() == 0) {
-            cursor.setPosition(cursor.position() - 1);
-            setTextCursor(cursor);
-            key = new QKeyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
-            myKey = true;
-        }
-    }
-
-    if (key->key() == Qt::Key_Backspace) {
-        QTextCursor cursor = textCursor();
         if (cursor.position() == 0) return;
-        if (cursor.positionInBlock() == 0) {
+        if (cursor.atBlockStart() && cursor.selectedText().length() == 0) {
             cursor.setPosition(cursor.position() - 1);
             setTextCursor(cursor);
             QKeyEvent* myKey = new QKeyEvent(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier);
@@ -246,12 +237,10 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         } else QTextEdit::keyPressEvent(key);
     } else QTextEdit::keyPressEvent(key);
 
-    if (myKey) delete key;
-
     // Margin wrap detection
     if (mSoundPool) {
         QRect r = cursorRect();
-        if (r.right() >= mWrapMarginPx) mSoundPool->play(SoundPool::Sound::MarginDing);
+        if (r.right() > mWrapMarginPx && r.left() <= mWrapMarginPx) mSoundPool->play(SoundPool::Sound::MarginDing);
     }
 
 }

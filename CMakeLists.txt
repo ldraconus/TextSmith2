@@ -137,6 +137,8 @@ qt_add_executable(TextSmith2
     PrintDialog.h PrintDialog.cpp PrintDialog.ui
     scripts/tools.5th
     .gitignore
+    packages/com.vendor.product/meta/installScripts.qs packages/com.vendor.product/meta/installScripts.qs.linux packages/com.vendor.product/meta/license.txt packages/com.vendor.product/meta/package.xml
+    config/Background.png config/config.xml
 )
 
 # Link Qt + libzip
