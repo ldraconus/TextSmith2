@@ -408,8 +408,12 @@ QTextBlockFormat TextEdit::fromTextBlockFormatObject(QJsonObject &obj) {
     format.setTextIndent(paraIndent);
     if (obj.contains(Alignment) && obj[Alignment].isDouble()) {
         auto alignment = obj[Alignment].toInt();
-        if (alignment == 0) alignment = Qt::AlignLeft;
-        format.setAlignment(Qt::Alignment(int(alignment)));
+        Qt::Alignment align = Qt::AlignLeft;
+        if (alignment == 1) align = Qt::AlignLeft;
+        if (alignment == 3) align = Qt::AlignRight;
+        if (alignment == 4) align = Qt::AlignJustify;
+        if (alignment == 2) align = Qt::AlignHCenter;
+        format.setAlignment(align);
     }
     if (obj.contains(Indent) && obj[Indent].isDouble()) format.setIndent(obj[Indent].toInt());
     return format;
@@ -426,7 +430,13 @@ QTextCharFormat TextEdit::fromTextCharFormatObject(QJsonObject &obj) {
 }
 
 void TextEdit::toTextBlockFormat(QJsonObject& obj, const QTextBlockFormat format) const {
-    obj[Alignment] = int(format.alignment());
+    auto align = format.alignment();
+    qlonglong alignment = 0;
+    if (align & Qt::AlignLeft) alignment = 1;
+    if (align & Qt::AlignRight) alignment = 3;
+    if (align & Qt::AlignJustify) alignment = 4;
+    if (align & Qt::AlignHCenter) alignment = 2;
+    obj[Alignment] = alignment;
     obj[Indent] =    int(format.indent());
 }
 
@@ -446,14 +456,12 @@ static QTextBlock::iterator findFragment(QTextBlock& blk, int pos) {
 
 void TextEdit::fromJson(const QJsonDocument& doc) {
     QTextCursor cursor = textCursor();
-    auto* document = cursor.document();
-    int pos = cursor.position();
     if (!doc.isObject()) return;
     QJsonObject top = doc.object();
     if (!top.contains(Images) || !top[Images].isArray()) return;
     if (!top.contains(Blocks) || !top[Blocks].isArray()) return;
     cursor.beginEditBlock();
-    QJsonArray images;
+    QJsonArray images = top[Images].toArray();
     QMap<QUrl, QUrl> in2Internal;
     for (auto&& image: images) {
         if (!image.isObject()) continue;
@@ -470,17 +478,17 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
         QImage pic;
         pic.loadFromData(data);
         if (pic.isNull()) continue;
-        const QUrl url = makeInternalUrl();
-        in2Internal[in] = url;
-        addInternalImage(url, pic, true);
+        if (!mOriginals.contains(in)) {
+            const QUrl url = makeInternalUrl();
+            in2Internal[in] = url;
+            addInternalImage(url, pic, true);
+        } else in2Internal[in] = in;
     }
 
-    if (cursor.atBlockStart()) cursor.insertBlock();
     QJsonArray paragraphs = top[Blocks].toArray();;
     bool first = true;
     for (auto&& paragraph: paragraphs) {
         if (!paragraph.isObject()) return;
-        QTextBlock block = document->findBlock(pos);
         QJsonObject blk = paragraph.toObject();
         QTextBlockFormat format = fromTextBlockFormatObject(blk);
         QTextCharFormat charFormat = fromTextCharFormatObject(blk);
@@ -495,11 +503,12 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
             if (fragment.isObject()) {
                 QJsonObject frag = fragment.toObject();
                 if (frag.contains(Image)) {
-                    if (frag[Image].isString()) continue;
+                    if (!frag[Image].isString()) continue;
                     QString id = frag[Image].toString();
-                    if (!in2Internal.contains(QUrl(id))) continue;
+                    QUrl urlId(id);
+                    if (!in2Internal.contains(urlId)) continue;
                     QTextImageFormat imgFmt;
-                    imgFmt.setName(in2Internal[QUrl(id)].toString());
+                    imgFmt.setName(in2Internal[urlId].toString());
                     int height = -1;
                     if (frag.contains(Height) && frag[Height].isDouble()) height = frag[Height].toInt();
                     int width = -1;
@@ -538,8 +547,8 @@ QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
         toTextBlockFormat(blk, block.blockFormat());
         toTextCharFormat(blk, block.charFormat());
         QJsonArray fragments;
-        QTextFragment frag = fragment.fragment();
         while (fragment != block.end()) {
+            QTextFragment frag = fragment.fragment();
             QJsonObject frgmnt;
             if (frag.charFormat().isImageFormat()) {
                 QTextImageFormat imgFmt = frag.charFormat().toImageFormat();
@@ -558,14 +567,14 @@ QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
             fragments.append(frgmnt);
             if (frag.contains(endPos)) break;
             ++fragment;
-            frag = fragment.fragment();
         }
-        blk[Fragments] = fargments;
+        blk[Fragments] = fragments;
         slctBlks.append(blk);
         if (block.blockNumber() == endBlock.blockNumber()) break;
         block = block.next();
         fragment = block.begin();
-        pos = fragment.fragment().position();
+        if (fragment != block.end()) pos = fragment.fragment().position();
+        else pos = 0;
     }
     data[Blocks] = slctBlks;
 

@@ -405,8 +405,12 @@ QTextBlockFormat Item::fromTextBlockFormatObject(Json5Object &obj) {
     int paraIndent =  4 * metrics.averageCharWidth();
     auto alignment =  hasNum(obj, Novel::Alignment,  qlonglong(0));
     auto indent =     hasNum(obj, Novel::Indent,     qlonglong(0));
-    if (alignment == 0) alignment = Qt::AlignLeft;
-    format.setAlignment(Qt::Alignment(int(alignment)));
+    Qt::Alignment align = Qt::AlignLeft;
+    if (alignment == 1) align = Qt::AlignLeft;
+    if (alignment == 3) align = Qt::AlignRight;
+    if (alignment == 4) align = Qt::AlignJustify;
+    if (alignment == 2) align = Qt::AlignHCenter;
+    format.setAlignment(align);
     format.setBottomMargin(lineHeight);
     format.setTextIndent(paraIndent);
     format.setIndent(indent);
@@ -454,7 +458,13 @@ QString Item::toPlainText() {
 }
 
 void Item::toTextBlockFormat(Json5Object& obj, QTextBlockFormat& format) {
-    obj[Novel::Alignment] = qlonglong(format.alignment());
+    Qt::Alignment align = format.alignment();
+    qlonglong alignment = 0;
+    if (align & Qt::AlignLeft) alignment = 1;
+    if (align & Qt::AlignRight) alignment = 3;
+    if (align & Qt::AlignJustify) alignment = 4;
+    if (align & Qt::AlignHCenter) alignment = 2;
+    obj[Novel::Alignment] = alignment;
     obj[Novel::Indent] = qlonglong(format.indent());
 }
 
