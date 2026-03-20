@@ -924,9 +924,12 @@ void Main::loadFile(const QString& filename) {
 
     update(true);
     doCursorPositionChanged();
+    auto item = mNovel.findItem(mCurrentNode);
+    auto count = item.count();
     auto total = mNovel.countAll();
     mWordCount.setSinceLastCounted(0);
     mWordCount.setSinceOpened(0);
+    mWordCount.setCurrentItem(count);
     mWordCount.setTotal(total);
     clearChanged();
     ready();
@@ -1310,7 +1313,6 @@ void Main::doWeb() {
 }
 
 void Main::doWordCount() {
-    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
     wordCounts();
     auto report = QString("Total: %1 | Current Item %2 | Since Opening %3 | Since Last Count %4")
                       .arg(mWordCount.total())
@@ -2262,11 +2264,12 @@ QList<qlonglong> Main::vectorOfIds(QTreeWidgetItem* branch, const StringList& ta
 }
 
 void Main::wordCounts() {
-    auto oldCount = mWordCount.currentItem();
+    auto oldCount = mWordCount.total();
     auto newCount = mNovel.countAll();
     auto difference = newCount - oldCount;
-    mWordCount.setCurrentItem(newCount);
-    mWordCount.setTotal(mWordCount.total() + difference);
+    auto current = mNovel.count(mCurrentNode);
+    mWordCount.setCurrentItem(current);
+    mWordCount.setTotal(newCount);
     mWordCount.setSinceOpened(mWordCount.sinceOpened() + difference);
     mWordCount.setSinceLastCounted(mWordCount.sinceLastCounted() + difference);
 }

@@ -196,6 +196,7 @@ public:
     void        setFilename(const QString& f)  { mFilename = f; change(); }
 
     void        changeFont(const QFont& font);
+    qlonglong   count(qlonglong id);
     qlonglong   countAll();
     void        deleteItem(qlonglong id);
     Item&       fifthItem(fifth::stack& user);

@@ -115,7 +115,7 @@ void Item::clearTag(const QString &tag) {
 
 qlonglong Item::count() {
     QString plain = mDoc->toPlainText();
-    StringList words(plain.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts));
+    StringList words(plain.split(QRegularExpression(R"(\s+)"), Qt::SkipEmptyParts));
     return mCount = words.count();
 }
 
@@ -166,6 +166,7 @@ bool Item::fromDocObject(Json5Object &obj) {
     Preferences* prefs = &Main::ref().prefs();
     QFont font(prefs->fontFamily(), prefs->fontSize());
     mDoc->setDefaultFont(font);
+
     Json5Array doc = hasArr(obj, Novel::NakedDoc);
     if (!fromDocArray(doc)) {
         delete mDoc;
@@ -508,6 +509,11 @@ Json5Object Novel::toObject() {
 
 void Novel::changeFont(const QFont& font) {
     for (auto& child: mItems) child.second.changeFont(font);
+}
+
+qlonglong Novel::count(qlonglong id) {
+    Item& item = findItem(id);
+    return item.count();
 }
 
 qlonglong Novel::countAll() {
