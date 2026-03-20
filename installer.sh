@@ -36,7 +36,7 @@ if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
     echo "Fetching libraries"
     $WINDEPLOY --no-translations ${TO_PROG}${EXE}
 else
-    echo "Confiuring linux post install"
+    echo "Configuring linux post install"
     cp ../../../../TextSmithIcon.png .
     cp ../meta/installScripts.qs.linux ../meta/installScripts.qs
 fi

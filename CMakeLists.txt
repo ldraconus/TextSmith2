@@ -56,10 +56,12 @@ endif()
 set(SOURCES
     5th.cpp
     dict.cpp
+    AboutDialog.cpp
     EBookExporter.cpp
     EasySpelling.cpp
     ExportDialog.cpp
     FullScreenDialog.cpp
+    HelpDialog.cpp
     HtmlExporter.cpp
     ItemDescriptionDialog.cpp
     Main.cpp
@@ -70,8 +72,10 @@ set(SOURCES
     Preferences.cpp
     PreferencesDialog.cpp
     Printer.cpp
+    PrintDialog.cpp
     RtfExporter.cpp
     SearchReplace.cpp
+    ScriptDialog.cpp
     SoundPool.cpp
     Speech.cpp
     Start.cpp
@@ -81,11 +85,13 @@ set(SOURCES
 # Headers
 set(HEADERS
     5th.h
+    AboutDialog.h
     EBookExporter.h
     EasySpelling.h
     ExportDialog.h
     Exporter.h
     FullScreenDialog.h
+    HelpDialog.h
     HtmlExporter.h
     ItemDescriptionDialog.h
     Main.h
@@ -95,8 +101,10 @@ set(HEADERS
     PdfExporter.h
     Preferences.h
     PreferencesDialog.h
+    PrintDialog.h
     Printer.h
     RtfExporter.h
+    ScriptDialog.h
     SearchReplace.h
     Speech.h
     SoundPool.h
@@ -107,13 +115,17 @@ set(HEADERS
 
 # UI files
 set(FORMS
+    AboutDialog.ui
     dialog.ui
     ExportDialog.ui
     FullScreenDialog.ui
+    HelpDialog.ui
     ItemDescriptionDialog.ui
     Main.ui
-    PreferencesDialog.ui
     PageSetupDialog.ui
+    PreferencesDialog.ui
+    PrintDialog.ui
+    ScriptDialog.ui
     SpeechDialog.ui
     SpellCheckDialog.ui
 )
@@ -131,14 +143,14 @@ qt_add_executable(TextSmith2
     TODO.txt
     Documentation.novel
     installer.sh
-    AboutDialog.h AboutDialog.cpp AboutDialog.ui
-    HelpDialog.h HelpDialog.cpp HelpDialog.ui
-    ScriptDialog.h ScriptDialog.cpp ScriptDialog.ui
-    PrintDialog.h PrintDialog.cpp PrintDialog.ui
     scripts/tools.5th
     .gitignore
-    packages/com.vendor.product/meta/installScripts.qs packages/com.vendor.product/meta/installScripts.qs.linux packages/com.vendor.product/meta/license.txt packages/com.vendor.product/meta/package.xml
-    config/Background.png config/config.xml
+    packages/com.vendor.product/meta/installScripts.qs
+    packages/com.vendor.product/meta/installScripts.qs.linux
+    packages/com.vendor.product/meta/license.txt
+    packages/com.vendor.product/meta/package.xml
+    config/Background.png
+    config/config.xml
 )
 
 # Link Qt + libzip
