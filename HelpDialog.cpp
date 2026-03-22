@@ -2,6 +2,8 @@
 #include "ui_HelpDialog.h"
 #include "Main.h"
 
+#include <QDir>
+
 HelpDialog::HelpDialog(QWidget *parent)
     : QDialog(parent)
     , mUi(new Ui::HelpDialog) {
@@ -15,6 +17,8 @@ HelpDialog::HelpDialog(QWidget *parent)
         // testing... testing ... 1 2 3
         // build/<type>/TextSmith2.exe
         filename = Main::ref().appDir() + "/../../Documentation.html";
+        QDir dir(Main::ref().appDir() + "/../..");
+        mUi->textBrowser->setSearchPaths(QStringList() << dir.absolutePath());
         QFile file(filename);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
         data = QByteArray(file.readAll());

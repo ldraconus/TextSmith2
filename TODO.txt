@@ -6,7 +6,10 @@
     - Part IV
     - Part V
     [/] Part VI
-    [ ] Export in html to source directory
+        [ ] Write collect word usage statistics for the entire novel
+        [ ] add words as needed to get the job done
+        [ ] Write the deconstruction of it
+    [/] Export in html to source directory
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
@@ -171,58 +174,6 @@ Margaret Atwood: "If I waited for perfection, I would never write a word."
 "I love deadlines. I love the whooshing noise they make as they go by." — Douglas Adams (Use this one when you are running late on a promised software update—it usually gets a laugh!)
 
 
-Part III: The World Builder (Metadata)
-Defining Your Schema: You aren't stuck with "Character" sheets. You define "NPC," "Villain," or "MacGuffin" using your own tags.
-
-The "Bible" View: Storing world data (characters, locations) right next to the manuscript in the same tree.
-
-Images: Using items as containers for maps and portraits.
-
-Part IV: The Chameleon Compiler (Exporting)
-Mapping Tags to Output: The core instruction set.
-
-Default: Chapter = Heading + Break. Scene = Text.
-
-Custom: Using shorthand (e.g., 'C' vs 'Chapter') and how the project remembers it.
-
-The "Ignore" Rule: Anything untagged is invisible to the exporter.
-
-Target-Specific Tags: PDF-Cover vs EBook-Cover.
-
-Part V: Preferences & Defaults
-Project Memory: How the system learns your specific tag style for this book.
-
-Global Defaults: Setting the baseline for future projects.
-
-Part VI: The Scripting Engine (The Aseembly Line)
-The Parity Principle: "If you can do it with a mouse, you can do it with a script."
-
-1. The Concept: The Stack of Plates
-The Golden Rule: "Put data on the table, then tell the robot what to do with it.
-"Visual Metaphor: Explain that the script works like a cafeteria stack. You put a "Scene" on the stack, then you put a "Command" on top to process it.
-Reading Order: Explain why it reads Left-to-Right (Data $\to$ Action) rather than the reverse (Action $\leftarrow$ Data) they might remember from High School algebra.2.
-
-2. Basic Verbs (The "Words")
-Navigation: NextScene, PrevScene, GoToChapter.
-Content: GetText, SetText, Insert.
-Tags: GetTags, AddTag, RemoveTag.
-Documentation Style: Don't use function signatures void addTag(string t). Use stack effects: ( Item Tag -- Item ) (Show what it takes, and what it leaves).
-
-3. The "Nice to Have" Examples (Deconstructed)
-Use your actual planned scripts as the tutorials.
-The "Word Count" Tutorial:
-    Explain the flow: CurrentItem $\to$ GetText $\to$ CountWords $\to$ ShowAlert.
-The "Tag Injection" Tutorial:
-    Explain the conditional: GetText $\to$ "Letter:" $\to$ Contains? $\to$ IF $\to$ "Correspondence" $\to$ AddTag $\to$ ENDIF.
-
-4. Safety First
-The Undo Sandwich: Explain that every script that modifies text must start with BeginUndo and end with EndUndo.
-The "ReadOnly" Mode: Advise users to test scripts on a "Copy" of their item first.
-
-5. The Dictionary (Reference)
-Group commands by category (Movement, Editing, Logic, Math).
-Crucial: Include a "Cheat Sheet" for stack manipulation (Dup, Swap, Drop). This is the hardest part for newbies ("Wait, why is my text gone? Oh, I forgot to Dup it before counting words.").
-
 Automation:
 
 Batch Tagging (e.g., "Tag all items in folder 'Drafts' as 'ToDo'").
@@ -242,6 +193,7 @@ The API Reference: The dictionary of commands that mirror the UI.
 - Timeline Export: collect scene dates/times from tags and output a chronological timeline.
 
 🔍 Analysis & Consistency
+- Collect word usage statistics for the entire novel
 - Word Count per Scene/Chapter: tally words and report totals for pacing analysis.
 - Tag Frequency Report: count how often specific tags (e.g. POV, location) appear.
 - Dialogue Ratio Check: calculate percentage of dialogue vs. narration in each scene.
