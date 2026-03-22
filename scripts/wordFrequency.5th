@@ -42,10 +42,12 @@ rootid getChildren
     ( name = "Word Frequencey" ) if id wordFrequency [-->] end
 }
 
+wordFrequency id [@]
+
 // get the bag keys (var[1] .. var[n] n)
-wordCount keys;
+wordCount keys
 1 swap for {
-    dup ": " + swap WordCount swap [@]
+    dup ": " + swap wordCount swap [@]
     wordFrequency text [@] +
     swap "\n" + text WordFrequency [-->]
 }
