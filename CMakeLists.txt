@@ -151,6 +151,7 @@ qt_add_executable(TextSmith2
     packages/com.vendor.product/meta/package.xml
     config/Background.png
     config/config.xml
+    scripts/wordFrequency.5th
 )
 
 # Link Qt + libzip

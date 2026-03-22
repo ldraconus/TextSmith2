@@ -2772,20 +2772,6 @@ void Main::setupScripting() {
         }
         user.push(parts.count());
     });
-    mVm->addBuiltin("join", [this](fifth::vm* vm) { // part[n] ... part[1] n joinWith -u-> string
-        auto& user = vm->user();
-        auto j = user.pop();
-        auto n = user.pop();
-        QString joinWith = j.asString().str();
-        auto num = n.asNumber();
-        QString string;
-        for (auto i = 0; i < num; ++i) {
-            auto p = user.pop();
-            if (i != 0) string += joinWith;
-            string += p.asString().str();
-        }
-        user.push(string);
-    });
     mVm->addBuiltin("find", [this](fifth::vm* vm) { //  string target -u-> position of target in  string
         auto& user = vm->user();
         auto t = user.pop();
@@ -2830,10 +2816,10 @@ void Main::setupScripting() {
         cursor.removeSelectedText();
         cursor.insertText(text);
     });
-    mVm->addBuiltin("position",     [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().position()); }); //   -u-> position
-    mVm->addBuiltin("selectedtext", [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().selectedText()); }); //  -u-> text
-    mVm->addBuiltin("setposition",  [this](fifth::vm* vm) { mUi->textEdit->textCursor().setPosition(vm->user().pop().asNumber()); }); //  position -u->
-    mVm->addBuiltin("plaintext",    [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->toPlainText()); }); //   -u-> text
+    mVm->addBuiltin("textposition",    [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().position()); }); //   -u-> position
+    mVm->addBuiltin("selectedtext",    [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->textCursor().selectedText()); }); //  -u-> text
+    mVm->addBuiltin("settextposition", [this](fifth::vm* vm) { mUi->textEdit->textCursor().setPosition(vm->user().pop().asNumber()); }); //  position -u->
+    mVm->addBuiltin("plaintext",       [this](fifth::vm* vm) { vm->user().push(mUi->textEdit->toPlainText()); }); //   -u-> text
 
     // TreeWidget words
     mVm->addBuiltin("rootid",        [this](fifth::vm* vm) { vm->user().push(mUi->treeWidget->topLevelItem(0)->data(0, Qt::UserRole).toLongLong()); }); //    -u-> id

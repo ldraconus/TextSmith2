@@ -626,6 +626,32 @@ void Novel::setupScripting(fifth::vm* vm) {
         if (item.isNull() || html.isEmpty()) return;
         else item.setHtml(html);
     });
+    vm->addBuiltin("text", [this](fifth::vm* vm) { // id -u-> text
+        auto& user = vm->user();
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push("");
+        else user.push(item.doc()->toPlainText());
+    });
+    vm->addBuiltin("<text", [this](fifth::vm* vm) {   // id text -u-> id
+        auto& user = vm->user();
+        auto t = user.pop();
+        auto i = user.pop();
+        Item& item = fifthItem(user);
+        auto text = t.asString().str();
+
+        if (!item.isNull() && !text.isEmpty()) item.doc()->setPlainText(text);
+        user.push(i);
+    });
+    vm->addBuiltin("text>", [this](fifth::vm* vm) {   // text id -u-> text
+        auto& user = vm->user();
+        Item& item = fifthItem(user);
+        auto t = user.top();
+        auto text = t.asString().str();
+
+        if (item.isNull() || text.isEmpty()) return;
+        else item.doc()->setPlainText(text);
+    });
+
     vm->addBuiltin("name", [this](fifth::vm* vm) { // id -u-> name
         auto& user = vm->user();
         Item& item = fifthItem(user);
@@ -711,6 +737,12 @@ void Novel::setupScripting(fifth::vm* vm) {
         Item& item = fifthItem(user);
         if (item.isNull()) user.push(0);
         else user.push(item.position());
+    });
+    vm->addBuiltin("name", [this](fifth::vm* vm) { // id -u-> name
+        auto& user = vm->user();
+        Item& item = fifthItem(user);
+        if (item.isNull()) user.push("");
+        else user.push(item.name());
     });
     vm->addBuiltin("<position", [this](fifth::vm* vm) {   // id position -u-> id
         auto& user = vm->user();

@@ -554,11 +554,14 @@ namespace fifth {
 
     auto val = v->get(word);
     if (!val.isStr()) return;
+    auto brace = v->get(word);
+    if (!brace.isStr()) return;
+    if (brace.asString() != "{") return;
     if (v->compiling()) {
       static auto func = fifth::builtin(doFor);
       auto code = dynamic_cast<fifth::compiled*>(v->code());
       code->push(val);
-      v->doNextWord(word, "next", code);
+      v->doNextWord(word, "}", code);
       code->call(&func);
     } else {
       auto e = user.pop();
@@ -575,7 +578,7 @@ namespace fifth {
         auto val = value(i);
 //DBG_VAR(var.str(), i);
         v->set(var, val);
-        v->step(user, word, body, "next");
+        v->step(user, word, body, "}");
         ranOnce = true;
       }
       if (!ranOnce) v->skipToEnd(); // for loop did not run, test was false
@@ -609,18 +612,23 @@ namespace fifth {
     stack& user = v->user();
     exe word = (*v)["word"];
 
-    auto code = dynamic_cast<compiled*>(v->code());
+    auto brace = v->get(word);
+    if (!brace.isStr()) return;
+    if (brace.asString() != "{") return;
+
     if (v->compiling()) {
         static auto func = builtin(doWhile);
+        auto code = dynamic_cast<compiled*>(v->code());
+
         code->call(&func);
-        v->doNextWord(word, "next", code);
+        v->doNextWord(word, "}", code);
     }
     else {
       auto body = v->input().str();
       bool ranOnce = false;
       value condition = user.pop();
       while (!condition.isExe() && (condition.asNumber() || !condition.asString().empty())) {
-        v->step(user, word, body, "next");
+        v->step(user, word, body, "}");
         condition = user.pop();
         ranOnce = true;
       }
@@ -688,9 +696,9 @@ namespace fifth {
 
   /**
    * word: [<--]
-   * user: s a b --->
+   * user: s v b --->
    *
-   * Store a in previously creted bag s at a
+   * Store b in previously creted bag s at a
    **/
   void lsetBag(vm* v) {
     stack& user = v->user();
@@ -698,7 +706,7 @@ namespace fifth {
     auto b = user.pop();
     auto a = user.pop();
     auto s = user.pop();
-    if (!s.isStr()) return;
+    if (!s.isStr() || !a.isStr()) return;
     str bag = s.asString();
     v->set(bag, a.asString(), b);
   }
@@ -737,6 +745,29 @@ namespace fifth {
   }
 
   /**
+   * word: keys
+   * user: s ---> key[n] .. key[1] n
+   *
+   * Retrieve the keys for the bag
+   **/
+  void keys(vm* v) {
+      stack& user = v->user();
+      auto s = user.pop();
+      if (!s.isStr()) {
+          user.push(s);
+          return;
+      }
+      auto var = s.asString();
+      auto& bag = v->bag(var);
+      QStringList keys;
+      for (const auto& entry: bag) {
+          keys.append(entry.first.str());
+      }
+      for (auto i = keys.size(); i != 0; --i) user.push(keys[i - 1]);
+      user.push(keys.size());
+  }
+
+  /**
    * word: @
    * alias: fetch
    * user: s ---> a
@@ -744,6 +775,26 @@ namespace fifth {
    * Retrieve the stored value.
    **/
   void fetch(vm* v) {
+      stack& user = v->user();
+      auto s = user.pop();
+      if (!s.isStr()) {
+          user.push(s);
+          return;
+      }
+      auto var = s.asString();
+      auto val = v->get(var);
+      //DBG_VAL("fetch " + var.str(), val);
+      user.push(val);
+  }
+
+  /**
+   * word: [empty]
+   * alias: [-]
+   * user: s ---> s
+   *
+   * Retrieve the stored value.
+   **/
+  void emptyBag(vm* v) {
     stack& user = v->user();
     auto s = user.pop();
     if (!s.isStr()) {
@@ -751,9 +802,8 @@ namespace fifth {
         return;
     }
     auto var = s.asString();
-    auto val = v->get(var);
-//DBG_VAL("fetch " + var.str(), val);
-    user.push(val);
+    auto& bag = v->bag(var);
+    bag.clear();
   }
 
   /**
@@ -764,16 +814,16 @@ namespace fifth {
    * Retrieve the stored value.
    **/
   void fetchBag(vm* v) {
-    stack& user = v->user();
-    auto a = user.pop();
-    auto s = user.pop();
-    if (!s.isStr()) {
-        user.push(s);
-        return;
-    }
-    auto var = s.asString();
-    auto val = v->get(var, a.asString());
-    user.push(val);
+      stack& user = v->user();
+      auto a = user.pop();
+      auto s = user.pop();
+      if (!s.isStr()) {
+          user.push(s);
+          return;
+      }
+      auto var = s.asString();
+      auto val = v->get(var, a.asString());
+      user.push(val);
   }
 
   /**
@@ -1865,12 +1915,15 @@ namespace fifth {
     addBuiltin("-->",     rset);     //   a s -u->
     addBuiltin("@",       fetch);    //     s -u-> a
     addBuiltin("fetch",   fetch);    //     s -u-> a
-    addBuiltin("[<--]",   lsetBag);  // s a b -u->
-    addBuiltin("[<]",     lsetBag);  // s a b -u->
-    addBuiltin("[-->]",   rsetBag);  // b a s -u->
-    addBuiltin("[>]",     rsetBag);  // b a s -u->
+    addBuiltin("keys",    keys);     //     s -u-> key[1] .. key[n] n
+    addBuiltin("[<--]",   lsetBag);  // s v b -u->
+    addBuiltin("[<]",     lsetBag);  // s v b -u->
+    addBuiltin("[-->]",   rsetBag);  // b v s -u->
+    addBuiltin("[>]",     rsetBag);  // b v s -u->
     addBuiltin("[@]",     fetchBag); //   s a -u-> a
     addBuiltin("[fetch]", fetchBag); //   s a -u-> a
+    addBuiltin("[empty]", emptyBag); //     s -u-> s
+    addBuiltin("[-]",     emptyBag); //     s -u-> s
 
     // --[ Math ]-------------
     addBuiltin("++", inc);     //     s -u->       Increment variable

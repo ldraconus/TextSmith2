@@ -1,0 +1,54 @@
+// word frequency collector -- creates an item call 'Word Frquencyy' off the root (if it already exists, clears it) then counts every word in the document.
+
+// create place for local vars
+bag wordFrequency pop
+
+// create the bag to store the word counts in and clear it
+bag wordCount empty
+
+// get list of all items in novel onto the stack (the ids), dont't care about the order
+ids
+
+// top of the stack is the number of items, I want to loop over them, so swapping with 1 and doing a for loop sounds like the obvious solution
+1 swap for i {
+    // top of the stack is id to be worked on
+    id text
+
+    // now the top of the stack has the entire item in it, split into words
+    " " split
+
+    // like the items, ready to loop over the words
+    1 swap for j {
+        // top is the word, magic is using the bag to hold each word as the var, so we just get from the bag, the add and put in the bag
+        wordCount swap dup wordCount swap [@]
+
+        // now the stack has the bag, the word and a number, it defaults to 0 on creation, so ...
+        1 +
+
+        // just update the bag now, everthings in the right order
+        [<--]
+    }
+}
+
+// need a place to store text
+wordFrequency text "" [<--]
+wordFrequenct id 0 [<--]
+
+// find the item named 'Word Frequency'
+rootid getChildren
+
+// loop over ids looking for our item: if found set wordFrequency id to it
+1 swap for i {
+    ( name = "Word Frequencey" ) if id wordFrequency [-->] end
+}
+
+// get the bag keys (var[1] .. var[n] n)
+wordCount keys;
+1 swap for {
+    dup ": " + swap WordCount swap [@]
+    wordFrequency text [@] +
+    swap "\n" + text WordFrequency [-->]
+}
+
+// top of the stack should be item id
+wordFrequency text [@] <text

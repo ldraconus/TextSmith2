@@ -6,6 +6,9 @@
     - Part IV
     - Part V
     [/] Part VI
+        [ ] add empty, text, <text and text> to dictionary docs
+        [ ] fix for and while to react properly if next word isn't a {
+        [ ] fix if to use braces
         [ ] Write collect word usage statistics for the entire novel
         [ ] add words as needed to get the job done
         [ ] Write the deconstruction of it
