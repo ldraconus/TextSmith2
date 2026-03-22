@@ -2,17 +2,25 @@
 #include "TextEdit.h"
 
 void SearchSelection::buildResults(const QString& text) {
-    auto strLen = mSearchString.length();
+    mTarget = text;
+    buildResults();
+}
+
+void SearchSelection::buildResults() {
+    mResults.clear();
     qlonglong pos = mBegin;
-    bool first = true;
-    auto splits = StringList { text.split(mSearchString, Qt::KeepEmptyParts,
-                                          mCaseInsensitive ? Qt::CaseInsensitive : Qt::CaseSensitive) };
+    auto strLen = mSearchString.length();
+    if (strLen == 0) return;
+    auto splits = StringList { mTarget.split(mSearchString, Qt::KeepEmptyParts,
+                                             mCaseInsensitive ? Qt::CaseInsensitive : Qt::CaseSensitive) };
     if (splits.size() > 1) {
+        bool first = true;
         for (const auto& split: splits) {
+            QString mid = mTarget.mid(pos, strLen);
+            if (!mid.compare(mSearchString, mCaseInsensitive ? Qt::CaseInsensitive : Qt::CaseSensitive)) mResults.append(pos);
             if (first) first = false;
             else pos += strLen;
             pos += split.length();
-            mResults.append(pos);
         }
     } else mResults.clear();
 }
@@ -28,10 +36,7 @@ SearchSelection::SearchSelection(Novel& novel,
     , mEnd(end)
     , mId(id) {
     Item& item = mNovel.findItem(mId);
-    TextEdit edit;
-    edit.setHtml(item.html());
-    auto text = edit.toPlainText().mid(mBegin, mEnd - mBegin);
-    buildResults(text);
+    mTarget = item.doc()->toPlainText().mid(mBegin, mEnd - mBegin);
     mIndex = 0;
 }
 
@@ -60,15 +65,22 @@ SearchItem::SearchItem(Novel& novel, qlonglong id, qlonglong start, const QStrin
 }
 
 void SearchTree::buildResults(qlonglong id) {
-    Item& item = mNovel.findItem(id);
+    mTarget = id;
+    buildResults();
+}
+
+void SearchTree::buildResults() {
+    mResults.clear();
+    Item& item = mNovel.findItem(mTarget);
     TextEdit edit;
     edit.setHtml(item.html());
     auto text = edit.toPlainText();
     auto strLen = mSearchString.length();
+    if (strLen == 0) return;
     qlonglong pos = 0;
     bool first = true;
     auto splits = StringList { text.split(mSearchString, Qt::KeepEmptyParts,
-                                          mCaseInsensitive ? Qt::CaseInsensitive : Qt::CaseSensitive) };
+                                        mCaseInsensitive ? Qt::CaseInsensitive : Qt::CaseSensitive) };
     if (splits.size() > 1) {
         for (const auto& split: splits) {
             if (first) first = false;
@@ -97,8 +109,6 @@ SearchTree::SearchTree(Novel& novel,
                        bool caseInsensitive)
     : SearchCore(novel, str, caseInsensitive)
     , mId(id) {
-    buildResults(id);
-
     qlonglong index = 0;
     for (const auto& result: mResults) {
         if (start >= result) {

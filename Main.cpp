@@ -493,12 +493,13 @@ void Main::doExport(const QString& name) {
 
 void Main::doFindChanged() {
     if (mSearch && mFindWidget) {
-        QString text = mFindWidget->findLineEdit->text();
-        mSearch->setText(text);
         bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
                                ? SearchCore::NotCaseInsensitive
                                : SearchCore::CaseInsensitive;
         auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
+        mSearch->setSensitivity(sense);
+        QString text = mFindWidget->findLineEdit->text();
+        mSearch->setText(text);
         QString replace = mFindWidget->replaceLineEdit->text();
         mFindWidget->replacePushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
         mFindWidget->replaceAllPushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
@@ -519,19 +520,22 @@ void Main::doFindNext() {
         if (pos.isValid()) {
             QTreeWidgetItem* branch = findItem(mUi->treeWidget->topLevelItem(0), pos.id());
             mUi->treeWidget->setCurrentItem(branch);
-            setPosition(pos.textPosition());
-            cursorPositionChanged();
             QString text = mFindWidget->findLineEdit->text();
+            auto cursor = mUi->textEdit->textCursor();
+            cursor.setPosition(pos.textPosition());
+            cursor.setPosition(pos.textPosition() + text.length(), QTextCursor::KeepAnchor);
+            mUi->textEdit->setTextCursor(cursor);
+            cursorPositionChanged();
             QString replace = mFindWidget->replaceLineEdit->text();
             bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
-                                   ? SearchCore::NotCaseInsensitive
-                                   : SearchCore::CaseInsensitive;
+                                   ? SearchCore::CaseInsensitive
+                                   : SearchCore::NotCaseInsensitive;
             auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
-            mFindWidget->replacePushButton->setDisabled(text.compare(replace, sense) == 0);
-            mFindWidget->replaceAllPushButton->setDisabled(text.compare(replace, sense) == 0);
+            mFindWidget->replacePushButton->setDisabled(!text.compare(replace, sense));
+            mFindWidget->replaceAllPushButton->setDisabled(!text.compare(replace, sense));
         } else {
-            mFindWidget->replacePushButton->setDisabled(false);
-            mFindWidget->replacePushButton->setDisabled(false);
+            mFindWidget->replacePushButton->setDisabled(true);
+            mFindWidget->replacePushButton->setDisabled(true);
         }
     }
 }
@@ -539,7 +543,6 @@ void Main::doFindNext() {
 void Main::doFindReplace() {
     mSpellcheck->hide();
     mFindLine->show();
-    mFindLine->setFocus();
     delete mSearch;
     mSearch = nullptr;
 
@@ -548,7 +551,10 @@ void Main::doFindReplace() {
     QString find = mFindWidget->findLineEdit->text();
     QString replace = mFindWidget->replaceLineEdit->text();
 
-    bool sensitivity = mFindWidget->caseInsensitiveCheckBox->isChecked()
+    mFindLine->setFocus();
+    mFindWidget->findLineEdit->setFocus();
+
+    bool sensitivity = !mFindWidget->caseInsensitiveCheckBox->isChecked()
                            ? SearchCore::NotCaseInsensitive
                            : SearchCore::CaseInsensitive;
     auto cursor = mUi->textEdit->textCursor();
@@ -566,13 +572,17 @@ void Main::doFindReplace() {
         else mSearch = new SearchTree(mNovel, mUi->treeWidget->currentItem(), mCurrentNode, start, find, sensitivity);
     }
 
-    auto sense = sensitivity ? Qt::CaseInsensitive : Qt::CaseSensitive;
-    mFindWidget->replacePushButton->setDisabled(find.isEmpty() || find.compare(replace, sense) == 0);
-    mFindWidget->replaceAllPushButton->setDisabled(find.isEmpty() || find.compare(replace, sense) == 0);
+    auto sense = sensitivity ? Qt::CaseSensitive : Qt::CaseInsensitive;
+    bool replaceAble = find.isEmpty() || !find.compare(replace, sense);
+    mFindWidget->replacePushButton->setDisabled(replaceAble);
+    mFindWidget->replaceAllPushButton->setDisabled(replaceAble);
+
+    connect(mFindWidget->findLineEdit,            &QLineEdit::textEdited,        this, &Main::findChanged);
+    connect(mFindWidget->caseInsensitiveCheckBox, &QCheckBox::checkStateChanged, this, &Main::findChanged);
 
     if (find.isEmpty()) return;
 
-    doFindNext();
+    doFindChanged();
 }
 
 void Main::doFocusChanged(QWidget*, QWidget* now) {

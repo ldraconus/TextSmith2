@@ -24,7 +24,7 @@ public:
     qlonglong id()           { return mId; }
     bool      empty()        { return isEmpty(); }
     bool      isEmpty()      { return mId < 0; }
-    bool      isValid()      { return isEmpty() && mTextPosition != -1; }
+    bool      isValid()      { return !isEmpty() && mTextPosition != -1; }
     qlonglong textPosition() { return mTextPosition; }
     bool      valid()        { return isValid(); }
 };
@@ -36,7 +36,8 @@ protected:
     QString mSearchString;
 
     virtual void buildResults(const QString& ref) { }
-    virtual void buildResults(qlonglong id) { }
+    virtual void buildResults(qlonglong id)       { }
+    virtual void buildResults() = 0;
 
 public:
     static constexpr bool CaseInsensitive    = true;
@@ -52,7 +53,8 @@ public:
 
     virtual const NovelPosition findNext() = 0;
 
-    void setText(const QString& s) { mSearchString = s; buildResults(s); }
+    void setSensitivity(bool s)    { mCaseInsensitive = s; buildResults(); }
+    void setText(const QString& s) { mSearchString = s; buildResults(); }
 
     QString text() const { return mSearchString; }
 };
@@ -63,12 +65,14 @@ protected:
     qlonglong       mEnd;
     qlonglong       mId;
     qlonglong       mIndex;
+    QString         mTarget;
     List<qlonglong> mResults;
 
     void setBegin(qlonglong b) { mBegin = b; }
     void setEnd(qlonglong e)   { mEnd = e; }
 
     void buildResults(const QString& text) override;
+    void buildResults() override;
 
 public:
     SearchSelection() = delete;
@@ -95,9 +99,11 @@ protected:
     List<qlonglong> mFlattenedTree;
     bool            mNeverFound { true };
     List<qlonglong> mResults;
+    qlonglong       mTarget { -1 };
     qlonglong       mBranchIndex;
 
     void buildResults(qlonglong id) override;
+    void buildResults() override;
     void flattenTree(QTreeWidgetItem* tree, qlonglong id);
 
 public:

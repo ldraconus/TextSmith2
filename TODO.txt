@@ -1,5 +1,3 @@
-[ ] Paste sometimes honors center & indent and other times not. Figure it out, fix it. Probably need textsmith specific clipboard.
-[/] Search isn't ;-)
 [/] Write the Documentation
     - Intro
     - Part I
@@ -7,17 +5,19 @@
     - Part III
     - Part IV
     - Part V
-    - Part VI
+    [/] Part VI
     [ ] Export in html to source directory
-[/] Add a recent novels to the file menu
-    - Documents added to menu
-    - Need a clear recents option in the menu
-    [ ] Update documetation
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Write scripts
+[X] Search isn't ;-)
+[H] Paste sometimes honors center & indent and other times not. Figure it out, fix it. Probably need textsmith specific clipboard.
+[X] Add a recent novels to the file menu
+    - Documents added to menu
+    - Need a clear recents option in the menu
+    - Update documetation
 [X] Print does't want to do cover smaller than page followed by chapter correctly
 [X] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     Backspace should move back a character (if possible, else do nothing), then DEL
