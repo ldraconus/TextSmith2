@@ -216,3 +216,69 @@ The API Reference: The dictionary of commands that mirror the UI.
 - Random Prompt Inserter: insert a writing prompt at the cursor from a supplied list.
 - Mood Tagger: scan for sentiment words and tag scenes with “tone: dark/light/romantic.”
 - Chapter Title Styler: auto‑apply formatting (caps, underline) to chapter headings.
+
+Images pasting  solution
+
+QString embedImagesAsBase64(const QString &html) {
+    QString result = html;
+    QRegularExpression re(R"(src=\"(file://[^\"]+)\")");
+    QRegularExpressionMatchIterator it = re.globalMatch(html);
+
+    // Collect replacements first to avoid offset shifting
+    QList<QPair<QString, QString>> replacements;
+
+    while (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        QString fullSrc = match.captured(0);   // src="file:///..."
+        QString fileUrl = match.captured(1);   // file:///...
+
+        // Convert file URL to local path
+        QString localPath = QUrl(fileUrl).toLocalFile();
+        QFile file(localPath);
+
+        if (!file.open(QIODevice::ReadOnly)) continue;
+
+        QByteArray fileData = file.readAll();
+        file.close();
+
+        // Determine MIME type from extension
+        QString ext = QFileInfo(localPath).suffix().toLower();
+        QString mimeType;
+        if      (ext == "png")  mimeType = "image/png";
+        else if (ext == "jpg" || ext == "jpeg") mimeType = "image/jpeg";
+        else if (ext == "gif")  mimeType = "image/gif";
+        else if (ext == "webp") mimeType = "image/webp";
+        else if (ext == "bmp")  mimeType = "image/bmp";
+        else                    mimeType = "image/png"; // fallback
+
+        QString base64 = fileData.toBase64();
+        QString dataUri = QString("src=\"data:%1;base64,%2\"")
+                              .arg(mimeType, base64);
+
+        replacements.append({fullSrc, dataUri});
+    }
+
+    for (const auto &pair : replacements) result.replace(pair.first, pair.second);
+
+    return result;
+}
+
+void MyTextEdit::keyPressEvent(QKeyEvent *event) {
+    if (event->matches(QKeySequence::Copy) ||
+        event->matches(QKeySequence::Cut)) {
+        QString html = toHtml();
+        QString embedded = embedImagesAsBase64(html);
+
+        QMimeData *mimeData = new QMimeData();
+        mimeData->setHtml(embedded);
+        mimeData->setText(toPlainText());
+
+        QApplication::clipboard()->setMimeData(mimeData);
+
+        if (event->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
+
+        return; // don't call base class — we handled it
+    }
+
+    QTextEdit::keyPressEvent(event); // pass everything else through
+}

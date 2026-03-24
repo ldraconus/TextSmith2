@@ -34,6 +34,9 @@ cd packages/com.vendor.product/data
 # windeployqt is Windows-only; Linux handles Qt libs via other means
 if [[ -n "$EXE" && -n "$WINDEPLOY" ]]; then
     echo "Fetching libraries"
+    cp ../../../../../vcpkg/packages/hunspell_x64-windows/bin/hunspell-1.7-0.dll .
+    cp ../../../../../zlib-1.3.1/build/libzlib.dll .
+    cp ../../../../../libzip/build/lib/libzip.dll .
     $WINDEPLOY --no-translations ${TO_PROG}${EXE}
 else
     echo "Configuring linux post install"
