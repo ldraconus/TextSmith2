@@ -113,6 +113,10 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
     else return false;
   }
 
+  void vm::remove(const str& bag, const str& var) {
+    if (mBags.contains(bag) && mBags[bag].contains(var)) mBags[bag].erase(var);
+  }
+
   void vm::create(const str& n) {
     mVars[n] = nullptr;
   }
@@ -145,6 +149,37 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
     }
   }
 
+  void vm::skipBlock(exe& word) {
+    auto wrd = get(word);
+    if (wrd.isExe()) return;
+    if (wrd.asString() == "{") {
+      for (; ; ) {
+        if (wrd.isExe()) return;
+        if (wrd.isStr()) {
+          if (wrd.asString() == "{") skipBlock(word);
+          else if (wrd.asString() == "}") return;
+        }
+        wrd = get(word);
+      }
+    }
+  }
+
+  void vm::skipIfs(exe& word, exe& peek, bool toElse) {
+    // if ({ ... })|word [else ({ ... })|word]
+    auto wrd = get(peek);
+    if (wrd.isExe()) return;
+    if (wrd == "if") {
+      get(word);
+      skipIfs(word, peek);
+    }
+    skipBlock(word);
+    wrd = get(word);
+    if (wrd.isExe() && wrd.asString() == "else") {
+      if (toElse) return;
+      skipBlock(word);
+    }
+  }
+
   void vm::step(stack& user, exe& word, const QString& body, const QString& end) {
       setInput(body);
       fifth::value x = get(word);
@@ -167,20 +202,16 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
     fifth::value x;
     str name;
     exe word = mBuiltin["word"];
-//str skipped;
     x = get(word);
     name = x.asString();
     while (x.isNum() || forc) {
-      if (mEnds.find(name) != mEnds.end()) ++forc;
-      if (name == "next") --forc;
+      if (name == "{") ++forc;
+      if (name == "}") --forc;
       if (forc) {
           x = get(word);
           name = x.asString();
       }
-//skipped += " " + name;
     }
-//if (skipped[0] == ' ') skipped = skipped.substr(1);
-//DBG_VAR("skipped", skipped.str());
   }
 
   exe vm::compile(const str& end, exe cd, bool) {

@@ -2758,6 +2758,28 @@ void Main::setupScripting() {
         for (auto i = words.count(); i != 0; --i) user.push(words[i - 1]);
         user.push(words.count());
     });
+    mVm->addBuiltin("tolower", [this](fifth::vm* vm){
+        auto& user = vm->user();
+        auto s = user.pop();
+        auto str = s.asString().str();
+        str = str.toLower();
+        user.push(str);
+    });
+    mVm->addBuiltin("toupper", [this](fifth::vm* vm){
+        auto& user = vm->user();
+        auto s = user.pop();
+        auto str = s.asString().str();
+        str = str.toUpper();
+        user.push(str);
+    });
+    mVm->addBuiltin("unpunct", [this](fifth::vm* vm){
+        static QRegularExpression punctuation(R"([.,!?;:"'()\[\]{}\-_/\\@#%&*+=<>~`^|])");
+        auto& user = vm->user();
+        auto s = user.pop();
+        auto str = s.asString().str();
+        str.remove(punctuation);
+        user.push(str);
+    });
     mVm->addBuiltin("split", [this](fifth::vm* vm) { // string splitBy -u-> part[n] ... part[1] n
         auto& user = vm->user();
         auto s2 = user.pop();

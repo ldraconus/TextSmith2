@@ -342,9 +342,7 @@ namespace fifth {
   void subfunc(vm* v) {
     stack& user = v->user();
     exe code = dynamic_cast<exe>(v->newCompiled());  // NOLINT
-//DBG_MSG(QString("S 0x%1").arg((long long) v->code(), 0, 16));
     v->compile("}", code);
-//DBG_MSG(QString("S 0x%1").arg((long long) v->code(), 0, 16));
     if (v->compiling()) {
         if (compiled* parent = dynamic_cast<compiled*>(v->code()); parent) {
             parent->call(code);
@@ -411,9 +409,6 @@ namespace fifth {
   }
 
   /**
-   * word: \x20if
-   * user: a t f --->
-   *
    * Run the compiled if
    **/
   void doIf(vm* v) {
@@ -445,82 +440,79 @@ namespace fifth {
   void ifThen(vm* v) {
     stack& user = v->user();
     exe word = (*v)["word"];
+    exe peek = (*v)["peek"];
 
+    auto input = v->get(word);
     if (v->compiling()) {
-      // process words until an end is seen
-      //code->call((*v)[" if"]);
+      static auto func = fifth::builtin(doIf);
+      auto parent = dynamic_cast<fifth::compiled*>(v->code());
+      if(input.isStr() && input.asString() == "{") {
+        exe code = dynamic_cast<exe>(v->newCompiled());  // NOLINT
+        v->compile("}", code);
+        parent->push(code);
+      } else if (input.isStr() && v->contains(input.asString())) {
+        parent->call((*v)[input.asString()]);
+      } else parent->push(input);
+      input = v->get(peek);
+      if (input == "else") {
+        v->get(word);
+        auto input = v->get(word);
+        if(input.isStr() && input.asString() == "{") {
+          exe code = dynamic_cast<exe>(v->newCompiled());  // NOLINT
+          v->compile("}", code);
+          parent->push(code);
+        } else if (input.isStr() && v->contains(input.asString())) {
+          parent->call((*v)[input.asString()]);
+        } else parent->push(input);
+      } else user.push(exe(0));
     } else {
       auto test = user.pop();
       if (test.asNumber()) {
-          auto x = v->get(word);
-          auto name = x.asString();
-          while (!x.isExe()) {
-            if (x.isNum()) user.push(x);
-            else {
+        auto x = v->get(word);
+        auto name = x.asString();
+        if (x.isNum()) user.push(x);
+        else {
+          if (name == "{") {
+            x = v->get(word);
+            auto name = x.asString();
+            while (name != "}") {
               if (v->contains(name)) {
                 auto func = (*v)[name];
                 func->eval(v);
-              } else {
-                  if (name == "else" || name == "end") break;
-                  user.push(x);
-              }
+              } else user.push(x);
             }
-            x = v->get(word);
-            name = x.asString();
-          }
-          if (name == "else") {
-            int ifc = 1;
-            for (; !x.isExe(); (x = v->get(word)), name = x.asString()) {
-              if (name == "if") ++ifc;
-              if (name == "end") {
-                --ifc;
-                if (!ifc) break;
-            }
+          } else if (v->contains(name)) {
+            auto func = (*v)[name];
+            func->eval(v);
+          } else {
+            user.push(x);
           }
         }
       } else {
-        int ifc = 1;
-        str name = "not-if";
-        value x;
-        x = v->get(word);
-        name = x.asString();
-        while (!x.isExe() && ifc) {
-          if (name == "if") ++ifc;
-          if (name == "end") {
-              --ifc;
-              if (!ifc) break;
-          }
-          if (ifc == 1 && name == "else") break;
-          x = v->get(word);
-          name = x.asString();
-        }
-        if (name == "end") {
-          return;
-        }
-        x = v->get(word);
-        name = x.asString();
-        while (!x.isExe()) {
-          if (x.isNum()) user.push(x);
-          else {
-            if (v->contains(name)) {
-              auto func = (*v)[name];
-              func->eval(v);
-            } else {
-                if (name == "end") break;
-                user.push(x);
+        v->skipIfs(word, peek, true);
+        auto x = v->get(word);
+        auto name = x.asString();
+        if (x.isNum()) user.push(x);
+        else {
+          if (name == "{") {
+            x = v->get(word);
+            auto name = x.asString();
+            while (name != "}") {
+              if (v->contains(name)) {
+                auto func = (*v)[name];
+                func->eval(v);
+              } else user.push(x);
             }
-          }
-          x = v->get(word);
-          name = x.asString();
+          } else if (v->contains(name)) {
+            auto func = (*v)[name];
+            func->eval(v);
+          } else user.push(x);
         }
       }
     }
   }
 
   /**
-   * word: \x20for
-   * user: s e s a --->
-   *
    * Run the compiled for
    **/
   void doFor(vm* v) {
@@ -554,16 +546,22 @@ namespace fifth {
 
     auto val = v->get(word);
     if (!val.isStr()) return;
-    auto brace = v->get(word);
-    if (!brace.isStr()) return;
-    if (brace.asString() != "{") return;
+    auto input = v->get(word);
     if (v->compiling()) {
       static auto func = fifth::builtin(doFor);
-      auto code = dynamic_cast<fifth::compiled*>(v->code());
-      code->push(val);
-      v->doNextWord(word, "}", code);
-      code->call(&func);
+      auto parent = dynamic_cast<fifth::compiled*>(v->code());
+      parent->push(val);
+      if (input.isStr() && input.asString() == "{") {
+        auto code = v->newCompiled();  // NOLINT
+        v->compile("}", code);
+        parent->push(code);
+      } else if (input.isStr() && v->contains(input.asString())) {
+        parent->push((*v)[input.asString()]);
+      } else parent->push(input);
+      parent->call(&func);
     } else {
+      bool braced = input.isStr() && input.asString() == "{";
+      bool inDict = !braced && input.isStr() && v->contains(input.asString());
       auto e = user.pop();
       auto s = user.pop();
       auto body = v->input().str();
@@ -571,17 +569,17 @@ namespace fifth {
       auto start = s.asNumber();
       num by = 1;
       str var = val.asString();
-//DBG_MSG("for " + var.str() + "=" + s.asString().str() + " to " + e.asString().str() + ((start > end) ? " by -1" : ""));
       if (start > end) by = -1;
       bool ranOnce = false;
       for (num i = start; (by > 0) ? (i <= end) : (i >= end); i += by) {
         auto val = value(i);
-//DBG_VAR(var.str(), i);
         v->set(var, val);
-        v->step(user, word, body, "}");
+        if (braced) v->step(user, word, body, "}");
+        else if (inDict) v->exec((*v)[input.asString()]);
+        else user.push(input);
         ranOnce = true;
       }
-      if (!ranOnce) v->skipToEnd(); // for loop did not run, test was false
+      if (!ranOnce && braced) v->skipToEnd(); // for loop did not run, test was false
     }
   }
 
@@ -612,23 +610,30 @@ namespace fifth {
     stack& user = v->user();
     exe word = (*v)["word"];
 
-    auto brace = v->get(word);
-    if (!brace.isStr()) return;
-    if (brace.asString() != "{") return;
-
+    auto input = v->get(word);
     if (v->compiling()) {
-        static auto func = builtin(doWhile);
-        auto code = dynamic_cast<compiled*>(v->code());
-
-        code->call(&func);
-        v->doNextWord(word, "}", code);
+      static auto func = builtin(doWhile);
+      auto parent = dynamic_cast<fifth::compiled*>(v->code());
+      if (input.isStr() && input.asString() == "{") {
+        auto code = v->newCompiled();  // NOLINT
+        v->compile("}", code);
+        parent->push(code);
+      } else if (input.isStr() && v->contains(input.asString())) {
+        parent->call((*v)[input.asString()]);
+      } else parent->push(input);
+      parent->call(&func);
     }
     else {
       auto body = v->input().str();
       bool ranOnce = false;
       value condition = user.pop();
+      auto x = v->get(word);
+      bool brace = x.isStr() && x.asString() == "{";
+      auto isExe = x.isStr() && v->contains(x.asString());
       while (!condition.isExe() && (condition.asNumber() || !condition.asString().empty())) {
-        v->step(user, word, body, "}");
+        if (brace) v->step(user, word, body, "}");
+        else if (isExe) x.asCallable()->eval(v);
+        else user.push(x);
         condition = user.pop();
         ranOnce = true;
       }
@@ -725,6 +730,22 @@ namespace fifth {
     if (!s.isStr()) return;
     str var = s.asString();
     v->set(var, a);
+  }
+
+  /**
+   * word: [rem]
+   * user: s a ---> s
+   *
+   * remove a from bag s
+   **/
+  void removeBag(vm* v) {
+      stack& user = v->user();
+
+      auto a = user.pop();
+      auto s = user.top();
+      if (!s.isStr() || !a.isStr()) return;
+      str bag = s.asString();
+      v->remove(bag, a.asString());
   }
 
   /**
@@ -1070,7 +1091,7 @@ namespace fifth {
           auto num = a.asNumber();
           auto var = s.asString();
           auto val = v->get(var);
-          if (num == 0) val = int(0);
+          if (num == 0) val = qlonglong(0);
           else val = val.asNumber() % num;
           v->set(var, val);
       }
@@ -1133,7 +1154,7 @@ namespace fifth {
           auto num = a.asNumber();
           auto var = s.asString();
           auto val = v->get(var);
-          if (num == 0) val = int(0);
+          if (num == 0) val = qlonglong(0);
           else val = val.asNumber() % num;
           v->set(var, val);
       }
@@ -1322,7 +1343,7 @@ namespace fifth {
    * user: a b ---> c
    *
    * Take 'a' and 'b' off the stack, and compare them.  Whatever 'a' is compare
-   * them as that type. Push a 1 if less than or equal, a 0 otherwise.
+   * them as that type. Push a 1 ifless than or equal, a 0 otherwise.
    **/
   void lessEq(vm* v) {
     stack& user = v->user();
@@ -1913,17 +1934,18 @@ namespace fifth {
     addBuiltin("call",    call);     //     e -u->
     addBuiltin("<--",     lset);     //   s a -u->
     addBuiltin("-->",     rset);     //   a s -u->
+    addBuiltin("[empty]", emptyBag); //     s -u-> s
+    addBuiltin("[-]",     emptyBag); //     s -u-> s
+    addBuiltin("[@]",     fetchBag); //   s a -u-> a
+    addBuiltin("[fetch]", fetchBag); //   s a -u-> a
     addBuiltin("@",       fetch);    //     s -u-> a
     addBuiltin("fetch",   fetch);    //     s -u-> a
     addBuiltin("keys",    keys);     //     s -u-> key[1] .. key[n] n
     addBuiltin("[<--]",   lsetBag);  // s v b -u->
     addBuiltin("[<]",     lsetBag);  // s v b -u->
+    addBuiltin("[rem]",   removeBag);//   s v -u-> s
     addBuiltin("[-->]",   rsetBag);  // b v s -u->
     addBuiltin("[>]",     rsetBag);  // b v s -u->
-    addBuiltin("[@]",     fetchBag); //   s a -u-> a
-    addBuiltin("[fetch]", fetchBag); //   s a -u-> a
-    addBuiltin("[empty]", emptyBag); //     s -u-> s
-    addBuiltin("[-]",     emptyBag); //     s -u-> s
 
     // --[ Math ]-------------
     addBuiltin("++", inc);     //     s -u->       Increment variable
@@ -1982,9 +2004,6 @@ namespace fifth {
     addBuiltin("lrot", lrot);  // a b c -u-> b c a Left rotate the top 3
     addBuiltin("rev",  rev);   // a.. b -u-> ..a   Reverse b items
     addBuiltin("nth",  nth);   // a.. b -u-> a..a  Copy b-th item to top
-
-    addEnd("for");
-    addEnd("while");
 
     mPrec.add("^",    POWER_PREC);
     mPrec.add("*",    MULT_PREC);

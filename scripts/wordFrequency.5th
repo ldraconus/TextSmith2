@@ -4,7 +4,7 @@
 bag wordFrequency pop
 
 // create the bag to store the word counts in and clear it
-bag wordCount empty
+bag wordCount [empty] pop
 
 // get list of all items in novel onto the stack (the ids), dont't care about the order
 ids
@@ -12,21 +12,23 @@ ids
 // top of the stack is the number of items, I want to loop over them, so swapping with 1 and doing a for loop sounds like the obvious solution
 1 swap for i {
     // top of the stack is id to be worked on
-    id text
-
-    // now the top of the stack has the entire item in it, split into words
-    " " split
+    id text para2words
 
     // like the items, ready to loop over the words
     1 swap for j {
-        // top is the word, magic is using the bag to hold each word as the var, so we just get from the bag, the add and put in the bag
-        wordCount swap dup wordCount swap [@]
+        tolower unpunct
+        dup length if {    // skip empty words now
+            // top is the word, magic is using the bag to hold each word as the var, so we just get from the bag, the add and put in the bag
+            wordCount swap // wordCount word
+            over over      // wordCount word wordCount word
+            [@]            // wordCount word #
 
-        // now the stack has the bag, the word and a number, it defaults to 0 on creation, so ...
-        1 +
+            // now the stack has the bag, the word and a number, it defaults to 0 on creation, so ...
+            1 +
 
-        // just update the bag now, everthings in the right order
-        [<--]
+            // just update the bag now, everthings in the right order
+            [<--]
+        } else pop
     }
 }
 
@@ -44,12 +46,23 @@ rootid getChildren
 
 wordFrequency id [@]
 
+// remove common english words that WILL be ranked high
+wordCount "and"  [rem]
+          "but"  [rem]
+          "or"   [rem]
+          "the"  [rem]
+          "a"    [rem]
+          "an"   [rem] pop
+
 // get the bag keys (var[1] .. var[n] n)
 wordCount keys
-1 swap for {
-    dup ": " + swap wordCount swap [@]
-    wordFrequency text [@] +
-    swap "\n" + text WordFrequency [-->]
+1 swap for i {
+                                     // ... top-word
+    dup                              // top-word top-word
+    ": " +                           // top-word 'top-word: '
+    swap wordCount swap [@] + "\n" + // ... 'top-word: #\n'
+    wordFrequency text [@] swap +    // just append the the string to the end of the existing text
+    text WordFrequency [-->]         // and store it
 }
 
 // top of the stack should be item id

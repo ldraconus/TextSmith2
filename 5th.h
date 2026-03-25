@@ -386,7 +386,6 @@ class vm {
     void addImmediate(const str& n, const function& f);
     void addImmediate(const str& n, exe e);
 
-    void                  addEnd(const str& s)    { mEnds[s] = true; }
     std::map<str, value>& bag(const str& name)    { return mBags[name]; }
     exe                   code()                  { return mCode; }
     void                  drop(const str& name)   { mBags.erase(mBags.find(name)); }
@@ -402,22 +401,25 @@ class vm {
     void                  setOutput(const str& s) { mOutput = s; }
     void                  start()                 { ++mCompiling; }
 
-    exe   compile(const str& end = "", exe cd = nullptr, bool dbg = false);
-    void  create(const str& n);
-    void  createBag(const str& n);
-    void  disassemble(exe call);
-    bool  doNextWord(exe word, const str& end = "", exe cd = nullptr, bool dbg = false);
-    void  exec(exe c);
-    void  dump();
-    void  evaluate(const str& code);
-    value get(callable* word);
-    value get(const str& n);
-    value get(const str& n, const str& idx);
-    bool  isVar(const str& n);
-    void  set(const str& n, const value& v);
-    void  set(const str& n, const str& idx, const value& v);
-    void  skipToEnd();
-    void  step(stack& user, exe& word, const QString& body, const QString& end);
+    exe     compile(const str& end = "", exe cd = nullptr, bool dbg = false);
+    void    create(const str& n);
+    void    createBag(const str& n);
+    void    disassemble(exe call);
+    bool    doNextWord(exe word, const str& end = "", exe cd = nullptr, bool dbg = false);
+    void    exec(exe c);
+    void    dump();
+    void    evaluate(const str& code);
+    value   get(callable* word);
+    value   get(const str& n);
+    value   get(const str& n, const str& idx);
+    bool    isVar(const str& n);
+    void    remove(const str& bag, const str& var);
+    void    set(const str& n, const value& v);
+    void    set(const str& n, const str& idx, const value& v);
+    void    skipBlock(exe& word);
+    void    skipIfs(exe& word, exe& peek, bool toElse = false);
+    void    skipToEnd();
+    void    step(stack& user, exe& word, const QString& body, const QString& end);
 
   private:
     std::map<str, exe>                  mBuiltin;
@@ -426,7 +428,6 @@ class vm {
     std::map<str, value>                mVars;
     precedence                          mPrec;
     std::map<exe, str>                  mReverse;
-    std::map<str, bool>                 mEnds;
     stack mSystem;
     stack mUser;
 
