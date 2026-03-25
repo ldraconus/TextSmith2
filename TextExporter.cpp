@@ -12,17 +12,15 @@ bool TextExporter::convert() {
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
-    QString ext =  "." + info.completeSuffix();
+    QString ext =  "." + (info.completeSuffix().isEmpty() ? Extension() : info.completeSuffix());
     Main::ref().setDocDir(path);
 
-    QString dir = path + "/" + base;
-    QDir work;
-    work.mkpath(dir);
+    QString dir = path;
 
     QString text;
     for (auto&& id: mItemIds) {
         Item& item = Main::ref().novel().findItem(id);
-        text += item.doc()->toPlainText();
+        text += item.doc()->toPlainText() + "\n";
     }
 
     QFile file(dir + "/" + base + ext);

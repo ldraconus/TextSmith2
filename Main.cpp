@@ -553,6 +553,8 @@ void Main::doFindReplace() {
     QString find = mFindWidget->findLineEdit->text();
     QString replace = mFindWidget->replaceLineEdit->text();
 
+    if (!find.isEmpty()) mFindWidget->findLineEdit->selectAll();
+
     mFindLine->setFocus();
     mFindWidget->findLineEdit->setFocus();
 

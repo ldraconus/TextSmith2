@@ -6,18 +6,20 @@
     - Part IV
     - Part V
     [/] Part VI
-        [ ] add empty, text, <text and text> to dictionary docs
-        [ ] fix for and while to react properly if next word isn't a {
-        [ ] fix if to use braces
-        [ ] Write collect word usage statistics for the entire novel
-        [ ] add words as needed to get the job done
-        [ ] Write the deconstruction of it
+        [ ] add tolower, toupper, unpunct, empty, text, <text, text> and [rem] to dictionary docs
+        [ ] Write safety first
+        - fix for and while to react properly if next word isn't a {
+        - fix if to use braces
+        - Write collect word usage statistics for the entire novel
+        - add words as needed to get the job done
+        - Write the deconstruction of it
     [/] Export in html to source directory
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
 [ ] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [ ] Write scripts
+[X[ Find really needs to select any previous text ... I'm always trippijng over it. if you want to extend it, a quit right/left arraw is all it takes.
 [X] Search isn't ;-)
 [H] Paste sometimes honors center & indent and other times not. Figure it out, fix it. Probably need textsmith specific clipboard.
 [X] Add a recent novels to the file menu
