@@ -84,6 +84,8 @@ template class Exporter<PdfExporter>;
 template class Exporter<EBookExporter>;
 #include "RtfExporter.h"
 template class Exporter<RtfExporter>;
+#include "TextExporter.h"
+template class Exporter<TextExporter>;
 
 constexpr qlonglong Second = 1000;
 Main* Main::sMain = nullptr;

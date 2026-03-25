@@ -1125,18 +1125,18 @@ namespace fifth {
    * Take the var s and modulo it by a. If 's' is not a number var do nothing.
    **/
   void rpowerTo(vm* v) {
-      stack& user = v->user();
-      auto s = user.pop();
-      auto a = user.pop();
+    stack& user = v->user();
+    auto s = user.pop();
+    auto a = user.pop();
 
-      if (s.isStr() && a.isNum()) {
-          auto nm = a.asNumber();
-          auto var = s.asString();
-          auto val = v->get(var);
-          if (nm == 0) val = num(1);
-          else val = num(pow(val.asNumber(), nm));
-          v->set(var, val);
-      }
+    if (s.isStr() && a.isNum()) {
+      auto nm = a.asNumber();
+      auto var = s.asString();
+      auto val = v->get(var);
+      if (nm == 0) val = num(1);
+      else val = num(pow(val.asNumber(), nm));
+      v->set(var, val);
+    }
   }
 
   /**
@@ -1146,18 +1146,18 @@ namespace fifth {
    * Take the var s and modula it by a. If 's' is not a number var do nothing.
    **/
   void lmodTo(vm* v) {
-      stack& user = v->user();
-      auto a = user.pop();
-      auto s = user.pop();
+    stack& user = v->user();
+    auto a = user.pop();
+    auto s = user.pop();
 
-      if (s.isStr() && a.isNum()) {
-          auto num = a.asNumber();
-          auto var = s.asString();
-          auto val = v->get(var);
-          if (num == 0) val = qlonglong(0);
-          else val = val.asNumber() % num;
-          v->set(var, val);
-      }
+    if (s.isStr() && a.isNum()) {
+      auto num = a.asNumber();
+      auto var = s.asString();
+      auto val = v->get(var);
+      if (num == 0) val = qlonglong(0);
+      else val = val.asNumber() % num;
+      v->set(var, val);
+    }
   }
 
   /**
