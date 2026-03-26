@@ -37,6 +37,7 @@ protected:
     QMimeData* createMimeDataFromSelection() const override;
     void       dragEnterEvent(QDragEnterEvent* event) override;
     void       dropEvent(QDropEvent* event) override;
+    QString    embedImagesAsBase64(const QString &html);
     void       insertFromMimeData(const QMimeData* source) override;
     void       keyPressEvent(QKeyEvent* key) override;
     void       resizeEvent(QResizeEvent* event) override;

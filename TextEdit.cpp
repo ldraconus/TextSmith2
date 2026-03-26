@@ -1,5 +1,10 @@
 #include "TextEdit.h"
+
 #include <QAbstractTextDocumentLayout>
+#include <QApplication>
+#include <QClipboard>
+#include <QFile>
+#include <QFileInfo>
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QTextDocumentFragment>
@@ -136,7 +141,94 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
     QTextEdit::insertFromMimeData(source); // non-image content
 }
 
+QString TextEdit::embedImagesAsBase64(const QString &html) {
+    QString result = html;
+    QRegularExpression reFile(R"(src=\"(file://[^\"]+)\")");
+    QRegularExpression reInternal(R"(src=\"(internal://[^\"]+\"))");
+    QRegularExpressionMatchIterator itFile = reFile.globalMatch(html);
+    QRegularExpressionMatchIterator intFile = reInternal.globalMatch(html);
+
+    // Collect replacements first to avoid offset shifting
+    QList<QPair<QString, QString>> replacements;
+
+    while (itFile.hasNext()) {
+        QRegularExpressionMatch match = itFile.next();
+        QString fullSrc = match.captured(0);   // src="file:///..."
+        QString fileUrl = match.captured(1);   // file:///...
+
+        // Convert file URL to local path
+        QString localPath = QUrl(fileUrl).toLocalFile();
+        QFile file(localPath);
+
+        if (!file.open(QIODevice::ReadOnly)) continue;
+
+        QByteArray fileData = file.readAll();
+        file.close();
+
+        // Determine MIME type from extension
+        QString ext = QFileInfo(localPath).suffix().toLower();
+        QString mimeType;
+        if      (ext == "png")  mimeType = "image/png";
+        else if (ext == "jpg" || ext == "jpeg") mimeType = "image/jpeg";
+        else if (ext == "gif")  mimeType = "image/gif";
+        else if (ext == "webp") mimeType = "image/webp";
+        else if (ext == "bmp")  mimeType = "image/bmp";
+        else                    mimeType = "image/png"; // fallback
+
+        QString base64 = fileData.toBase64();
+        QString dataUri = QString("src=\"data:%1;base64,%2\"")
+                              .arg(mimeType, base64);
+
+        replacements.append({fullSrc, dataUri});
+    }
+
+    while (intFile.hasNext()) {
+        QRegularExpressionMatch match = intFile.next();
+        QString fullSrc = match.captured(0);   // src="internal:///..."
+        QString intUrl = match.captured(1);   // internal:///...
+
+        // Convert file URL to local path
+        QByteArray byteArray;
+        QBuffer buffer(&byteArray);
+        buffer.open(QIODevice::WriteOnly);
+
+        // Save as PNG
+        mOriginals[intUrl].save(&buffer, "PNG");        QByteArray fileData;
+        buffer.close();
+
+        // Determine MIME type from extension
+        QString ext = "png";
+        QString mimeType = "image/png";
+
+        QString base64 = fileData.toBase64();
+        QString dataUri = QString("src=\"data:%1;base64,%2\"")
+                              .arg(mimeType, base64);
+
+        replacements.append({fullSrc, dataUri});
+    }
+
+    for (const auto &pair : replacements) result.replace(pair.first, pair.second);
+
+    return result;
+}
+
 void TextEdit::keyPressEvent(QKeyEvent* key) {
+    if (key->matches(QKeySequence::Copy) ||
+        key->matches(QKeySequence::Cut)) {
+        QString html = toHtml();
+        QString embedded = embedImagesAsBase64(html);
+
+        QMimeData *mimeData = new QMimeData();
+        mimeData->setHtml(embedded);
+        mimeData->setText(toPlainText());
+
+        QApplication::clipboard()->setMimeData(mimeData);
+
+        if (key->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
+
+        return;
+    }
+
     if (mSoundPool) {
         switch (key->key()) {
         case Qt::Key_Escape:
