@@ -18,6 +18,7 @@
     [ ] Update documentation
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [/] Write scripts
+[X] And broke cut/copy ... grabs whole document, not what's highlighted.
 [X] Can't cut/copy an image ... internal -- find & add to clipboard & into html
 [X[ Find really needs to select any previous text ... I'm always trippijng over it. if you want to extend it, a quit right/left arraw is all it takes.
 [X] Search isn't ;-)

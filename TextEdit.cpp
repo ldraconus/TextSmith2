@@ -215,12 +215,14 @@ QString TextEdit::embedImagesAsBase64(const QString &html) {
 void TextEdit::keyPressEvent(QKeyEvent* key) {
     if (key->matches(QKeySequence::Copy) ||
         key->matches(QKeySequence::Cut)) {
-        QString html = toHtml();
+        QTextCursor cursor = textCursor();
+        QTextDocumentFragment fragment = cursor.selection();
+        QString html = fragment.toHtml();
         QString embedded = embedImagesAsBase64(html);
 
         QMimeData *mimeData = new QMimeData();
         mimeData->setHtml(embedded);
-        mimeData->setText(toPlainText());
+        mimeData->setText(fragment.toPlainText());
 
         QApplication::clipboard()->setMimeData(mimeData);
 
