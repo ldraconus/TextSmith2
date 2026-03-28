@@ -12,16 +12,21 @@ Component.prototype.createOperations = function()
 {
     component.createOperations(); // run default operations first
 
-    if (systemInfo.productType === "ubuntu" || 
+    if (systemInfo.productType === "ubuntu" ||
         systemInfo.productType === "zorin") {
         component.addOperation("CreateDesktopEntry",
             "@HomeDir@/.local/share/applications/TextSmith.desktop",
+            "[Desktop Entry]\n" +
             "Type=Application\n" +
-            "Name=MyApp\n" +
+            "Name=TextSmith\n" +
+            "Comment=A novel writing tool\n" +
             "Exec=@TargetDir@/TextSmith\n" +
-            "Icon=@TargetDir@/TextSmith.png\n" +
-            "Categories=Office;\n" +
-            "Terminal=false\n"
+            "Icon=@TargetDir/TextSmithIcon.png\n" +
+            "Terminal=false\n" +
+            "Categories=Office;WordProcessor;Writing;\n" +
+            "StartupNotify=true\n" +
+            "StartupWMClass=TextSmith\n" +
+            "Keywords=novel;writing;author;book;\n";
         );
     }
 }
