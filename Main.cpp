@@ -605,15 +605,26 @@ void Main::doFullJustify() {
 
 void Main::doFullScreen() {
     FullScreenDialog dlg(mPrefs, this);
-    dlg.setDocument(mUi->textEdit->document());
-    dlg.setPosition(mUi->textEdit->textCursor().position());
+
+    TextEdit* edit = mUi->textEdit;
+    QTextDocument* doc = edit->document();
+
+    dlg.setDocument(doc);
+    dlg.setPosition(edit->textCursor().position());
+
     if (mPrefs.typingSounds()) dlg.setSoundPool(&mSoundPool);
+
     auto arr = mPrefs.otherSplitter();
     if (arr.size() >= 2) dlg.setOther(arr);
+
     dlg.showFullScreen();
     dlg.exec();
+
     auto other = dlg.other();
     mPrefs.setOtherSplitter(other);
+
+    edit->setDocument(doc);
+
     setPosition(dlg.position());
     doCursorPositionChanged();
 }

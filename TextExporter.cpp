@@ -23,6 +23,8 @@ bool TextExporter::convert() {
         text += item.doc()->toPlainText() + "\n";
     }
 
+    // go through text and assume courier 12, break at margins
+
     QFile file(dir + "/" + base + ext);
     if (file.open(QIODeviceBase::WriteOnly)) return file.write(text.toUtf8()) != -1;
     return false;
