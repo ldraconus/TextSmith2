@@ -689,7 +689,6 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     mUi->textEdit->setDocument(doc);
 
     /* this is a hack! */
-
     QApplication::processEvents();
     mUi->textEdit->setUpdatesEnabled(false);
 
@@ -708,6 +707,7 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
     /* end of hack */
 
     mPosition = item.position();
+    setPosition(mPosition);
 
     mUi->actionOpen_Current_Item->setText(current->isExpanded() ? "Close Current Item" : "Open Current Item");
 
@@ -900,9 +900,9 @@ void Main::loadFile(const QString& filename) {
     if (obj.contains(Novel::Prefs)) {
         Json5Object prefs = Item::hasObj(obj, Novel::Prefs, {} );
         mPrefs.read(prefs);
-        mCurrentNode = Item::hasNum(obj, Novel::Current, qlonglong(-1));
-        mPosition = Item::hasNum(obj, Novel::Position, qlonglong(0));
-        Json5Array array = Item::hasArr(obj, Novel::State);
+        mCurrentNode =      Item::hasNum(obj, Novel::Current, qlonglong(-1));
+        mPosition =         Item::hasNum(obj, Novel::Position, qlonglong(0));
+        Json5Array array =  Item::hasArr(obj, Novel::State);
         mState.clear();
         for (auto& state: array) {
             if (!state.isArray()) continue;
@@ -947,6 +947,7 @@ void Main::loadFile(const QString& filename) {
     mPrefs.setRecentNovels(savedRecents);
     mPrefs.addNovel(info.baseName() + ".novel", filename);
 
+    setPosition(mPosition);
     update(true);
     doCursorPositionChanged();
     auto item = mNovel.findItem(mCurrentNode);
