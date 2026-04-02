@@ -11,6 +11,8 @@
     <TargetDir>@ApplicationsDirX64@/TextSmith</TargetDir>
     <RunProgram>@TargetDir@/TextSmith</RunProgram>
     <RunProgramDescription>Run TextSmith</RunProgramDescription>
-    <WizardStyle>Mac</WizardStyle>
+    <WizardStyle>Modern</WizardStyle>
+    <WizardShowPageList>true</WizardShowPageList>
+    <StyleSheet>style.css<</StyleSheet>
     <Background>Background.png</Background>
 </Installer>

@@ -153,6 +153,9 @@ qt_add_executable(TextSmith2
     config/config.xml
     scripts/wordFrequency.5th
     TextExporter.h TextExporter.cpp
+    config/Background.png
+    config/style.css
+    config/Background.png
 )
 
 # Link Qt + libzip

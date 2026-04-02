@@ -286,6 +286,7 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         default:
             if (!key->text().isEmpty() && !key->text().at(0).isSpace() &&
                 !(key->modifiers() & (Qt::AltModifier |
+                                      Qt::ShiftModifier |
                                       Qt::ControlModifier))) mSoundPool->play(SoundPool::Sound::KeyWhack);
             break;
         }
