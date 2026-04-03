@@ -114,7 +114,7 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
   }
 
   void vm::remove(const str& bag, const str& var) {
-    if (mBags.contains(bag) && mBags[bag].contains(var)) mBags[bag].erase(var);
+    if (mBags.contains(bag) && mBags[bag].contains(var)) mBags[bag].remove(var);
   }
 
   void vm::create(const str& n) {
@@ -258,18 +258,21 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
 
   void vm::dump() {
     DBG_MSG(QString("----<Dictionary>----------------------------"));
-    for (const auto& a: mBuiltin) {
-      DBG_MSG(a.first.str());
+    for (auto&& a: mBuiltin) {
+        DBG_MSG(a->asString().str());
     }
     DBG_MSG(QString("----<Globals>-------------------------------"));
-    for (const auto& g: mVars) {
-        DBG_VAL(g.first.str(), g.second);
+    auto keys = mVars.keys();
+    for (auto&& g: keys) {
+        DBG_VAL(mVars[g].asString().str(), g.str());
     }
     DBG_MSG(QString("----<Bags>----------------------------------"));
-    for (const auto& b: mBags) {
-        DBG_MSG(b.first.str() + "=" + QString("%1").arg(b.second.size()));
-        for (const auto& v: b.second) {
-            DBG_MSG("    " + v.first.str() + ":" + v.second.asString().str());
+    auto bags = mBags.keys();
+    for (auto&& b: bags) {
+        DBG_MSG(b.str() + "=" + QString("%1").arg(mBags[b].count()));
+        keys = mBags[b].keys();
+        for (auto&& v: keys) {
+            DBG_MSG("    " + v.str() + ":" + mBags[b][v].asString().str());
         }
     }
     mUser.dump();

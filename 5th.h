@@ -4,12 +4,12 @@
 
 #include <functional>
 #include <initializer_list>
-#include <map>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
 #include <QDebug>
+#include <QMap>
 #include <QString>
 
 // Choose one or the other if you want debugging
@@ -364,7 +364,7 @@ namespace fifth {
       void add(const str& s, int p) { mPrec[s] = p ? p : 1; }
 
     private:
-      std::map<str, int> mPrec;
+      QMap<str, int> mPrec;
   };
 
 class vm {
@@ -386,20 +386,20 @@ class vm {
     void addImmediate(const str& n, const function& f);
     void addImmediate(const str& n, exe e);
 
-    std::map<str, value>& bag(const str& name)    { return mBags[name]; }
-    exe                   code()                  { return mCode; }
-    void                  drop(const str& name)   { mBags.erase(mBags.find(name)); }
-    void                  finish()                { --mCompiling; }
-    void                  forget(const str& name) { mVars.erase(mVars.find(name)); }
-    str                   input() const           { return mInput; }
-    str                   varName(const str& s)   { if (isVar(s)) return mVars[s].asString(); else return str("?"); }
-    compiled*             newCompiled()           { mCompiled.append({ }); return &mCompiled.last(); }
-    str                   output() const          { return mOutput; }
-    auto&                 precTable()             { return mPrec; }
-    void                  setCode(exe code)       { mCode = code; }
-    void                  setInput(const str& s)  { mInput = s; }
-    void                  setOutput(const str& s) { mOutput = s; }
-    void                  start()                 { ++mCompiling; }
+    QMap<str, value>& bag(const str& name)    { return mBags[name]; }
+    exe               code()                  { return mCode; }
+    void              drop(const str& name)   { mBags.erase(mBags.find(name)); }
+    void              finish()                { --mCompiling; }
+    void              forget(const str& name) { mVars.erase(mVars.find(name)); }
+    str               input() const           { return mInput; }
+    str               varName(const str& s)   { if (isVar(s)) return mVars[s].asString(); else return str("?"); }
+    compiled*         newCompiled()           { mCompiled.append({ }); return &mCompiled.last(); }
+    str               output() const          { return mOutput; }
+    auto&             precTable()             { return mPrec; }
+    void              setCode(exe code)       { mCode = code; }
+    void              setInput(const str& s)  { mInput = s; }
+    void              setOutput(const str& s) { mOutput = s; }
+    void              start()                 { ++mCompiling; }
 
     exe     compile(const str& end = "", exe cd = nullptr, bool dbg = false);
     void    create(const str& n);
@@ -422,12 +422,12 @@ class vm {
     void    step(stack& user, exe& word, const QString& body, const QString& end);
 
   private:
-    std::map<str, exe>                  mBuiltin;
-    std::map<str, std::map<str, value>> mBags;
-    stable_array<compiled>              mCompiled;
-    std::map<str, value>                mVars;
-    precedence                          mPrec;
-    std::map<exe, str>                  mReverse;
+    QMap<str, exe>              mBuiltin;
+    QMap<str, QMap<str, value>> mBags;
+    stable_array<compiled>      mCompiled;
+    QMap<str, value>            mVars;
+    precedence                  mPrec;
+    QMap<exe, str>              mReverse;
     stack mSystem;
     stack mUser;
 

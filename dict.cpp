@@ -781,8 +781,9 @@ namespace fifth {
       auto var = s.asString();
       auto& bag = v->bag(var);
       QStringList keys;
-      for (const auto& entry: bag) {
-          keys.append(entry.first.str());
+      auto vars = bag.keys();
+      for (auto&& entry: vars) {
+          keys.append(var.str());
       }
       for (auto i = keys.size(); i != 0; --i) user.push(keys[i - 1]);
       user.push(keys.size());
