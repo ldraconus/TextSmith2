@@ -158,9 +158,10 @@ QString Printer::nextWord(int& charFormat, const QList<QTextFragment>& newFragme
 }
 
 bool Printer::outputNovel(List<qlonglong> ids,
-                          const QString &chapterTag,
-                          const QString &sceneTag,
-                          const QString &coverTag,
+                          const QString& chapterTag,
+                          const QString& sceneTag,
+                          const QString& coverTag,
+                          const QString& sceneSeparator,
                           QPainter* painter,
                           QSizeF pageSize,
                           std::function<void(bool)> finishPage) {
@@ -206,6 +207,7 @@ bool Printer::outputNovel(List<qlonglong> ids,
     int size = font.pixelSize() * scaleY;
     if (size < 1) size = font.pointSize() * mYFactor;
     font.setPixelSize(size);
+    QFontMetrics metrics(font);
     mDoc.setDefaultFont(font);
     for (const auto& id: ids) {
         mId = id;
@@ -221,6 +223,15 @@ bool Printer::outputNovel(List<qlonglong> ids,
         }
         auto paragraphs = createParagraphs(item, scaleX, scaleY, lineWidth, pageHeight);
         printParagraphs(painter, pageSize, finishPage, margins, at, startingPage, paragraphs, item.hasTag(coverTags) && mPageNo == 1);
+        if (item.hasTag(sceneTags)) {
+            int baseLine = metrics.descent();
+            int lineHeight = metrics.lineSpacing();
+            qreal bottom = pageSize.height() - margins.bottom();
+            QString text = mPrefs->separator();
+            printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
+            printLine(painter, pageSize, finishPage, margins, font, at, text, startingPage);
+            printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
+        }
         if (item.hasTag(coverTags) && startingPage && mPageNo == 1) {
             ++mPageNo;
             at = margins.top();
@@ -295,6 +306,34 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
     return marginals;
 }
 
+void Printer::printLine(QPainter* painter,
+                        QSizeF &pageSize,
+                        std::function<void(bool)>& emitPage,
+                        QMarginsF& margins,
+                        QFont& font,
+                        qreal& at,
+                        const QString& text,
+                        bool& startingPage) {
+    qreal bottom = pageSize.height() - margins.bottom();
+    QFontMetrics fontMetrics(font);
+    int baseLine = fontMetrics.descent();
+    if (at + baseLine > bottom) {
+        page(painter, emitPage, !startingPage);
+        ++mPageNo;
+        startingPage = true;
+        at = margins.top();
+    }
+    if (text.isEmpty()) {
+        at += fontMetrics.lineSpacing();
+        return;
+    }
+    qreal center = pageRect(QPrinter::Point).width() * mXFactor / 2;
+    auto width = fontMetrics.horizontalAdvance(text);
+    auto x = center - width / 2;
+    painter->drawText(QPoint({ int(x + 0.5), int(at + 0.5) }), text);
+    at += fontMetrics.lineSpacing();
+}
+
 void Printer::printMarginal(QPainter* painter, qlonglong y, const Marginal& object) {
     qreal left = mPrefs->margins()[Preferences::Left] * PointsPerInch * mXFactor;
     qreal right = (pageRect(QPrinter::Point).width() -  mPrefs->margins()[Preferences::Right] * PointsPerInch) * mXFactor;
@@ -318,7 +357,8 @@ void Printer::printNovel() {
     setFullPage(true);
     QSizeF size = pageSize(QPrinter::Point);
     QPainter* painter = this->painter();
-    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), painter, size,
+    QString separator = mPrefs->useSeparator() ? mPrefs->separator() : "";
+    outputNovel(mIds, mPrefs->chapterTag(), mPrefs->sceneTag(), mPrefs->coverTag(), separator, painter, size,
                 [this, &painter](bool m) {
                     if (m) {
                         header(painter);

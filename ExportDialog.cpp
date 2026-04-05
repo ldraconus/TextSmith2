@@ -22,6 +22,8 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
     mUi->chapterTagLineEdit->setPlaceholderText(prefs.chapterTag());
     mUi->sceneTagLineEdit->setPlaceholderText(prefs.sceneTag());
     mUi->coverTagLineEdit->setPlaceholderText(prefs.coverTag());
+    mUi->sceneSeparatorLineEdit->setPlaceholderText(prefs.separator());
+    mUi->sceneSeparatorCheckBox->setChecked(prefs.useSeparator());
     QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
     prefs.applyFontToTree(this, font);
     updateGeometry();
@@ -58,6 +60,14 @@ QString ExportDialog::filename() const {
 
 QString ExportDialog::sceneTag() const {
     return getString(mUi->sceneTagLineEdit);
+}
+
+QString ExportDialog::separator() const {
+    return getString(mUi->sceneSeparatorLineEdit);
+}
+
+bool ExportDialog::useSeparator() const {
+    return mUi->sceneSeparatorCheckBox->isChecked();
 }
 
 QString ExportDialog::getString(QLineEdit* field) const {

@@ -23,6 +23,8 @@ public:
     QString coverTag() const;
     QString filename() const;
     QString sceneTag() const;
+    QString separator() const;
+    bool    useSeparator() const;
 
 private:
     ExporterBase*     mExporter;

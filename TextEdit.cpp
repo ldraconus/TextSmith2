@@ -29,11 +29,63 @@ TextEdit::TextEdit(QWidget* parent)
     mIdBase = static_cast<quint64>(QDateTime::currentMSecsSinceEpoch());
     setAcceptRichText(true);
     setAcceptDrops(true);
-
+    setAttribute(Qt::WA_InputMethodEnabled, false);
     // Default margin is fine; you can tweak per your layout
 }
 
 static constexpr auto TextSmith2MimeData = "x-TextSmith2-json";
+
+void TextEdit::handleComposeSequence(QKeyEvent* key) {
+    QString text = key->text();
+
+
+    if (mComposeState == Idle) {
+        // First key after Compose
+        if (text == "'") {
+            mComposeState = GotApostrophe;
+            key->accept();
+        }
+        else if (text == "^") {
+            mComposeState = GotCaret;
+            key->accept();
+        }
+        else {
+            // Unknown compose sequence - abort
+            mInComposeSequence = false;
+            mComposeState = Idle;
+            // Pass through the original key
+            QTextEdit::keyPressEvent(key);
+        }
+        return;
+    }
+
+    // Second key after Compose - complete the sequence
+    if (mComposeState == GotApostrophe) {
+        switch (text[0].toLatin1()) {
+        case 'u':
+            insertPlainText(QString(QChar(0x00FA)));  // ú
+            mInComposeSequence = false;
+            mComposeState = Idle;
+            key->accept();
+            break;
+        }
+    }
+    else if (mComposeState == GotCaret) {
+        switch (text[0].toLatin1()) {
+        case 'i':
+            insertPlainText(QString(QChar(0x00EE)));  // î
+            mInComposeSequence = false;
+            mComposeState = Idle;
+            key->accept();
+            break;
+        }
+    } else {
+        // Invalid sequence - abort and insert whatever was typed
+        mInComposeSequence = false;
+        mComposeState = Idle;
+        QTextEdit::keyPressEvent(key);
+    }
+}
 
 void TextEdit::insertFromMimeData(const QMimeData *source) {
     ReentryGuard guard(mReentry);
@@ -213,6 +265,20 @@ QString TextEdit::embedImagesAsBase64(const QString &html) {
 }
 
 void TextEdit::keyPressEvent(QKeyEvent* key) {
+    if ((key->key() == Qt::Key_Multi_key) ||
+        (key->key() == 0 && key->text().isEmpty())) {
+        qDebug() << "Compose key detected - starting composition";
+        mInComposeSequence = true;
+        mComposeState = Idle;
+        key->accept();
+        return;
+    }
+
+    // If we're in a compose sequence, handle the following keys
+    if (mInComposeSequence) {
+        handleComposeSequence(key);
+        return;
+    }
     if (key->matches(QKeySequence::Copy) ||
         key->matches(QKeySequence::Cut)) {
         QTextCursor cursor = textCursor();

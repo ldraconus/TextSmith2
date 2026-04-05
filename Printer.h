@@ -179,10 +179,19 @@ public:
                                   const QString& chapterTag,
                                   const QString& sceneTag,
                                   const QString& coverTag,
+                                  const QString& sceneSeparator,
                                   QPainter* painter,
                                   QSizeF pageSize,
                                   std::function<void(bool)> pager);
     const QSizeF      pageSize(QPrinter::Unit unit) const;
+    void              printLine(QPainter* painter,
+                                QSizeF &pageSize,
+                                std::function<void(bool)>& emitPage,
+                                QMarginsF& margins,
+                                QFont& font,
+                                qreal& at,
+                                const QString& text,
+                                bool& startingPage);
     void              printNovel();
     void              printParagraphs(QPainter* painter,
                                       QSizeF& pageSize,

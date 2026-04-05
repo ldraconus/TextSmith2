@@ -31,7 +31,9 @@ public:
     virtual void                   setIds(const QList<qlonglong>& ids) = 0;
     virtual void                   setInternalImages(const QMap<QUrl, QImage>& images) = 0;
     virtual void                   setMetadataValue(const QString& meta, const QString& value) = 0;
+    virtual void                   setSceneSeparator(const QString& sep) = 0;
     virtual void                   setSceneTag(const QString& tag) = 0;
+    virtual void                   setUseSceneSeparator(bool use) = 0;
 
     virtual QList<ExportMetadataField>& metadataFields() {
         static QList<ExportMetadataField> nil;
@@ -70,14 +72,16 @@ public:
     void setChapterTag(const QString& c) override                     { mChapterTag = c.toLower(); }
     void setCoverTag(const QString& c) override                       { mCoverTag = c.toLower(); }
     void setInternalImages(const QMap<QUrl, QImage>& images) override { mImages = images; }
-    void setSceneTag(const QString& s) override                       { mSceneTag = s.toLower(); }
     void setFilename(const QString& f) override                       { mFilename = f; }
     void setIds(const QList<qlonglong>& ids) override                 { mItemIds = ids; }
+    void setSceneSeparator(const QString& sep) override               { mSceneSeparator = sep; }
+    void setSceneTag(const QString& s) override                       { mSceneTag = s.toLower(); }
+    void setUseSceneSeparator(bool use) override                      { mUseSceneSeparator = use; }
 
     QMap<QString, QString> collectMetadataDefaults() override {
         QMap<QString, QString> defaults;
 
-        for (int id: mItemIds) {
+        for (int&& id: mItemIds) {
             Item& item = mNovel.findItem(id);
 
             for (const QString& tag: item.tags()) {
@@ -133,7 +137,9 @@ protected:
     QMap<QUrl, QImage> mImages;
     QList<qlonglong>   mItemIds;
     Novel&             mNovel;
+    QString            mSceneSeparator;
     QString            mSceneTag;
+    bool               mUseSceneSeparator;
 };
 
 template<typename Class>

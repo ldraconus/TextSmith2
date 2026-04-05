@@ -1,3 +1,6 @@
+[/] Add optional scene separator to
+    - printing
+    [/] exporting
 [/] Write the Documentation
     - Intro
     - Part I
@@ -27,7 +30,7 @@
 [X] Add a recent novels to the file menu
     - Documents added to menu
     - Need a clear recents option in the menu
-    - Update documetation
+    - Update do cumetation
 [X] Print does't want to do cover smaller than page followed by chapter correctly
 [X] Backspace also erases format (also, pictures appear unformatted, which screws up the other parts of the formatting system)...
     Backspace should move back a character (if possible, else do nothing), then DEL

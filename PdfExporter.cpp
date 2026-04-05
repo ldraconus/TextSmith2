@@ -28,7 +28,8 @@ bool PdfExporter::render() {
 
     auto save = Main::ref().exchangePrinter(pdf);
 
-    bool result = pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, painter, pageSize,
+    QString separator = mUseSceneSeparator ? mSceneSeparator : "";
+    bool result = pdf->outputNovel(mItemIds, mChapterTag, mSceneTag, mCoverTag, separator, painter, pageSize,
         [this, &pdf, &painter](bool m) {
             if (m) {
                 pdf->header(painter);

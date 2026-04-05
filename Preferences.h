@@ -70,6 +70,7 @@ public:
     QString      pageSize() const          { return mPageSize; }
     qlonglong    position() const          { return mPosition; }
     List<Recent> recentNovels() const      { return mRecentNovels; }
+    QString      separator() const         { return mSeparator; }
     QString      sceneTag() const          { return mSceneTag.isEmpty() ? "Scene" : mSceneTag; }
     qlonglong    theme() const             { return mTheme; }
     bool         toolbarVisible() const    { return mToolbarVisible; }
@@ -77,6 +78,7 @@ public:
     bool         typingSounds() const      { return mTypingSounds; }
     QString      uiFontFamily() const      { return mUiFontFamily.isEmpty() ? "Segoe UI" : mUiFontFamily; }
     qlonglong    uiFontSize() const        { return mUiFontSize; }
+    bool         useSeparator() const      { return mUseSeparator; }
     qlonglong    voice() const             { return mVoice; }
     bool         wasDark() const           { return mWasDark; }
     QRect        windowLocation() const    { return mWindow; }
@@ -101,11 +103,13 @@ public:
     void setPageSize(const QString& s)                       { mPageSize = s; }
     void setRecentNovels(const List<Recent>& r)              { mRecentNovels = r; }
     void setSceneTag(const QString& s)                       { mSceneTag = s; }
+    void setSeparator(const QString& s)                      { mSeparator = s; }
     void setTheme(qlonglong t)                               { mTheme = t; }
     void setToolbarVisible(bool t)                           { mToolbarVisible = t; }
     void setTypingSounds(bool t)                             { mTypingSounds = t; }
     void setUiFontFamily(const QString& f)                   { mUiFontFamily = f; }
     void setUiFontSize(qlonglong s)                          { mUiFontSize = s; }
+    void setUseSeparator(bool u)                             { mUseSeparator = u; }
     void setVoice(qlonglong v)                               { mVoice = v; }
     void setWindowLocation(QRect r)                          { mWindow = r; }
 
@@ -129,11 +133,13 @@ private:
     qlonglong                mPosition         { 0 };
     List<Recent>             mRecentNovels     { };
     QString                  mSceneTag         { "scene" };
+    QString                  mSeparator        { "###" };
     qlonglong                mTheme            { 2 };
     bool                     mToolbarVisible   { true };
     bool                     mTypingSounds     { false };
     QString                  mUiFontFamily     { "Segoe UI" };
     qlonglong                mUiFontSize       { 9 };
+    bool                     mUseSeparator     { false };
     qlonglong                mVoice            { 0 };
     bool                     mWasDark          { false };
     QRect                    mWindow;

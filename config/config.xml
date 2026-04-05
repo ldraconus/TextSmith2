@@ -13,6 +13,6 @@
     <RunProgramDescription>Run TextSmith</RunProgramDescription>
     <WizardStyle>Modern</WizardStyle>
     <WizardShowPageList>true</WizardShowPageList>
-    <StyleSheet>style.css<</StyleSheet>
+    <StyleSheet>style.css</StyleSheet>
     <Background>Background.png</Background>
 </Installer>
