@@ -16,11 +16,12 @@ set(CMAKE_AUTORCC ON)
 # Qt setup
 find_package(Qt6 REQUIRED COMPONENTS
     Core
-    Gui
     Widgets
     PrintSupport
     TextToSpeech
 )
+qt_standard_project_setup()
+
 
 # Include directories
 if (UNIX)
@@ -163,7 +164,6 @@ if(UNIX)
 target_link_libraries(TextSmith2 PRIVATE
     Qt6::Core
     Qt6::DBus
-    Qt6::Gui
     Qt6::Widgets
     Qt6::PrintSupport
     Qt6::TextToSpeech
