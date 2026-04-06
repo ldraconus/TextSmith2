@@ -70,6 +70,18 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
 
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
+    mUi->useSceneSeparatorCheckBox->setChecked(mPrefs->useSeparator());
+    mUi->sceneSeparatorLineEdit->setText(mPrefs->separator());
+    connect(mUi->useSceneSeparatorCheckBox, &QCheckBox::checkStateChanged, this, [this] {
+        mUi->sceneSeparatorLineEdit->setEnabled(mUi->useSceneSeparatorCheckBox->isChecked());
+        mPrefs->setUseSeparator(mUi->useSceneSeparatorCheckBox->isChecked());
+        updatePreview();
+    });
+    connect(mUi->sceneSeparatorLineEdit, &QLineEdit::textChanged, this, [this] {
+        mPrefs->setSeparator(mUi->sceneSeparatorLineEdit->text());
+        updatePreview();
+    });
+
     QString header = mPrefs->header();
     StringList lcr { header.split(Preferences::sep, Qt::KeepEmptyParts) };
     if (lcr.size() == 3) {
@@ -210,10 +222,12 @@ void PageSetupDialog::justify(QTextEdit* edit, Qt::AlignmentFlag which) {
     edit->setTextCursor(cursor);
 }
 
-double PageSetupDialog::bottomMargin() { return mUi->bottomMarginDoubleSpinBox->value(); }
-double PageSetupDialog::leftMargin()   { return mUi->leftMarginDoubleSpinBox->value(); }
-double PageSetupDialog::rightMargin()  { return mUi->rightMarginDoubleSpinBox->value(); }
-double PageSetupDialog::topMargin()    { return mUi->topMarginDoubleSpinBox->value(); }
+double  PageSetupDialog::bottomMargin()      { return mUi->bottomMarginDoubleSpinBox->value(); }
+double  PageSetupDialog::leftMargin()        { return mUi->leftMarginDoubleSpinBox->value(); }
+double  PageSetupDialog::rightMargin()       { return mUi->rightMarginDoubleSpinBox->value(); }
+QString PageSetupDialog::sceneSeparator()    { return mUi->sceneSeparatorLineEdit->text(); }
+double  PageSetupDialog::topMargin()         { return mUi->topMarginDoubleSpinBox->value(); }
+bool    PageSetupDialog::useSceneSeparator() { return mUi->useSceneSeparatorCheckBox->isChecked(); }
 
 void PageSetupDialog::marginChanged() {
     auto* edit = dynamic_cast<QDoubleSpinBox*>(sender());

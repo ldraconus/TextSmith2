@@ -184,17 +184,22 @@ QString EBookExporter::navPoints() {
 void EBookExporter::novelToBook() {
     TextEdit build;
     Main::ref().setupHtml(build);
+    auto& prefs = Main::ref().prefs();
     qlonglong currentId = -1;
+    bool firstScene = true;
     for (int i = 0; i < mItemIds.count(); ++i) {
         Item& item = mNovel.findItem(mItemIds[i]);
         if (item.hasTag(mChapterTag)) {
             if (currentId != -1) mBook[currentId] = convertHTML(build.toHtml());
             currentId = item.id();
             build.setHtml(item.html());
+            firstScene = true;
         } else if (currentId != -1) {
-            if (item.hasTag(mCoverTag) && item.hasTag(mSceneTag)) {
+            if (item.hasTag(mCoverTag) || item.hasTag(mSceneTag)) {
                 auto cursor = QTextCursor(build.document());
                 cursor.movePosition(QTextCursor::End);
+                if (firstScene) firstScene = false;
+                else if (prefs.useSeparator()) cursor.insertHtml("<br/><center>" + prefs.separator() + "</center><br/>");
                 cursor.insertHtml(item.html());
             }
         }

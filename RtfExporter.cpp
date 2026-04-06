@@ -51,6 +51,8 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
 
     if (!cover.isEmpty()) handleImage(cover);
 
+    bool firstScene = true;
+    auto& prefs = Main::ref().prefs();
     for (auto& id: mItemIds) {
         Item& item = mNovel.findItem(id);
         if (!item.hasTag(mChapterTag) &&
@@ -58,11 +60,17 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
             !item.hasTag(mCoverTag)) continue;
         if (item.hasTag(mCoverTag) || item.hasTag(mChapterTag)) {
             if (!first) rtf += "  \\page\n";
+            firstScene = true;
         }
         first = false;
 
         QTextDocument doc;
         doc.setHtml(item.html());
+
+        if (item.hasTag(mSceneTag)) {
+            if (firstScene) firstScene = false;
+            else if (prefs.useSeparator()) rtf += "  \\pard\\fi" + QString::number(indent) + "\\qc " + prefs.separator() + "\n  \\par\n";
+        }
 
         for (auto it = doc.begin(); it != doc.end(); it = it.next()) {
             QTextBlock block = it;

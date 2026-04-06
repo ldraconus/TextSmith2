@@ -36,7 +36,9 @@ public:
     double       leftMargin();
     List<double> margins();
     double       rightMargin();
+    QString      sceneSeparator();
     double       topMargin();
+    bool         useSceneSeparator();
 
 protected:
     bool event(QEvent *e);

@@ -116,10 +116,17 @@ QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString
     StringList sceneTags = tag[Scene].trimmed().split(",");
     StringList coverTags = tag[Cover].trimmed().split(",");
     bool canSeparate = false;
+    bool firstScene = !canSeparate;
+    auto& prefs = Main::ref().prefs();
     for (auto& id: ids) {
         Item& item = novel.findItem(id);
-        if (item.hasTag(chapterTags) && canSeparate) html += "<hr>\n";
+        if (item.hasTag(chapterTags)) {
+            if (canSeparate) html += "<hr>\n";
+            else firstScene = true;
+        }
         if (item.hasTag(chapterTags) || item.hasTag(sceneTags) || item.hasTag(coverTags)) {
+            if (firstScene) firstScene = false;
+            else if (!canSeparate && prefs.useSeparator()) html += "<br><center>" + prefs.separator() + "</center><br>";
             html += "\n" + addParagraphs(item.html());
             canSeparate = true;
         }

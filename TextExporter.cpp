@@ -38,18 +38,32 @@ bool TextExporter::convert() {
     QString text;
     int line = 0;
     bool firstLineEver = true;
-    StringList chapterTags { Main::ref().prefs().chapterTag().split(Preferences::sep) };
-    StringList coverTags { Main::ref().prefs().coverTag().split(Preferences::sep) };
-    StringList sceneTags { Main::ref().prefs().sceneTag().split(Preferences::sep) };
+    auto& prefs = Main::ref().prefs();
+    StringList chapterTags { prefs.chapterTag().split(Preferences::sep) };
+    StringList coverTags   { prefs.coverTag().split(Preferences::sep) };
+    StringList sceneTags   { prefs.sceneTag().split(Preferences::sep) };
+    bool useSep = prefs.useSeparator();
+    QString sep = prefs.separator();
+    bool firstScene = true;
     for (auto&& id: mItemIds) {
         Item& item = Main::ref().novel().findItem(id);
         StringList paragraphs { item.doc()->toPlainText().split("\n") };
         if (item.hasTag(coverTags)) continue;
-        if (item.hasTag(Main::ref().prefs().chapterTag())) {
+        if (item.hasTag(chapterTags)) {
             if (firstLineEver) firstLineEver = false;
             else {
                 text += QChar(12);
                 line = 0;
+            }
+            firstScene = true;
+        }
+        if (item.hasTag(sceneTags)) {
+            if (firstScene) firstScene = false;
+            if (useSep) {
+                int leading = (charactersPerLine - sep.length()) / 2;
+                text += "\n";
+                for (int i = 0; i < leading; ++i) text += " ";
+                text += sep + "\n";
             }
         }
         for (const auto& paragraph: paragraphs) {

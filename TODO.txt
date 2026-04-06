@@ -1,6 +1,4 @@
-[/] Add optional scene separator to
-    - printing
-    [/] exporting
+[ ] Add bold/italic/underline support to text export
 [/] Write the Documentation
     - Intro
     - Part I
@@ -21,6 +19,10 @@
     [ ] Update documentation
 [ ] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [/] Write scripts
+[X] Add optional scene separator to
+    - printing
+    - page setup
+    - exporting
 [X] Lost cursor repositioning on item switch and after open. Probably when Document switching started.
 [X] And broke cut/copy ... grabs whole document, not what's highlighted.
 [X] Can't cut/copy an image ... internal -- find & add to clipboard & into html
