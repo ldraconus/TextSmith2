@@ -5,11 +5,11 @@
 #include <QTextDocument>
 
 #include "5th.h"
+#include "List.h"
+#include "Map.h"
+#include "StringList.h"
 
 #include <Json5.h>
-#include <List.h>
-#include <Map.h>
-#include <StringList.h>
 
 class TreeNode {
 public:
@@ -52,18 +52,17 @@ public:
     virtual void clear();
     virtual void init();
 
-    auto* doc() const        { return mDoc; }
-    auto  html() const       { return mDoc->toHtml(); }
-    auto  id() const         { return mID; }
-    auto  name() const       { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
-    auto  position() const   { return mPosition; }
-    void  setId(qlonglong i) { mID = i++; if (i > sNextID) sNextID = i; }
-
-    void addTag(const QString& tag)       { if (!hasTag(tag)) { mTags.append(tag); } }
-    void removeTag(const QString& tag)    { if (hasTag(tag)) { mTags.removeAll(tag, Qt::CaseInsensitive); } }
-    bool hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
-    void setTags(const StringList& tags)  { mTags = tags; }
-    StringList tags() const               { return mTags; }
+    auto*      doc() const                      { return mDoc; }
+    auto       html() const                     { return mDoc->toHtml(); }
+    auto       id() const                       { return mID; }
+    auto       name() const                     { return mName.isEmpty() ? "<unnamed_#" + QString::number(mID) + ">" : mName; }
+    auto       position() const                 { return mPosition; }
+    void       setId(qlonglong i)               { mID = i++; if (i > sNextID) sNextID = i; }
+    void       addTag(const QString& tag)       { if (!hasTag(tag)) { mTags.append(tag); } }
+    void       removeTag(const QString& tag)    { if (hasTag(tag)) { mTags.removeAll(tag, Qt::CaseInsensitive); } }
+    bool       hasTag(const QString& tag) const { return mTags.contains(tag, Qt::CaseInsensitive); }
+    void       setTags(const StringList& tags)  { mTags = tags; }
+    StringList tags() const                     { return mTags; }
 
     bool isNull() const  { return mName.isEmpty() && mDoc == nullptr; }
 
@@ -221,7 +220,6 @@ private:
 
     bool fromObject(Json5Object& obj);
     bool fromV1Object(Json5Object& obj);
-    void saveImages(Json5Object& obj);
 
     static Novel* sNovel;
 };

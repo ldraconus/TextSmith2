@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include <QObject>
 #include <QDebug>
 #include <QMap>
 #include <QString>

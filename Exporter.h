@@ -1,8 +1,7 @@
 #pragma once
 
+#include <QRegularExpression>
 #include <QObject>
-
-#include <List.h>
 
 #include "Novel.h"
 
@@ -84,8 +83,8 @@ public:
         for (int&& id: mItemIds) {
             Item& item = mNovel.findItem(id);
 
-            for (const QString& tag: item.tags()) {
-                int idx = tag.indexOf(':');
+            for (auto&& tag: item.tags()) {
+                int idx = tag.indexOf(":");
                 if (idx <= 0) continue;
 
                 QString key = tag.left(idx).trimmed().toLower();

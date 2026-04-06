@@ -929,7 +929,7 @@ void Main::loadFile(const QString& filename) {
             mUi->textEdit->addInternalImage(url, img, false);
         }
         Json5Array words = Item::hasArr(obj, Novel::Dictionary);
-        for (auto i = 0; i < words.size(); ++i) {
+        for (auto i = 0; i < words.count(); ++i) {
             QString word = Item::hasStr(words, i, "");
             if (!word.isEmpty()) mSpelling.addWord(word);
         }
@@ -1244,7 +1244,6 @@ void Main::doSpellcheckNext() {
             if (!button) break;
             repaint();
             mSpellWidget->leftPushButton->setDisabled(true);
-            auto geom = button->geometry();
             auto* scrollBar = dynamic_cast<QScrollBar*>(mSpellWidget->scrollArea->horizontalScrollBar());
             mSpellWidget->rightPushButton->setEnabled(scrollBar->value() < scrollBar->maximum());
             return;
@@ -2137,7 +2136,7 @@ Main::Main(QApplication* app, QWidget* parent)
     sMain = this;
     mUi->setupUi(this);
 
-    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme scheme) {
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme) {
         updateFromPrefs();
     });
 
@@ -2665,7 +2664,6 @@ void Main::setupScripting() {
         auto& user = vm->user();
         auto s = user.pop();
         QString name;
-        QShortcut* shortcut { nullptr };
         fifth::exe body = s.asCallable();
         s = user.pop();
         if (s.isNum()) {
@@ -2702,7 +2700,7 @@ void Main::setupScripting() {
         }
         vm->user().push(filename);
     });
-    mVm->addBuiltin("writefile", [this](fifth::vm* vm) {
+    mVm->addBuiltin("writefile", [](fifth::vm* vm) {
         auto& user = vm->user();
         QString filename = user.pop().asString().str();
         int result = 0;
@@ -2723,23 +2721,23 @@ void Main::setupScripting() {
         }
         user.push(result);
     });
-    mVm->addBuiltin("message", [this](fifth::vm* vm) { mMsg.Statement(mVm->user().pop().asString().str()); }); // msg -u->
+    mVm->addBuiltin("message", [this](fifth::vm* vm) { mMsg.Statement(vm->user().pop().asString().str()); }); // msg -u->
     mVm->addBuiltin("yesno", [this](fifth::vm* vm) { // question -u-> 1|0
-        auto& user = mVm->user();
+        auto& user = vm->user();
         mMsg.YesNo(user.pop().asString().str(),
                    [&user]() { user.push(1); },
                    [&user]() { user.push(0); },
                    "Yes, or No?");
     });
     mVm->addBuiltin("okcancel", [this](fifth::vm* vm) { // question -u-> 1|0
-        auto& user = mVm->user();
+        auto& user = vm->user();
         mMsg.OKCancel(user.pop().asString().str(),
                      [&user]() { user.push(1); },
                      [&user]() { user.push(0); },
                      "Okay, or Cancel?");
     });
     mVm->addBuiltin("yesnocancel", [this](fifth::vm* vm) { // question -u-> 1|0|-1
-        auto& user = mVm->user();
+        auto& user = vm->user();
         mMsg.YesNoCancel(user.pop().asString().str(),
                         [&user]() { user.push(1); },
                         [&user]() { user.push(0); },
@@ -2748,7 +2746,7 @@ void Main::setupScripting() {
     });
 
     // List words (more)
-    mVm->addBuiltin("reverse", [this](fifth::vm* vm) {
+    mVm->addBuiltin("reverse", [](fifth::vm* vm) {
         auto& user = vm->user();
         QList<fifth::value> contents;
         auto num = user.pop().asNumber();
@@ -2766,7 +2764,7 @@ void Main::setupScripting() {
         for (auto i = paragraphs.count(); i != 0; --i) user.push(paragraphs[i - 1]);
         user.push(paragraphs.count());
     });
-    mVm->addBuiltin("para2words", [this](fifth::vm* vm) { // para -u-> word[n] ... word[1] n
+    mVm->addBuiltin("para2words", [](fifth::vm* vm) { // para -u-> word[n] ... word[1] n
         auto& user = vm->user();
         auto s = user.pop();
         auto paragraph = s.asString().str();
@@ -2774,21 +2772,21 @@ void Main::setupScripting() {
         for (auto i = words.count(); i != 0; --i) user.push(words[i - 1]);
         user.push(words.count());
     });
-    mVm->addBuiltin("tolower", [this](fifth::vm* vm){
+    mVm->addBuiltin("tolower", [](fifth::vm* vm){
         auto& user = vm->user();
         auto s = user.pop();
         auto str = s.asString().str();
         str = str.toLower();
         user.push(str);
     });
-    mVm->addBuiltin("toupper", [this](fifth::vm* vm){
+    mVm->addBuiltin("toupper", [](fifth::vm* vm){
         auto& user = vm->user();
         auto s = user.pop();
         auto str = s.asString().str();
         str = str.toUpper();
         user.push(str);
     });
-    mVm->addBuiltin("unpunct", [this](fifth::vm* vm){
+    mVm->addBuiltin("unpunct", [](fifth::vm* vm){
         static QRegularExpression punctuation(R"([.,!?;:"'()\[\]{}\-_/\\@#%&*+=<>~`^|])");
         auto& user = vm->user();
         auto s = user.pop();
@@ -2796,7 +2794,7 @@ void Main::setupScripting() {
         str.remove(punctuation);
         user.push(str);
     });
-    mVm->addBuiltin("split", [this](fifth::vm* vm) { // string splitBy -u-> part[n] ... part[1] n
+    mVm->addBuiltin("split", [](fifth::vm* vm) { // string splitBy -u-> part[n] ... part[1] n
         auto& user = vm->user();
         auto s2 = user.pop();
         auto s1 = user.pop();
@@ -2810,7 +2808,7 @@ void Main::setupScripting() {
         }
         user.push(parts.count());
     });
-    mVm->addBuiltin("find", [this](fifth::vm* vm) { //  string target -u-> position of target in  string
+    mVm->addBuiltin("find", [](fifth::vm* vm) { //  string target -u-> position of target in  string
         auto& user = vm->user();
         auto t = user.pop();
         auto s = user.pop();
@@ -2818,7 +2816,7 @@ void Main::setupScripting() {
         QString target = t.asString().str();
         user.push(string.indexOf(target));
     });
-    mVm->addBuiltin("replace", [this](fifth::vm* vm) { //  string target with -u-> new string
+    mVm->addBuiltin("replace", [](fifth::vm* vm) { //  string target with -u-> new string
         auto& user = vm->user();
         auto w = user.pop();
         auto t = user.pop();
