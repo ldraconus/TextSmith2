@@ -1,117 +1,201 @@
-QT       += core gui texttospeech
+QT += widgets core gui texttospeech printsupport
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
+CONFIG += c++23
 
-CONFIG += \
-    c++23
-
-INCLUDEPATH += \
-    E:\QtSource\include \
-    E:\QtSource\libzip\lib \
-    E:\QtSource\libzip\build
-
-LIBS += -LE:\QtSource\libzip\build\lib -lzip -lz
-
-RC_FILE = appicon.rc
-
-appicon.rc.depends = TextSmith2.ico
-
+# You can make your code fail to compile if it uses deprecated APIs.
+# In order to do so, uncomment the following line.
 DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+unix {
+    INCLUDEPATH += \
+        /home/chris/src/include \
+        /home/chris/src/TextSmith2 \
+        /home/chris/src/libzip/lib \
+        /home/chris/src/libzip/build
+}
+win32 {
+    INCLUDEPATH += \
+        "E:/QtSource/include" \
+        "E:/QtSource/libzip/build" \
+        "E:/QtSource/libzip/lib" \
+        "E:/QtSource/vcpkg/packages/hunspell_x64-windows/include"
+}
+
+LIBS += -L$path) -l($lib)
+unix {
+    LIBS += \
+        -L/usr/local/lib/ -lz \
+        -L/usr/local/lib/ -lzip \
+        -L/usr/local/lib/ -lhunspell-1.7 \
+        -L/usr/local/lib/ -lparsers
+}
+win32 {
+    LIBS += \
+        -LE:/QtSource/libzip/build/lib/ -lzip \
+        -LE:/QtSource/zlib-1.3.1/build/ -lzlib \
+        -LE:/QtSource/vcpkg/installed/x64-windows/lib/ -lhunspell-1.7
+}
+
 SOURCES += \
+    5th.cpp \
+    AboutDialog.cpp \
     EBookExporter.cpp \
+    EasySpelling.cpp \
+    EpubBuilder.cpp \
     ExportDialog.cpp \
     FullScreenDialog.cpp \
+    HelpDialog.cpp \
     HtmlExporter.cpp \
     ItemDescriptionDialog.cpp \
     Main.cpp \
     MarkdownExporter.cpp \
     Novel.cpp \
+    PageSetupDialog.cpp \
     PdfExporter.cpp \
     Preferences.cpp \
     PreferencesDialog.cpp \
+    PrintDialog.cpp \
+    Printer.cpp \
+    RtfExporter.cpp \
+    ScriptDialog.cpp \
     SearchReplace.cpp \
+    SoundPool.cpp \
     Speech.cpp \
     Start.cpp \
     TextEdit.cpp \
-    entity.c \
-    html2md-main/src/html2md.cpp \
-    html2md-main/src/table.cpp
+    TextExporter.cpp \
+    dict.cpp \
+    mainwindow.cpp
 
 HEADERS += \
+    5th.h \
+    AboutDialog.h \
     EBookExporter.h \
+    EasySpelling.h \
+    EpubBuilder.h \
     ExportDialog.h \
     Exporter.h \
     FullScreenDialog.h \
+    HelpDialog.h \
     HtmlExporter.h \
     ItemDescriptionDialog.h \
     Main.h \
     MarkdownExporter.h \
     Novel.h \
+    PageSetupDialog.h \
     PdfExporter.h \
     Preferences.h \
     PreferencesDialog.h \
+    PrintDialog.h \
     Printer.h \
+    RtfExporter.h \
+    ScriptDialog.h \
     SearchReplace.h \
+    SoundPool.h \
     Speech.h \
     TextEdit.h \
+    TextExporter.h \
     TreeWidget.h \
     Words.h \
-    entity.h \
-    html2md-main/include/html2md.h \
-    html2md-main/include/table.h
+    mainwindow.h
 
 FORMS += \
+    AboutDialog.ui \
     ExportDialog.ui \
     FullScreenDialog.ui \
+    HelpDialog.ui \
     ItemDescriptionDialog.ui \
     Main.ui \
+    PageSetupDialog.ui \
     PreferencesDialog.ui \
-    dialog.ui
+    PrintDialog.ui \
+    ScriptDialog.ui \
+    SpeechDialog.ui \
+    SpellCheckDialog.ui \
+    dialog.ui \
+    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-Installer.target = Installer
-Installer.depends = \
-    release
-Installer.commands = \
-    ../../installer.sh
+LIBS += -L/path/to/library -lmylibrary
 
-QMAKE_EXTRA_TARGETS += Installer
+# Add header path
+INCLUDEPATH += /path/to/library/include
 
 DISTFILES += \
-    .clangd \
+    .gitignore \
     Background.png \
     CMakeLists.txt \
     Center.ico \
     Center.png \
+    CenterCk.ico \
     Closed.png \
     DarkClosed.png \
     DarkOpen.png \
+    Documentation.html \
+    Documentation.novel \
+    Documentation.pdf \
+    Gitub_Build.yaml.txt \
     Installer.ico \
+    InstallerTag.png \
+    KeyWhack.mp3 \
+    KeyWhack.wav \
+    LICENSE \
+    LtCenter.ico \
+    LtCenterCk.ico \
+    Ltbold.ico \
+    LtboldCk.ico \
+    LtdecreaseIndent.ico \
+    LtdeleteItem.ico \
+    LtfullJustify.ico \
+    LtfullJustifyCk.ico \
+    LtincreseIndent.ico \
+    Ltitalic.ico \
+    LtitalicCk.ico \
+    Ltleftjustify.ico \
+    LtleftjustifyCk.ico \
+    LtmoveItemDown.ico \
+    LtmoveItemOut.ico \
+    LtmoveItemUp.ico \
+    LtnewItem.ico \
+    LtrightJustify.ico \
+    LtrightJustifyCk.ico \
+    Ltunderline.ico \
+    LtunderlineCk.ico \
+    MarginDing.mp3 \
     Open.png \
+    ReturnClunk.mp3 \
+    ReturnRoll.mp3 \
+    SpaceThunk.mp3 \
     TODO.txt \
     TextSmith2.ico \
     TextSmithIcon.png \
     appicon.rc \
+    appicon.s \
     bold.ico \
     bold.png \
+    boldCk.ico \
     decreaseIndent.ico \
     decreaseIndent.png \
     deleteItem.ico \
     deleteItem.png \
     fullJustify.ico \
     fullJustify.png \
+    fullJustifyCk.ico \
     increseIndent.ico \
     increseIndent.png \
+    index.aff \
+    index.dic \
     installer.sh \
     italic.ico \
     italic.png \
+    italicCk.ico \
     leftjustify.ico \
     leftjustify.png \
+    leftjustifyCk.ico \
     moveItemDown.ico \
     moveItemDown.png \
     moveItemOut.ico \
@@ -122,8 +206,11 @@ DISTFILES += \
     newItem.png \
     rightJustify.ico \
     rightJustify.png \
+    rightJustifyCk.ico \
+    triangle-right.svg \
     underline.ico \
-    underline.png
+    underline.png \
+    underlineCk.ico
 
 RESOURCES += \
     gfx.qrc

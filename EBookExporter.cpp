@@ -184,9 +184,9 @@ QString EBookExporter::navPoints() {
 void EBookExporter::novelToBook() {
     TextEdit build;
     Main::ref().setupHtml(build);
-    auto& prefs = Main::ref().prefs();
     qlonglong currentId = -1;
     bool firstScene = true;
+    auto& prefs = Main::ref().prefs();
     for (int i = 0; i < mItemIds.count(); ++i) {
         Item& item = mNovel.findItem(mItemIds[i]);
         if (item.hasTag(mChapterTag)) {

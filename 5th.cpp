@@ -83,13 +83,13 @@ DBG_MSG(QString("----<User Stack>----------------------------"));
   }
 
   void vm::addBuiltin(const str &n, const function &f) {
-    mBuiltin[n] = dynamic_cast<exe>(new builtin(f));
-    mReverse[mBuiltin[n]] = n;
+    auto x = mBuiltin[n] = dynamic_cast<exe>(new builtin(f));
+    mReverse[x] = n;
   }
 
   void vm::addBuiltin(const str& n, exe e) {
-    mBuiltin[n] = e;
-    mReverse[mBuiltin[n]] = n;
+    auto x = mBuiltin[n] = e;
+    mReverse[x] = n;
   }
 
   void vm::addImmediate(const str &n, const function &f){

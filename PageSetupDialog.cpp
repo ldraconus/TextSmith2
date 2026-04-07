@@ -70,15 +70,16 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
 
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
-    mUi->useSceneSeparatorCheckBox->setChecked(mPrefs->useSeparator());
-    mUi->sceneSeparatorLineEdit->setText(mPrefs->separator());
-    connect(mUi->useSceneSeparatorCheckBox, &QCheckBox::checkStateChanged, this, [this] {
-        mUi->sceneSeparatorLineEdit->setEnabled(mUi->useSceneSeparatorCheckBox->isChecked());
-        mPrefs->setUseSeparator(mUi->useSceneSeparatorCheckBox->isChecked());
+    mUi->useSeparatorCheckBox->setChecked(mPrefs->useSeparator());
+    connect(mUi->useSeparatorCheckBox, &QCheckBox::checkStateChanged, this, [this]() {
+        mPrefs->setUseSeparator(mUi->useSeparatorCheckBox->isChecked());
+        mUi->separatorLineEdit->setEnabled(mPrefs->useSeparator());
         updatePreview();
     });
-    connect(mUi->sceneSeparatorLineEdit, &QLineEdit::textChanged, this, [this] {
-        mPrefs->setSeparator(mUi->sceneSeparatorLineEdit->text());
+    mUi->separatorLineEdit->setText(mPrefs->separator());
+    mUi->separatorLineEdit->setEnabled(mPrefs->useSeparator());
+    connect(mUi->separatorLineEdit, &QLineEdit::textEdited, this, [this]() {
+        mPrefs->setSeparator(mUi->separatorLineEdit->text());
         updatePreview();
     });
 

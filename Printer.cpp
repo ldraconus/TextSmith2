@@ -209,6 +209,7 @@ bool Printer::outputNovel(List<qlonglong> ids,
     font.setPixelSize(size);
     QFontMetrics metrics(font);
     mDoc.setDefaultFont(font);
+    bool firstScene = true;
     for (const auto& id: ids) {
         mId = id;
         Item& item = Main::ref().novel().findItem(id);
@@ -220,17 +221,18 @@ bool Printer::outputNovel(List<qlonglong> ids,
                 at = margins.top();
                 startingPage = true;
             }
+            firstScene = true;
         }
         auto paragraphs = createParagraphs(item, scaleX, scaleY, lineWidth, pageHeight);
         printParagraphs(painter, pageSize, finishPage, margins, at, startingPage, paragraphs, item.hasTag(coverTags) && mPageNo == 1);
         if (item.hasTag(sceneTags)) {
-            int baseLine = metrics.descent();
-            int lineHeight = metrics.lineSpacing();
-            qreal bottom = pageSize.height() - margins.bottom();
-            QString text = mPrefs->separator();
-            printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
-            printLine(painter, pageSize, finishPage, margins, font, at, text, startingPage);
-            printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
+            if (firstScene) firstScene = false;
+            else if (mPrefs->useSeparator()) {
+                QString text = mPrefs->separator();
+                printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
+                printLine(painter, pageSize, finishPage, margins, font, at, text, startingPage);
+                printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
+            }
         }
         if (item.hasTag(coverTags) && startingPage && mPageNo == 1) {
             ++mPageNo;

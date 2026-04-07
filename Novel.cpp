@@ -12,8 +12,8 @@ Map<QString, QImage> Item::sImages;
 
 Item::Item(bool noId)
     : mCount(0)
-    , mID(noId ? sNextID : sNextID++)
-    , mDoc(new QTextDocument()) {
+    , mDoc(new QTextDocument())
+    , mID(noId ? sNextID : sNextID++) {
 }
 
 Item::Item(Json5Object& obj)
@@ -826,10 +826,6 @@ bool Novel::fromV1Object(Json5Object& obj) {
     mBranches = tree;
     countAll();
     return true;
-}
-
-void Novel::saveImages(Json5Object& obj) {
-
 }
 
 TreeNode::TreeNode(Json5Object& obj) {

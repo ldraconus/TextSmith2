@@ -239,19 +239,23 @@
                 <number>0</number>
                </property>
                <item>
-                <widget class="QCheckBox" name="useSceneSeparatorCheckBox">
+                <widget class="QCheckBox" name="useSeparatorCheckBox">
                  <property name="text">
                   <string/>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="sceneSeparatorLineEdit"/>
+                <widget class="QLineEdit" name="separatorLineEdit">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
             </item>
-            <item row="5" column="0">
+            <item row="4" column="0">
              <widget class="QLabel" name="label">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -270,7 +274,7 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
+            <item row="4" column="1">
              <widget class="QFrame" name="headerFrame">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -387,7 +391,7 @@
               </layout>
              </widget>
             </item>
-            <item row="6" column="0">
+            <item row="5" column="0">
              <widget class="QLabel" name="label_2">
               <property name="minimumSize">
                <size>
@@ -400,7 +404,7 @@
               </property>
              </widget>
             </item>
-            <item row="6" column="1">
+            <item row="5" column="1">
              <widget class="QFrame" name="footerFrame">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -514,14 +518,14 @@
               </layout>
              </widget>
             </item>
-            <item row="7" column="0">
+            <item row="6" column="0">
              <widget class="QLabel" name="label_3">
               <property name="text">
                <string>Units:</string>
               </property>
              </widget>
             </item>
-            <item row="7" column="1">
+            <item row="6" column="1">
              <widget class="QComboBox" name="unitsComboBox">
               <item>
                <property name="text">
@@ -550,7 +554,7 @@
               </item>
              </widget>
             </item>
-            <item row="8" column="0">
+            <item row="7" column="0">
              <widget class="QLabel" name="label_7">
               <property name="minimumSize">
                <size>
@@ -563,7 +567,7 @@
               </property>
              </widget>
             </item>
-            <item row="8" column="1">
+            <item row="7" column="1">
              <widget class="QFrame" name="marginFrame">
               <property name="frameShape">
                <enum>QFrame::Shape::NoFrame</enum>
