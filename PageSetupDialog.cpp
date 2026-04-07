@@ -70,6 +70,19 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
 
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
+    mUi->useSeparatorCheckBox->setChecked(mPrefs->useSeparator());
+    connect(mUi->useSeparatorCheckBox, &QCheckBox::checkStateChanged, this, [this]() {
+        mPrefs->setUseSeparator(mUi->useSeparatorCheckBox->isChecked());
+        mUi->separatorLineEdit->setEnabled(mPrefs->useSeparator());
+        updatePreview();
+    });
+    mUi->separatorLineEdit->setText(mPrefs->separator());
+    mUi->separatorLineEdit->setEnabled(mPrefs->useSeparator());
+    connect(mUi->separatorLineEdit, &QLineEdit::textEdited, this, [this]() {
+        mPrefs->setSeparator(mUi->separatorLineEdit->text());
+        updatePreview();
+    });
+
     QString header = mPrefs->header();
     StringList lcr { header.split(Preferences::sep, Qt::KeepEmptyParts) };
     if (lcr.size() == 3) {
