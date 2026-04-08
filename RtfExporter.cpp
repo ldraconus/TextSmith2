@@ -83,7 +83,7 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
             auto blockFmt = block.blockFormat();
             rtf += "  \\pard\\fi" + QString::number(indent);
             switch (blockFmt.alignment()) {
-            case Qt::AlignCenter:  rtf += "\\qc "; break;
+            case Qt::AlignHCenter: rtf += "\\qc "; break;
             case Qt::AlignRight:   rtf += "\\qr "; break;
             case Qt::AlignJustify: rtf += "\\qj "; break;
             default:               rtf += "\\ql "; break;
