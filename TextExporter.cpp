@@ -6,6 +6,10 @@
 #include "Main.h"
 
 bool TextExporter::convert() {
+    static constexpr auto PageHeight = 11.0;
+    static constexpr auto PointSize  = 72;
+    static constexpr auto PageWidth  = 8.5;
+
     if (mFilename.isEmpty()) return false;
 
     const auto& defaults = collectMetadataDefaults();
@@ -15,20 +19,19 @@ bool TextExporter::convert() {
     QString ext =  "." + (info.completeSuffix().isEmpty() ? Extension() : info.completeSuffix());
 
     auto pointMargins = Main::ref().prefs().margins(Preferences::Units::Points);
-    QSize pageSize(8.5 * 72, 11 * 72);
+    QSize pageSize(PageWidth * PointSize, PageHeight * PointSize);
     int pointWidth = pageSize.width() - pointMargins[Preferences::Left] - pointMargins[Preferences::Right];
     int pointHeight = pageSize.height() - pointMargins[Preferences::Top] - pointMargins[Preferences::Bottom];
 
     QFont courier("Courier", 12);
     QFontMetrics metrics(courier);
 
-    auto charWidth = metrics.averageCharWidth();
-    qreal dpiX = 1;
+    QChar space = QChar::Space;
+    auto spaceWidth = metrics.horizontalAdvance(space);
     int fontHeight = 12;
-    int fontWidth = charWidth / dpiX;
 
     int linesPerPage = pointHeight / fontHeight;
-    int charactersPerLine = pointWidth / fontWidth;
+    int lineWidth = pointWidth;
 
     QString dir = path.isEmpty() ? Main::ref().docDir() : path;
     Main::ref().setDocDir(dir);
@@ -52,7 +55,7 @@ bool TextExporter::convert() {
         if (item.hasTag(chapterTags)) {
             if (firstLineEver) firstLineEver = false;
             else {
-                document += QChar(12);
+                document += QChar::FormFeed;
                 line = 0;
             }
             firstScene = true;
@@ -60,10 +63,10 @@ bool TextExporter::convert() {
         if (item.hasTag(sceneTags)) {
             if (firstScene) firstScene = false;
             if (useSep) {
-                int leading = (charactersPerLine - sep.length()) / 2;
-                document += "\n";
-                for (int i = 0; i < leading; ++i) document += " ";
-                document += sep + "\n";
+                int leading = (lineWidth - metrics.horizontalAdvance(sep)) / (2 * spaceWidth);
+                document += QChar::LineFeed;
+                for (int i = 0; i < leading; ++i) document += space;
+                document += sep + QChar::LineFeed;
             }
         }
 
@@ -72,8 +75,8 @@ bool TextExporter::convert() {
             StringList lines;
             QTextBlock block = it;
             auto blockFmt = block.blockFormat();
-            int width = 4;
-            QString text = "    ";
+            QString text = QString(&space, 4);
+            int width = metrics.horizontalAdvance(text);
             for (auto it2 = block.begin(); it2 != block.end(); it2++) {
                 bool firstWord = true;
                 QTextFragment frag = it2.fragment();
@@ -89,19 +92,23 @@ bool TextExporter::convert() {
 
                 StringList words { frag.text().split(" ") };
                 for (const auto& word: words) {
-                    if (word.length() + 1 + width >= charactersPerLine) {
+                    int wordLen = metrics.horizontalAdvance(word);
+                    if (wordLen + (firstWord ? 0 : spaceWidth) + width >= lineWidth) {
                         if (line == linesPerPage) {
-                            text += QChar(12);
+                            text += QChar::FormFeed;
                             line = 0;
                         }
                         lines.append(text);
                         text = word;
-                        width = word.length();
+                        width = wordLen;
                     } else {
                         if (firstWord) firstWord = false;
-                        else text += " ";
+                        else {
+                            text += space;
+                            width += spaceWidth;
+                        }
                         text += word;
-                        width += word.length();
+                        width += wordLen;
                     }
                 }
                 if (format.fontUnderline())              text += underline[1];
@@ -113,13 +120,13 @@ bool TextExporter::convert() {
             for (const auto& line: lines) {
                 int spaces = 0;
                 switch (blockFmt.alignment()) {
-                case Qt::AlignHCenter: spaces = (charactersPerLine - width) / 2; break;
-                case Qt::AlignRight:   spaces = charactersPerLine - width;       break;
+                case Qt::AlignHCenter: spaces = (lineWidth - metrics.horizontalAdvance(line)) / (2 * spaceWidth); break;
+                case Qt::AlignRight:   spaces = (lineWidth - metrics.horizontalAdvance(line)) / spaceWidth;       break;
                 case Qt::AlignJustify:
-                default:                                                         break;
+                default:                                                                                          break;
                 }
-                for (int i = 0; i < spaces; ++i) document += " ";
-                document += line + "\n";
+                for (int i = 0; i < spaces; ++i) document += space;
+                document += line + QChar::LineFeed;
             }
         }
     }
