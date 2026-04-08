@@ -226,9 +226,9 @@ void PageSetupDialog::justify(QTextEdit* edit, Qt::AlignmentFlag which) {
 double  PageSetupDialog::bottomMargin()      { return mUi->bottomMarginDoubleSpinBox->value(); }
 double  PageSetupDialog::leftMargin()        { return mUi->leftMarginDoubleSpinBox->value(); }
 double  PageSetupDialog::rightMargin()       { return mUi->rightMarginDoubleSpinBox->value(); }
-QString PageSetupDialog::sceneSeparator()    { return mUi->sceneSeparatorLineEdit->text(); }
+QString PageSetupDialog::sceneSeparator()    { return mUi->separatorLineEdit->text(); }
 double  PageSetupDialog::topMargin()         { return mUi->topMarginDoubleSpinBox->value(); }
-bool    PageSetupDialog::useSceneSeparator() { return mUi->useSceneSeparatorCheckBox->isChecked(); }
+bool    PageSetupDialog::useSceneSeparator() { return mUi->useSeparatorCheckBox->isChecked(); }
 
 void PageSetupDialog::marginChanged() {
     auto* edit = dynamic_cast<QDoubleSpinBox*>(sender());

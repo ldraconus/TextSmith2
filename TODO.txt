@@ -1,3 +1,4 @@
+[ ] Important! Put chapter/scene/cover on page setup as well. It's just another export, after all. Panic! when it didn't show whole novel...
 [ ] Add bold/italic/underline support to text export
 [/] Write the Documentation
     - Intro

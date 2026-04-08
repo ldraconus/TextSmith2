@@ -51,13 +51,8 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
 
     if (!cover.isEmpty()) handleImage(cover);
 
-<<<<<<< HEAD
-    bool firstScene = true;
-    auto& prefs = Main::ref().prefs();
-=======
     auto& prefs = Main::ref().prefs();
     bool firstScene = true;
->>>>>>> 0df4a006cd70922f84b1ef36831e53ceca28bf44
     for (auto& id: mItemIds) {
         Item& item = mNovel.findItem(id);
         if (!item.hasTag(mChapterTag) &&
@@ -66,8 +61,6 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
         if (item.hasTag(mCoverTag) || item.hasTag(mChapterTag)) {
             if (!first) rtf += "  \\page\n";
             firstScene = true;
-<<<<<<< HEAD
-=======
         } else if (item.hasTag(mSceneTag)) {
             if (firstScene) firstScene = false;
             else if (prefs.useSeparator()) {
@@ -75,7 +68,6 @@ QString RtfExporter::itemsToRtf(const QString& cover) {
                 rtf += "  \\pard\\fi" + QString::number(indent) + "\\qc " + prefs.separator() + "\n  \\par\n";
                 rtf += "  \\pard\\fi" + QString::number(indent) + "\n  \\par\n";
             }
->>>>>>> 0df4a006cd70922f84b1ef36831e53ceca28bf44
         }
         first = false;
 
