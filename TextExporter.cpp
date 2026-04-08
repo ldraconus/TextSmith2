@@ -120,10 +120,17 @@ bool TextExporter::convert() {
             for (const auto& line: lines) {
                 int spaces = 0;
                 switch (blockFmt.alignment()) {
+                case Qt::AlignVCenter:
+                case Qt::AlignCenter:
                 case Qt::AlignHCenter: spaces = (lineWidth - metrics.horizontalAdvance(line)) / (2 * spaceWidth); break;
                 case Qt::AlignRight:   spaces = (lineWidth - metrics.horizontalAdvance(line)) / spaceWidth;       break;
                 case Qt::AlignJustify:
-                default:                                                                                          break;
+                case Qt::AlignAbsolute:                                                                           break;
+                case Qt::AlignBaseline:
+                case Qt::AlignTop:
+                case Qt::AlignBottom:
+                case Qt::AlignHorizontal_Mask:
+                case Qt::AlignLeft:                                                                               break;
                 }
                 for (int i = 0; i < spaces; ++i) document += space;
                 document += line + QChar::LineFeed;

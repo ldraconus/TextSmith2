@@ -1,10 +1,9 @@
 [/] Paste is nroken in wierd always
     [/] You only get one paste. Not matter how many times you cut, only the first is always there.
     [ ] Paste from one part of the novel to another can look wierd (fon't off, lline spacing is off. leave and return to the item and it's fixed.
-[ ] Add the chpater/scene/cover tag in the exprt dialog to the page setup one. it's just another for of exporting
+[ ] Add the chpater/scene/cover tag in the export dialog to the page setup one. it's just another form of exporting and it not being there is confusing.
 [ ] consider moving the exports to a submenu uder the save as menu ... feels more natural
-[ ] Text export needs to have a font you can specify
-[/] Add bold/italic/underline support to text export
+[/] Text export needs to have a font you can specify
 [/] Write the Documentation
     - Intro
     - Part I
@@ -23,10 +22,10 @@
     [/] Export in html to source directory
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
-[%] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
 [/] Write scripts
-[/] TextExport now honors margins (in it's way) and bold/italic/underline. does not take into account space size, easy fix.
-[X] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally. (OBE)
+[X] TextExport now honors margins (in it's way) and bold/italic/underline. does not take into account space size, easy fix.
+[%] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
+[X] Add bold/italic/underline support to text export
 [X] Add optional scene separator to
     - printing
     - page setup
