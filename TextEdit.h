@@ -39,23 +39,13 @@ protected:
     void       dragEnterEvent(QDragEnterEvent* event) override;
     void       dropEvent(QDropEvent* event) override;
     QString    embedImagesAsBase64(const QString &html);
-    void       handleComposeSequence(QKeyEvent* key);
     void       insertFromMimeData(const QMimeData* source) override;
     void       keyPressEvent(QKeyEvent* key) override;
     void       resizeEvent(QResizeEvent* event) override;
 
 private:
-    enum ComposeState {
-        Idle,
-        GotApostrophe,    // For ú
-        GotCaret,          // For î
-        GotQuote
-    };
-
-    ComposeState       mComposeState { Idle };
     QSet<QUrl>         mExternalUrls;
     quint64            mIdBase =            0;
-    bool               mInComposeSequence { false };
     bool               mInserting =         false;
     int                mLastViewportWidth = -1;
     QMap<QUrl, QImage> mOriginals;

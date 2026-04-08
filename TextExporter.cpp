@@ -23,7 +23,7 @@ bool TextExporter::convert() {
     int pointWidth = pageSize.width() - pointMargins[Preferences::Left] - pointMargins[Preferences::Right];
     int pointHeight = pageSize.height() - pointMargins[Preferences::Top] - pointMargins[Preferences::Bottom];
 
-    QFont courier("Courier", 12);
+    QFont courier("Courier", 10);
     QFontMetrics metrics(courier);
 
     QChar space = QChar::Space;
@@ -75,7 +75,8 @@ bool TextExporter::convert() {
             StringList lines;
             QTextBlock block = it;
             auto blockFmt = block.blockFormat();
-            QString text = QString(&space, 4);
+            QString text;
+            for (auto i = 0; i < 4; ++i) text += space;
             int width = metrics.horizontalAdvance(text);
             for (auto it2 = block.begin(); it2 != block.end(); it2++) {
                 bool firstWord = true;
