@@ -461,16 +461,25 @@ void Main::doExport(const QString& name) {
     const auto ids = vectorOfIds(mUi->treeWidget->currentItem(),
                                  { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
     ExporterBase* exporter = factory(mNovel, ids);
+
+    exporter->setUseSceneSeparator(mPrefs.useSeparator());
+    exporter->setSceneSeparator(mPrefs.separator());
+
     ExportDialog dlg(exporter, this);
     if (dlg.exec() == QDialog::Rejected) return;
 
     mPrefs.setChapterTag(dlg.chapterTag());
     mPrefs.setCoverTag(dlg.coverTag());
     mPrefs.setSceneTag(dlg.sceneTag());
+    mPrefs.setUseSeparator(dlg.useSeparator());
+    mPrefs.setSeparator(dlg.separator());
 
     exporter->setChapterTag(dlg.chapterTag());
     exporter->setCoverTag(dlg.coverTag());
     exporter->setSceneTag(dlg.sceneTag());
+    exporter->setUseSceneSeparator(mPrefs.useSeparator());
+    exporter->setSceneSeparator(mPrefs.separator());
+
     exporter->setInternalImages(mUi->textEdit->internalImages());
     auto* rootItem = mUi->treeWidget->topLevelItem(0);
     const auto finalIds = vectorOfIds(rootItem, { mPrefs.chapterTag(), mPrefs.sceneTag(), mPrefs.coverTag() });
@@ -1144,20 +1153,14 @@ void Main::doSave() {
 
     if (mSaving.exchange(true)) return;
 
-    mapTree(mById, mUi->treeWidget->topLevelItem(0));
+    Map<qlonglong, bool> byId;
+    mapTree(byId, mUi->treeWidget->topLevelItem(0));
 
-    mCopy = mNovel;
-    mGeom = geometry();
     busy();
-    QThread* thread = QThread::create([this]() {
-        save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
-        mSaving = false;
-    });
-    connect(thread, &QThread::finished, this, [&, this]() {
-        ready();
-        thread->deleteLater();
-    });
-    thread->start();
+    save(mNovel, byId, mUi->textEdit->textCursor().position(), geometry());
+    mSaving = false;
+    ready();
+    setTitle();
 }
 
 bool Main::doSaveAs() {
@@ -1981,8 +1984,7 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
         mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
                 [this]() { doNothing(); },
                 "Something unexpected has happened");
-    }
-    else setTitle();
+    } else if (!noUi) setTitle();
 }
 
 TreeNode Main::saveTree(QTreeWidgetItem* node) {
