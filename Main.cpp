@@ -1144,8 +1144,22 @@ void Main::doSave() {
 
     if (mSaving.exchange(true)) return;
 
-//    mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
     Map<qlonglong, bool> byId;
+    mapTree(mById, mUi->treeWidget->topLevelItem(0));
+
+    mCopy = mNovel;
+    mGeom = geometry();
+    busy();
+    QThread* thread = QThread::create([this]() {
+        save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
+        mSaving = false;
+    });
+    connect(thread, &QThread::finished, thread, [this, &thread]() {
+        ready();
+        thread->deleteLater();
+    });
+    thread->start();
+
     mapTree(byId, mUi->treeWidget->topLevelItem(0));
     save(mNovel, byId, mUi->textEdit->textCursor().position(), geometry());
     mSaving = false;
@@ -2571,7 +2585,6 @@ void Main::setupConnections() {
 
     connect(&mTimer, &QTimer::timeout, this, [this]() {
                 if (mSaving.exchange(true)) return;
-                mNovel.setHtml(mCurrentNode, mUi->textEdit->toHtml());
                 mapTree(mById, mUi->treeWidget->topLevelItem(0));
                 mCopy = mNovel;
                 mGeom = geometry();

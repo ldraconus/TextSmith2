@@ -231,10 +231,6 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
         if (key->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
 
         return;
-    } else if (key->matches(QKeySequence::Paste)) {
-        const QMimeData* mimeData = QApplication::clipboard()->mimeData();
-        insertFromMimeData(mimeData);
-        return;
     }
 
     if (mSoundPool) {
