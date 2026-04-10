@@ -1144,7 +1144,6 @@ void Main::doSave() {
 
     if (mSaving.exchange(true)) return;
 
-    Map<qlonglong, bool> byId;
     mapTree(mById, mUi->treeWidget->topLevelItem(0));
 
     mCopy = mNovel;
@@ -1154,15 +1153,11 @@ void Main::doSave() {
         save(mCopy, mById, mUi->textEdit->textCursor().position(), mGeom, NoUi);
         mSaving = false;
     });
-    connect(thread, &QThread::finished, thread, [this, &thread]() {
+    connect(thread, &QThread::finished, this, [&, this]() {
         ready();
         thread->deleteLater();
     });
     thread->start();
-
-    mapTree(byId, mUi->treeWidget->topLevelItem(0));
-    save(mNovel, byId, mUi->textEdit->textCursor().position(), geometry());
-    mSaving = false;
 }
 
 bool Main::doSaveAs() {
