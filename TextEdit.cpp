@@ -212,26 +212,31 @@ QString TextEdit::embedImagesAsBase64(const QString &html) {
 }
 
 void TextEdit::keyPressEvent(QKeyEvent* key) {
-    if (key->matches(QKeySequence::Copy) ||
-        key->matches(QKeySequence::Cut)) {
-        QTextCursor cursor = textCursor();
-        QTextDocumentFragment fragment = cursor.selection();
-        QString html = fragment.toHtml();
-        QString text = fragment.toPlainText();
-        QString embedded = embedImagesAsBase64(html);
-        QByteArray json = toJson(cursor).toJson().toBase64();
-
-        QMimeData* mimeData = new QMimeData();
-        mimeData->setHtml(embedded);
-        mimeData->setText(text);;
-        mimeData->setData(TextSmith2MimeData, json);
-
-        QApplication::clipboard()->setMimeData(mimeData);
-
-        if (key->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
-
-        return;
-    }
+//    if (key->matches(QKeySequence::Copy) ||
+//        key->matches(QKeySequence::Cut)) {
+//        QTextCursor cursor = textCursor();
+//        QTextDocumentFragment fragment = cursor.selection();
+//        QString html = fragment.toHtml();
+//        QString text = fragment.toPlainText();
+//        QString embedded = embedImagesAsBase64(html);
+//        QByteArray json = toJson(cursor).toJson().toBase64();
+//
+//        QMimeData* mimeData = new QMimeData();
+//        mimeData->setHtml(embedded);
+//        mimeData->setText(text);;
+//        mimeData->setData(TextSmith2MimeData, json);
+//
+//        QApplication::clipboard()->setMimeData(mimeData);
+//
+//        if (key->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
+//
+//        return;
+//    } else if (key->matches(QKeySequence::Paste)) {
+//        QClipboard* clipboard = QApplication::clipboard();
+//        auto& mimeData = *clipboard->mimeData();
+//        this->canInsertFromMimeData(&mimeData);
+//        return;
+//    }
 
     if (mSoundPool) {
         switch (key->key()) {
@@ -646,7 +651,7 @@ QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
             } else {
                 QString text = frag.text();
                 if (frag.contains(endPos)) text = text.left(endPos - frag.position());
-                if (frag.contains(pos)) text = text.mid(frag.position() - pos);
+                if (frag.contains(pos)) text = text.mid(pos - frag.position());
                 frgmnt[Text] = text;
                 toTextCharFormat(frgmnt, frag.charFormat());
             }
