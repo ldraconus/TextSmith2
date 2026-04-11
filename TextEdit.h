@@ -26,6 +26,7 @@ public:
 
     // Serialization: internal images only
     void       addInternalImage(const QUrl& url, const QImage& image, bool add = true);
+    bool       canInsertFromMimeData(const QMimeData *source) const override;
     void       clearInternalImages();
     void       registerInternalImages();
     void       removeInternalImage(const QUrl& url);
@@ -34,7 +35,6 @@ public:
     void       setWrapMargin();
 
 protected:
-    bool       canInsertFromMimeData(const QMimeData *source) const override;
     QMimeData* createMimeDataFromSelection() const override;
     void       dragEnterEvent(QDragEnterEvent* event) override;
     void       dropEvent(QDropEvent* event) override;

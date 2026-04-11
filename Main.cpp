@@ -284,7 +284,14 @@ void Main::doAboutToShowEditMenu() {
         mUi->actionRedo->setEnabled(mUi->textEdit->document()->isRedoAvailable());
         mUi->actionCopy->setEnabled(mUi->textEdit->textCursor().hasSelection());
         mUi->actionCut->setEnabled(mUi->textEdit->textCursor().hasSelection());
-        mUi->actionPaste->setEnabled(mUi->textEdit->canPaste());
+
+        QClipboard *clipboard = QApplication::clipboard();
+        const QMimeData *mimeData = clipboard->mimeData(QClipboard::Clipboard);
+        bool canPaste = false;
+        if (mimeData) canPaste = mUi->textEdit->canInsertFromMimeData(mimeData);
+        if (!canPaste && !clipboard->text(QClipboard::Clipboard).isEmpty()) canPaste = true;
+        mUi->actionPaste->setEnabled(canPaste);
+
         mUi->actionFind_Next->setEnabled(mSearch && !mSearch->text().isEmpty());
         mUi->actionUppercase->setEnabled(mUi->textEdit->textCursor().hasSelection());
         mUi->actionLowercase->setEnabled(mUi->textEdit->textCursor().hasSelection());

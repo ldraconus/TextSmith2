@@ -857,7 +857,7 @@ void TextEdit::removeInternalImage(const QUrl& url) {
 }
 
 bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
-    if (source && (source->hasFormat("x-TextSmith2-json"))) return true;
+    if (source && (source->hasFormat(TextSmith2MimeData))) return true;
     if (source && (source->hasHtml() || source->hasText())) return true;
     if (source && (source->hasImage() || source->hasUrls())) return true;
     return QTextEdit::canInsertFromMimeData(source);
