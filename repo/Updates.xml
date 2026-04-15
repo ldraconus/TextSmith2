@@ -1,0 +1,26 @@
+<Updates>
+ <ApplicationName>TextSmith</ApplicationName>
+<Version>
+<!-- VERSION -->
+</Version>
+<Checksum>true</Checksum>
+ <PackageUpdate>
+  <Name>com.vendor.product</Name>
+  <DisplayName>TextSmith Novel Writing Software</DisplayName>
+  <Description>Install the editor</Description>
+<Version>
+<!-- VERSION -->
+</Version>
+  <ReleaseDate>2025-11-29</ReleaseDate>
+  <Default>true</Default>
+  <InstallScript>installScript.js</InstallScript>
+  <UpdateFile CompressedSize="4927044" OS="Any" UncompressedSize="11392301"/>
+  <DownloadableArchives>Documentation.7z,scripts.7z,content.7z</DownloadableArchives>
+  <Licenses>
+   <License file="license.txt" name="MIT Public License Agreement"/>
+  </Licenses>
+  <SHA1>27475280bc91559d1364ff03070959d7a53e987e</SHA1>
+ </PackageUpdate>
+ <SHA1>45ac9400bee7838a866563c8049af8f716923a70</SHA1>
+ <MetadataName>2026-04-15-1044_meta.7z</MetadataName>
+</Updates>

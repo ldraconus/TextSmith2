@@ -157,6 +157,11 @@ qt_add_executable(TextSmith2
     config/Background.png
     config/style.css
     config/Background.png
+    config/controller.qs
+    repo/Updates.xml
+    TSVersion.h
+    TSVersion
+
 )
 
 # Link Qt + libzip

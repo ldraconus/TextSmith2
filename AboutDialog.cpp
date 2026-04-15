@@ -1,12 +1,18 @@
 #include "AboutDialog.h"
 #include "ui_AboutDialog.h"
 
+#include "TSVersion.h"
+
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent)
-    , ui(new Ui::AboutDialog) {
-    ui->setupUi(this);
+    , mUi(new Ui::AboutDialog) {
+    mUi->setupUi(this);
+
+    QString html = mUi->textBrowser->toHtml();
+    html.replace("[v]", TSVersion);
+    mUi->textBrowser->setHtml(html);
 }
 
 AboutDialog::~AboutDialog() {
-    delete ui;
+    delete mUi;
 }

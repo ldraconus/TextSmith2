@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 BUILD_DIR="$1"
 BINARY_CREATOR="$2"
-WINDEPLOY="$3"
-FROM_PROG=$4
-TO_PROG=$5
+REPOGEN="$3"
+WINDEPLOY="$4"
+FROM_PROG=$5
+TO_PROG=$6
 
 mkdir -p install
 echo "Gathering build files"
@@ -13,6 +14,10 @@ cp -ruf ../packages packages
 cp -ruf ../config config
 cp -uf  ../Installer.ico config/Installer.ico
 cp -uf  ../Background.png config/Background.png
+
+# Update versions
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' config/config.xml
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' packages/com.vendor.product/package.xml
 
 # Handle platform differences
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
@@ -44,6 +49,12 @@ else
     cp ../meta/installScripts.qs.linux ../meta/installScripts.qs
 fi
 
-echo "Building installer"
 cd ../../..
+rm -rf repo
+echo "Building update repository"
+$REPOGEN -p packages repo
+cp ../repo/Updates.xml repo/Updates.xml
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml
+echo "Building installer"
 $BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer${INSTALLER_EXT}
