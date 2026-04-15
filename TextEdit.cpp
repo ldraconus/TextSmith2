@@ -55,17 +55,20 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
         }
     }
 
+    if (source->hasText()) {
+        insertPlainText(source->text());
+        return;
+    }
+
     if (source->hasHtml()) { // strange, but possible ...
-        // 1. Use a lightweight document to parse the HTML structure
         QTextDocument tempDoc;
         tempDoc.setHtml(source->html());
 
-        // 2. Create a cursor for your MAIN editor
         QTextCursor cur = textCursor();
+
         cur.beginEditBlock(); // Group into one Undo step
         QTextBlockFormat blockFmt = cur.blockFormat();
 
-        // 3. Iterate over the confused HTML mess
         for (auto it = tempDoc.begin(); it != tempDoc.end(); it = it.next()) {
             QTextBlock block = it;
 
@@ -77,44 +80,29 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
 
                 QTextCharFormat dirtyFmt = frag.charFormat();
 
-                // --- 1. CHECK FOR IMAGE ---
                 if (dirtyFmt.isImageFormat()) {
                     QTextImageFormat dirtyImg = dirtyFmt.toImageFormat();
-
-                    // Create a pristine image format (strips size, borders, alignment)
                     QTextImageFormat cleanImg;
                     cleanImg.setName(dirtyImg.name()); // Keep ONLY the URL
-
                     cur.insertImage(cleanImg);
                 }
-                // --- 2. HANDLE TEXT ---
                 else {
                     QTextCharFormat cleanFmt;
-
-                    // Only copy the "Novel" attributes
                     if (dirtyFmt.fontItalic()) cleanFmt.setFontItalic(true);
                     if (dirtyFmt.fontUnderline()) cleanFmt.setFontUnderline(true);
                     if (dirtyFmt.fontWeight() > QFont::Normal) cleanFmt.setFontWeight(QFont::Bold);
 
-                    // Enforce YOUR standard font
                     cleanFmt.setFontFamilies({ fontFamily() });
                     cleanFmt.setFontPointSize(fontPointSize());
 
-                    // Insert the sanitized chunk
-                    // Note: Since we are in the 'else', we verify this isn't an image placeholder
                     cur.insertText(frag.text(), cleanFmt);
                 }
             }
 
-            if (block.next().isValid()) cur.insertBlock(blockFmt); // <--- CRITICAL: Insert next block with YOUR format
+            if (block.next().isValid()) cur.insertBlock(blockFmt);
         }
 
         cur.endEditBlock();
-        return;
-    }
-
-    if (source->hasText()) {
-        insertPlainText(source->text());
         return;
     }
 
@@ -212,32 +200,6 @@ QString TextEdit::embedImagesAsBase64(const QString &html) {
 }
 
 void TextEdit::keyPressEvent(QKeyEvent* key) {
-//    if (key->matches(QKeySequence::Copy) ||
-//        key->matches(QKeySequence::Cut)) {
-//        QTextCursor cursor = textCursor();
-//        QTextDocumentFragment fragment = cursor.selection();
-//        QString html = fragment.toHtml();
-//        QString text = fragment.toPlainText();
-//        QString embedded = embedImagesAsBase64(html);
-//        QByteArray json = toJson(cursor).toJson().toBase64();
-//
-//        QMimeData* mimeData = new QMimeData();
-//        mimeData->setHtml(embedded);
-//        mimeData->setText(text);;
-//        mimeData->setData(TextSmith2MimeData, json);
-//
-//        QApplication::clipboard()->setMimeData(mimeData);
-//
-//        if (key->matches(QKeySequence::Cut)) textCursor().removeSelectedText();
-//
-//        return;
-//    } else if (key->matches(QKeySequence::Paste)) {
-//        QClipboard* clipboard = QApplication::clipboard();
-//        auto& mimeData = *clipboard->mimeData();
-//        this->canInsertFromMimeData(&mimeData);
-//        return;
-//    }
-
     if (mSoundPool) {
         switch (key->key()) {
         case Qt::Key_Escape:
@@ -291,10 +253,10 @@ void TextEdit::keyPressEvent(QKeyEvent* key) {
             break;
 
         default:
-            if (!key->text().isEmpty() && !key->text().at(0).isSpace() &&
-                !(key->modifiers() & (Qt::AltModifier |
-                                      Qt::ShiftModifier |
-                                      Qt::ControlModifier))) mSoundPool->play(SoundPool::Sound::KeyWhack);
+            if (!key->text().isEmpty() && !key->text().at(0).isSpace()) {
+                if (!(key->modifiers() & (Qt::AltModifier |
+                                          Qt::ControlModifier))) mSoundPool->play(SoundPool::Sound::KeyWhack);
+            }
             break;
         }
     }
@@ -366,10 +328,8 @@ void TextEdit::insertInternalImage(const QImage& image) {
     QSignalBlocker blockDoc(document());
     QSignalBlocker blockLay(document()->documentLayout());
 
-    // Create an internal URL
     const QUrl url = makeInternalUrl();
 
-    // Store original for fidelity
     internalImages().insert(url, image);
 
     // Initial display size: clamp to viewport width
@@ -380,16 +340,11 @@ void TextEdit::insertInternalImage(const QImage& image) {
                              ? int(image.height() * scale)
                              : image.height();
 
-    // Register original once as resource (Qt will paint scaled per format)
     document()->addResource(QTextDocument::ImageResource, url, image);
 
-    // Insert with display size
     QTextCursor cursor = textCursor();
-
-    // Ensure we’re at a fresh block
     cursor.insertBlock();
 
-    // Clear indentation/margins
     QTextBlockFormat blockFmt;
     blockFmt.setLeftMargin(0);
     blockFmt.setIndent(0);
@@ -401,7 +356,6 @@ void TextEdit::insertInternalImage(const QImage& image) {
     fmt.setHeight(displayH);
     cursor.insertImage(fmt);
 
-    // Release isolation
     viewport()->setUpdatesEnabled(true);
     setAcceptDrops(prevAcceptDrops);
     mInserting = false;
@@ -409,7 +363,7 @@ void TextEdit::insertInternalImage(const QImage& image) {
     scheduleResize();
 }
 
-void TextEdit::insertExternalUrlImage(const QUrl& url) {
+void TextEdit::insertExternalUrlImage(const QUrl& url, bool createBlock) {
     if (!url.isValid()) return;
 
     const bool prevAcceptDrops = acceptDrops();
@@ -419,21 +373,18 @@ void TextEdit::insertExternalUrlImage(const QUrl& url) {
     QSignalBlocker blockDoc(document());
     QSignalBlocker blockLay(document()->documentLayout());
 
-    // Keep URL as-is, no internal storage; just insert with a conservative width
     externalImageUrls().insert(url);
 
-    // We don’t fetch or addResource here; Qt will request when painting via the URL.
-    // Use a placeholder size until first paint; then resize pass will clamp to viewport.
+    if (!createBlock) return;
+
     const int maxW = contentMaxWidth();
     const int displayW = maxW > 0 ? maxW : 512; // fallback
-    const int displayH = displayW; // square placeholder if unknown
+    const int displayH = displayW;
 
     QTextCursor cursor = textCursor();
 
-    // Ensure we’re at a fresh block
     cursor.insertBlock();
 
-    // Clear indentation/margins
     QTextBlockFormat blockFmt;
     blockFmt.setLeftMargin(0);
     blockFmt.setIndent(0);
@@ -453,7 +404,6 @@ void TextEdit::insertExternalUrlImage(const QUrl& url) {
 }
 
 int TextEdit::contentMaxWidth() const {
-    // Visible width minus margins
     const int w = viewport()->width();
     const int margin = int(document()->documentMargin());
     return w > 0 ? w - margin * 2 : w;
@@ -702,7 +652,6 @@ void TextEdit::resizeImagesToFit() {
 
     setWrapMargin();
 
-    // Phase 1: collect using block iteration (cursor-free scan)
     struct ImgFrag { int s, e; QUrl url; QSize orig; };
     QVector<ImgFrag> frags;
 
@@ -732,7 +681,6 @@ void TextEdit::resizeImagesToFit() {
         return;
     }
 
-    // Phase 2: apply format-only updates in a single edit block
     const bool prevUndo = document()->isUndoRedoEnabled();
     document()->setUndoRedoEnabled(false);
 
@@ -857,9 +805,11 @@ void TextEdit::removeInternalImage(const QUrl& url) {
 }
 
 bool TextEdit::canInsertFromMimeData(const QMimeData *source) const {
-    if (source && (source->hasFormat(TextSmith2MimeData))) return true;
-    if (source && (source->hasHtml() || source->hasText())) return true;
-    if (source && (source->hasImage() || source->hasUrls())) return true;
+    if (source && (source->hasFormat(TextSmith2MimeData) ||
+                   source->hasHtml() ||
+                   source->hasText() ||
+                   source->hasImage() ||
+                   source->hasUrls())) return true;
     return QTextEdit::canInsertFromMimeData(source);
 }
 
@@ -870,7 +820,7 @@ QMimeData* TextEdit::createMimeDataFromSelection() const {
     QString html = textCursor().selection().toHtml();
     QString text = textCursor().selection().toPlainText();
 
-    if (!json.isEmpty()) mime->setData("x-TextSmith2-json", json.toJson());
+    if (!json.isEmpty()) mime->setData(TextSmith2MimeData, json.toJson());
 
     if (!html.isEmpty()) mime->setHtml(html);
 
@@ -879,10 +829,9 @@ QMimeData* TextEdit::createMimeDataFromSelection() const {
     return mime;
 }
 
-// Own drag/drop pipeline (never invoke base for images/urls)
 void TextEdit::dragEnterEvent(QDragEnterEvent *de) {
     const QMimeData* m = de->mimeData();
-    if (m->hasImage() || m->hasUrls()) de->acceptProposedAction();
+    if (m->hasImage() || m->hasHtml() || m->hasText() || m->hasUrls()) de->acceptProposedAction();
     else QTextEdit::dragEnterEvent(de);
 }
 

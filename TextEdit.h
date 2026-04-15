@@ -58,7 +58,7 @@ private:
     void             fromJson(const QJsonDocument& document);
     QTextBlockFormat fromTextBlockFormatObject(QJsonObject &obj);
     QTextCharFormat  fromTextCharFormatObject(QJsonObject &obj);
-    void             insertExternalUrlImage(const QUrl& url);
+    void             insertExternalUrlImage(const QUrl& url, bool createBock = true);
     void             insertInternalImage(const QImage& image);
     void             insertLocalImage(const QString& localFilePath);
     QUrl             makeInternalUrl();
