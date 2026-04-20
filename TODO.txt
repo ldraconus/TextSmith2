@@ -1,7 +1,9 @@
-[/] Paste is nroken in wierd always
-    [/] You only get one paste. Not matter how many times you cut, only the first is always there.
-    [ ] Paste from one part of the novel to another can look wierd (fon't off, lline spacing is off. leave and return to the item and it's fixed.
+[/] Paste is nroken in wierd ways onlinus
+    - You only get one paste. Not matter how many times you cut, only the first is always there.
+    - Paste from one part of the novel to another can look wierd (fon't off, lline spacing is off. leave and return to the item and it's fixed.
+    [/] Now it awlays works inside the program, and it works right after a cut/paste inside, you can opy and paste external ... wierd. Looks like Qt?
 [ ] Add the chpater/scene/cover tag in the export dialog to the page setup one. it's just another form of exporting and it not being there is confusing.
+    [ ] add all of the nice little details from that dialog as well ...
 [ ] consider moving the exports to a submenu uder the save as menu ... feels more natural
 [/] Text export needs to have a font you can specify
 [/] Write the Documentation
