@@ -57,6 +57,7 @@ public:
     StringList   actingScripts() const     { return mActingScripts; }
     bool         autoSave() const          { return mAutoSave; }
     qlonglong    autoSaveIntyerval() const { return mAutoSaveInterval; }
+    QString      bold() const              { return mBold; }
     QString      chapterTag() const        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
     QString      coverTag() const          { return mCoverTag.isEmpty() ? "Cover" : mCoverTag; }
     QString      fontFamily() const        { return mFontFamily.isEmpty() ? "Segoe UI" : mFontFamily; }
@@ -64,6 +65,7 @@ public:
     QString      footer() const            { return mFooter.isEmpty() ? "&&" : mFooter; }
     QString      header() const            { return mHeader.isEmpty() ? "&&" : mHeader; }
     bool         isDarkTheme() const       { return mIsDark; }
+    QString      italic() const            { return mItalic; }
     List<int>    mainSplitter() const      { return mMainSplitter; }
     auto         orientation() const       { return mOrientation; }
     List<int>    otherSplitter() const     { return mOtherSplitter; }
@@ -78,6 +80,7 @@ public:
     bool         typingSounds() const      { return mTypingSounds; }
     QString      uiFontFamily() const      { return mUiFontFamily.isEmpty() ? "Segoe UI" : mUiFontFamily; }
     qlonglong    uiFontSize() const        { return mUiFontSize; }
+    QString      underline() const         { return mUnderline; }
     bool         useSeparator() const      { return mUseSeparator; }
     qlonglong    voice() const             { return mVoice; }
     bool         wasDark() const           { return mWasDark; }
@@ -88,6 +91,7 @@ public:
     void setApplicaiton(QApplication* a)                     { mApp = a; }
     void setAutoSave(bool a)                                 { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i)                    { mAutoSaveInterval = i; }
+    void setBold(const QString& b)                           { mBold = b; }
     void setChapterTag(const QString& c)                     { mChapterTag = c; }
     void setCoverTag(const QString& c)                       { mCoverTag = c; }
     void setFontFamily(const QString& f)                     { mFontFamily = f; }
@@ -95,6 +99,7 @@ public:
     void setFooter(const QString& f)                         { mFooter = f; }
     void setHeader(const QString& h)                         { mHeader = h; }
     void setIsDark(bool x)                                   { mIsDark = x; }
+    void setItalic(const QString& i)                         { mItalic = i; }
     void setMainSplitter(const List<int>& s)                 { mMainSplitter = s; }
     void setMargins(const List<qreal>& m)                    { mMargins = m; }
     void setOrientation(const QPageLayout::Orientation o)    { mOrientation = o; }
@@ -109,6 +114,7 @@ public:
     void setTypingSounds(bool t)                             { mTypingSounds = t; }
     void setUiFontFamily(const QString& f)                   { mUiFontFamily = f; }
     void setUiFontSize(qlonglong s)                          { mUiFontSize = s; }
+    void setUnderline(const QString& u)                      { mUnderline = u; }
     void setUseSeparator(bool u)                             { mUseSeparator = u; }
     void setVoice(qlonglong v)                               { mVoice = v; }
     void setWindowLocation(QRect r)                          { mWindow = r; }
@@ -118,6 +124,7 @@ private:
     QApplication*            mApp              { nullptr };
     bool                     mAutoSave         { false };
     qlonglong                mAutoSaveInterval { 5 * 60 };
+    QString                  mBold             { "*\xF1*" };
     QString                  mChapterTag       { "chapter" };
     QString                  mCoverTag         { "cover" };
     QString                  mFontFamily       { "Segoe UI" };
@@ -125,6 +132,7 @@ private:
     QString                  mFooter           { "" };
     QString                  mHeader           { "" };
     bool                     mIsDark           { false };
+    QString                  mItalic           { "/\xF1/" };
     List<int>                mMainSplitter     { };
     List<qreal>              mMargins          { };
     List<int>                mOtherSplitter    { };
@@ -139,6 +147,7 @@ private:
     bool                     mTypingSounds     { false };
     QString                  mUiFontFamily     { "Segoe UI" };
     qlonglong                mUiFontSize       { 9 };
+    QString                  mUnderline        { "_\xF1_" };
     bool                     mUseSeparator     { false };
     qlonglong                mVoice            { 0 };
     bool                     mWasDark          { false };

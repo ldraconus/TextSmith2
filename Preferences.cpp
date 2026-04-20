@@ -22,6 +22,7 @@
 #include <StringList.h>
 
 constexpr auto ActingScripts    { "ActingScripts" };
+constexpr auto Bold             { "Bold" };
 constexpr auto ChapterTag       { "ChapterTag" };
 constexpr auto Company          { "SoftwareOnHand" };
 constexpr auto CoverTag         { "CoverTag" };
@@ -32,6 +33,7 @@ constexpr auto FontFamily       { "FontFasmily" };
 constexpr auto FontSize         { "FontSize" };
 constexpr auto Footer           { "Footer" };
 constexpr auto Header           { "Header" };
+constexpr auto Italic           { "Italic" };
 constexpr auto MainSplitter     { "MainSplitter" };
 constexpr auto MarginBottom     { "MarginBottom" };
 constexpr auto MarginLeft       { "MarginLeft" };
@@ -50,10 +52,12 @@ constexpr auto ToolbarVisible   { "ToolbarVisible" };
 constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto UiFontFamily     { "UiFontFasmily" };
 constexpr auto UiFontSize       { "UiFontSize" };
+constexpr auto Underline        { "Underline" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
 const     auto DefaultActingScripts  { QJsonArray() };
+constexpr auto DefaultBold           { "*\x1F*" };
 constexpr auto DefaultChapterTag     { "chapter" };
 constexpr auto DefaultCoverTag       { "cover" };
 constexpr auto DefaultFont           { "Segoe UI" };
@@ -61,6 +65,7 @@ constexpr auto DefaultFontSize       { 9 };
 constexpr auto DefaultFooter         { "\x1F\x1F" };
 constexpr auto DefaultHeader         { "\x1F\x1F" };
 constexpr auto DefaultInterval       { 5 * 60 };
+constexpr auto DefaultItalic         { "/\x1F/" };
 constexpr auto DefaultMarginBottom   { 1.0 };
 constexpr auto DefaultMarginLeft     { 1.0 };
 constexpr auto DefaultMarginRight    { 1.0 };
@@ -76,6 +81,7 @@ constexpr auto DefaultSceneTag       { "scene" };
 constexpr auto DefaultSounds         { false };
 constexpr auto DefaultToolbarVisible { true };
 constexpr auto DefaultTheme          { 2 };
+constexpr auto DefaultUnderline      { "_\x1F_"};
 constexpr auto DefaultVoice          { 0 };
 
 bool Preferences::load() {
@@ -89,12 +95,14 @@ bool Preferences::load() {
     }
     mAutoSave =          settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval =  settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
+    mBold =              settings.value(Bold,             DefaultBold).toString();
     mChapterTag =        settings.value(ChapterTag,       DefaultChapterTag).toString();
     mCoverTag =          settings.value(CoverTag ,        DefaultCoverTag).toString();
     mFontFamily =        settings.value(FontFamily,       DefaultFont).toString();
     mFontSize =          settings.value(FontSize,         DefaultFontSize).toInt();
     mFooter =            settings.value(Footer,           DefaultFooter).toString();
     mHeader =            settings.value(Header,           DefaultHeader).toString();
+    mItalic =            settings.value(Italic,           DefaultItalic).toString();
     QJsonArray arr =     settings.value(MainSplitter,     DefaultSplitter).toJsonArray();
     mMainSplitter.clear();
     for (auto i = 0; i < arr.size(); ++i) mMainSplitter.append(qlonglong(arr[i].toInt(-1)));
@@ -122,6 +130,7 @@ bool Preferences::load() {
     mTypingSounds =      settings.value(TypingSounds,     DefaultSounds).toBool();
     mUiFontFamily =      settings.value(UiFontFamily,     def.defaultFamily()).toString();
     mUiFontSize =        settings.value(UiFontSize,       def.pointSize()).toInt();
+    mUnderline =         settings.value(Underline,        DefaultUnderline).toString();
     mVoice =             settings.value(Voice,            DefaultVoice).toInt();
     mWindow =            settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
@@ -197,6 +206,9 @@ bool Preferences::read(Json5Object& obj) {
         }
         mVoice =             Item::hasNum(obj,  "voice",           qlonglong(DefaultVoice));
         mActingScripts.clear();
+        mBold             = DefaultBold;
+        mItalic           = DefaultItalic;
+        mUnderline        = DefaultUnderline;
         mRecentNovels.clear();
         mChapterTag = DefaultChapterTag;
         mFooter = DefaultFooter;
@@ -231,12 +243,14 @@ bool Preferences::read(Json5Object& obj) {
         for (const auto& script: scripts) mActingScripts.append(script.toString());
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
         mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, qlonglong(DefaultInterval));
+        mBold =             Item::hasStr(obj,  Bold,             DefaultBold);
         mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
         mCoverTag =         Item::hasStr(obj,  CoverTag,         DefaultCoverTag);
         mFontFamily =       Item::hasStr(obj,  FontFamily,       DefaultFont);
         mFontSize =         Item::hasNum(obj,  FontSize,         qlonglong(DefaultFontSize));
         mFooter =           Item::hasStr(obj,  Footer,           DefaultFooter);
         mHeader =           Item::hasStr(obj,  Header,           DefaultHeader);
+        mItalic =           Item::hasStr(obj,  Italic,           DefaultItalic);
         mPosition =         Item::hasNum(obj,  Position,         qlonglong(DefaultPosition));
         mPageSize =         Item::hasStr(obj,  PageSize,         DefaultPageSize);
         mSceneTag =         Item::hasStr(obj,  SceneTag,         DefaultSceneTag);
@@ -245,6 +259,7 @@ bool Preferences::read(Json5Object& obj) {
         mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
         mUiFontFamily =     Item::hasStr(obj,  UiFontFamily,     def.defaultFamily());
         mUiFontSize =       Item::hasNum(obj,  UiFontSize,       qlonglong(def.pointSize()));
+        mUnderline =        Item::hasStr(obj,  Underline,        DefaultUnderline);
         mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
         arr =               Item::hasArr(obj,  MainSplitter,     { });
         mMainSplitter.clear();
@@ -290,12 +305,14 @@ bool Preferences::save() {
     settings.setValue(ActingScripts,    act);
     settings.setValue(AutoSave,         mAutoSave);
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
+    settings.setValue(Bold,             mBold);
     settings.setValue(ChapterTag,       mChapterTag);
     settings.setValue(CoverTag,         mCoverTag);
     settings.setValue(FontFamily,       mFontFamily);
     settings.setValue(FontSize,         mFontSize);
     settings.setValue(Footer,           mFooter);
     settings.setValue(Header,           mHeader);
+    settings.setValue(Italic,           mItalic);
     QJsonArray arr;
     for (auto& a: mMainSplitter) arr.append(a);
     settings.setValue(MainSplitter,     arr);
@@ -321,6 +338,7 @@ bool Preferences::save() {
     settings.setValue(Theme,            mTheme);
     settings.setValue(ToolbarVisible,   mToolbarVisible);
     settings.setValue(TypingSounds,     mTypingSounds);
+    settings.setValue(U)
     settings.setValue(UiFontFamily,     mUiFontFamily);
     settings.setValue(UiFontSize,       mUiFontSize);
     settings.setValue(Voice,            mVoice);
@@ -619,12 +637,14 @@ Json5Object Preferences::write() {
     obj[ActingScripts] =    ac;
     obj[AutoSave] =         mAutoSave;
     obj[AutoSaveInterval] = mAutoSaveInterval;
+    obj[Bold] =             mBold;
     obj[ChapterTag] =       mChapterTag;
     obj[CoverTag] =         mCoverTag;
     obj[FontFamily] =       mFontFamily;
     obj[FontSize] =         mFontSize;
     obj[Footer] =           mFooter;
     obj[Header] =           mHeader;
+    obj[Italic] =           mItalic;
     Json5Array ms;
     for (const auto v: mMainSplitter) ms.append(qlonglong(v));
     obj[MainSplitter] =     ms;
@@ -652,6 +672,7 @@ Json5Object Preferences::write() {
     obj[TypingSounds] =     mTypingSounds;
     obj[UiFontFamily] =     mUiFontFamily;
     obj[UiFontSize] =       mUiFontSize;
+    obj[Underline] =        mUnderline;
     obj[Voice] =            mVoice;
     Json5Array arr;
     arr.append(qlonglong(mWindow.x()));
