@@ -41,9 +41,6 @@ bool TextExporter::convert() {
     QString dir = path.isEmpty() ? Main::ref().docDir() : path;
     Main::ref().setDocDir(dir);
 
-    QString document;
-    int line = 0;
-    bool firstLineEver = true;
     auto& prefs = Main::ref().prefs();
     StringList chapterTags { prefs.chapterTag().split(Preferences::sep) };
     StringList coverTags   { prefs.coverTag().split(Preferences::sep) };
@@ -53,13 +50,24 @@ bool TextExporter::convert() {
     bool firstScene = true;
     StringList bold = fetchValue(Bold, defaults, prefs.bold()).split(",");
     if (bold.count() == 0) bold.append("*");
+    if (bold[0].isEmpty()) bold[0] = "*";
     if (bold.count() == 1) bold.append(bold[0]);
+    if (bold[1].isEmpty()) bold[1] = bold[0];
     StringList italic = fetchValue(Italic, defaults, prefs.italic()).split(",");
     if (italic.count() == 0) italic.append("/");
+    if (italic[0].isEmpty()) italic[0] = "/";
     if (italic.count() == 1) italic.append(italic[0]);
+    if (italic[1].isEmpty()) italic[1] = italic[0];
     StringList underline = fetchValue(Underline, defaults, prefs.underline()).split(",");
     if (underline.count() == 0) underline.append("_");
+    if (underline[0].isEmpty()) underline[0] = "_";
     if (underline.count() == 1) underline.append(underline[0]);
+    if (underline[1].isEmpty()) underline[1] = underline[0];
+
+    QString document;
+    int line = 0;
+    bool firstLineEver = true;
+
     for (auto&& id: mItemIds) {
         Item& item = Main::ref().novel().findItem(id);
         if (item.hasTag(coverTags)) continue;
@@ -73,11 +81,11 @@ bool TextExporter::convert() {
         }
         if (item.hasTag(sceneTags)) {
             if (firstScene) firstScene = false;
-            if (useSep) {
+            else if (useSep) {
                 int leading = (lineWidth - metrics.horizontalAdvance(sep)) / (2 * spaceWidth);
                 document += QChar::LineFeed;
                 for (int i = 0; i < leading; ++i) document += space;
-                document += sep + QChar::LineFeed;
+                document += sep + QChar::LineFeed + QChar::LineFeed;
             }
         }
 
@@ -88,6 +96,8 @@ bool TextExporter::convert() {
             auto blockFmt = block.blockFormat();
             QString text;
             for (auto i = 0; i < 4; ++i) text += space;
+            int indent = blockFmt.indent();
+            for (auto i = 0; i < indent * 4; ++i) text += space;
             int width = metrics.horizontalAdvance(text);
             for (auto it2 = block.begin(); it2 != block.end(); it2++) {
                 bool firstWord = true;
@@ -111,8 +121,13 @@ bool TextExporter::convert() {
                             line = 0;
                         }
                         lines.append(text);
-                        text = word;
-                        width = wordLen;
+                        text.clear();
+                        for (auto i = 0; i < indent * 4; ++i) {
+                            text += space;
+                            ++width;
+                        }
+                        text += word;
+                        width += wordLen;
                     } else {
                         if (firstWord) firstWord = false;
                         else {

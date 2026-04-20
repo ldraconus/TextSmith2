@@ -12,7 +12,7 @@ public:
     }
 
     QList<ExportMetadataField> mMetadata = {
-        { "title",     "Book Title (title:)", "" },
+        { "title",     "Book Title (title:)",                           "" },
         { "bold",      "Comma separated Bold makers (bold:)",           "*,*" },
         { "italic",    "Comma separated Italic makers (italic:)",       "/,/" },
         { "underline", "Comma separated Underline makers (underline:)", "_,_" },

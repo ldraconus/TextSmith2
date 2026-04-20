@@ -23,8 +23,7 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
     mUi->sceneTagLineEdit->setPlaceholderText(prefs.sceneTag());
     mUi->coverTagLineEdit->setPlaceholderText(prefs.coverTag());
     mUi->sceneSeparatorLineEdit->setPlaceholderText(prefs.separator());
-    mUi->sceneSeparatorCheckBox->setChecked(prefs.useSeparator());
-    QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
+    mUi->sceneSeparatorCheckBox->setChecked(prefs.useSeparator());    QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
     prefs.applyFontToTree(this, font);
     updateGeometry();
     repaint();
@@ -122,16 +121,21 @@ void ExportDialog::apply() {
     if (scene.isEmpty()) scene = mUi->sceneTagLineEdit->placeholderText();
     QString cover = mUi->coverTagLineEdit->text();
     if (cover.isEmpty()) cover = mUi->coverTagLineEdit->placeholderText();
-    mExporter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(), { chapter, scene,cover }));
+    mExporter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(), { chapter, scene, cover }));
+    auto& prefs = Main::ref().prefs();
     auto& metaData = mExporter->metadataFields();
-    int i = 0;
-    for (auto& meta: metaData) {
+    for (auto [i, meta]: enumerate(metaData)) {
         if (meta.getChoices != nullptr) {
             QComboBox* comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
             if (!comboBox->currentText().isEmpty()) meta.value = comboBox->currentText();
         } else {
             QLineEdit* lineEdit = dynamic_cast<QLineEdit*>(mWidget[i]);
-            if (!lineEdit->text().isEmpty()) meta.value = lineEdit->text();
+            if (!lineEdit->text().isEmpty()) {
+                meta.value = lineEdit->text();
+                if (meta.key == "bold") prefs.setBold(meta.value);
+                else if (meta.key == "italic") prefs.setItalic(meta.value);
+                else if (meta.key == "underline") prefs.setUnderline(meta.value);
+            }
         }
     }
     loadFields();
