@@ -122,12 +122,9 @@ bool TextExporter::convert() {
                         }
                         lines.append(text);
                         text.clear();
-                        for (auto i = 0; i < indent * 4; ++i) {
-                            text += space;
-                            ++width;
-                        }
+                        for (auto i = 0; i < indent * 4; ++i) text += space;
                         text += word;
-                        width += wordLen;
+                        width = metrics.horizontalAdvance(text);
                     } else {
                         if (firstWord) firstWord = false;
                         else {
