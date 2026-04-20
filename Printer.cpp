@@ -278,11 +278,12 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
         for (auto&& [lineNum, line]: enumerate(lines)) marginals.append({ justify, lineNum, line });
     }
 
-    // handle: \\ -      \
-    //         \# -      page number
-    //         \(tag) - look up tag for this id:value, output value
-    //         every other \, remove.
-    Item& item = Main::ref().novel().findItem(mId);
+    /*
+     * handle: \\ -      \
+     *         \# -      page number
+     *         \(tag) - look up tag for this id:value, output value
+     *         every other \, remove.
+     */
     for (auto& margin: marginals) {
         QString text = margin.text();
         text.replace("\\\\", QChar(0x001e));

@@ -120,36 +120,36 @@ public:
     void setWindowLocation(QRect r)                          { mWindow = r; }
 
 private:
-    StringList               mActingScripts    { "" };
     QApplication*            mApp              { nullptr };
-    bool                     mAutoSave         { false };
     qlonglong                mAutoSaveInterval { 5 * 60 };
+    qlonglong                mFontSize         { 9 };
+    qlonglong                mPosition         { 0 };
+    qlonglong                mTheme            { 2 };
+    qlonglong                mUiFontSize       { 9 };
+    qlonglong                mVoice            { 0 };
     QString                  mBold             { "*\xF1*" };
     QString                  mChapterTag       { "chapter" };
     QString                  mCoverTag         { "cover" };
     QString                  mFontFamily       { "Segoe UI" };
-    qlonglong                mFontSize         { 9 };
     QString                  mFooter           { "" };
     QString                  mHeader           { "" };
-    bool                     mIsDark           { false };
     QString                  mItalic           { "/\xF1/" };
     List<int>                mMainSplitter     { };
     List<qreal>              mMargins          { };
     List<int>                mOtherSplitter    { };
-    QPageLayout::Orientation mOrientation      { QPageLayout::Portrait };
     QString                  mPageSize         { "Letter" };
-    qlonglong                mPosition         { 0 };
     List<Recent>             mRecentNovels     { };
     QString                  mSceneTag         { "scene" };
     QString                  mSeparator        { "###" };
-    qlonglong                mTheme            { 2 };
+    QString                  mUiFontFamily     { "Segoe UI" };
+    QString                  mUnderline        { "_\xF1_" };
+    StringList               mActingScripts    { "" };
+    QPageLayout::Orientation mOrientation      { QPageLayout::Portrait };
+    QRect                    mWindow;
+    bool                     mAutoSave         { false };
+    bool                     mIsDark           { false };
     bool                     mToolbarVisible   { true };
     bool                     mTypingSounds     { false };
-    QString                  mUiFontFamily     { "Segoe UI" };
-    qlonglong                mUiFontSize       { 9 };
-    QString                  mUnderline        { "_\xF1_" };
     bool                     mUseSeparator     { false };
-    qlonglong                mVoice            { 0 };
     bool                     mWasDark          { false };
-    QRect                    mWindow;
 };

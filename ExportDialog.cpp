@@ -38,6 +38,7 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
 
     mOk = mUi->buttonBox->button(QDialogButtonBox::Ok);
     mOk->setDisabled(true);
+    connect(mOk, &QPushButton::clicked,  this, [this](){ this->apply(); });
 
     setWindowTitle(exporter->name() + " export");
 }

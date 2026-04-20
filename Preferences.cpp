@@ -57,7 +57,7 @@ constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
 const     auto DefaultActingScripts  { QJsonArray() };
-constexpr auto DefaultBold           { "*\x1F*" };
+constexpr auto DefaultBold           { "*,*" };
 constexpr auto DefaultChapterTag     { "chapter" };
 constexpr auto DefaultCoverTag       { "cover" };
 constexpr auto DefaultFont           { "Segoe UI" };
@@ -65,7 +65,7 @@ constexpr auto DefaultFontSize       { 9 };
 constexpr auto DefaultFooter         { "\x1F\x1F" };
 constexpr auto DefaultHeader         { "\x1F\x1F" };
 constexpr auto DefaultInterval       { 5 * 60 };
-constexpr auto DefaultItalic         { "/\x1F/" };
+constexpr auto DefaultItalic         { "/,/" };
 constexpr auto DefaultMarginBottom   { 1.0 };
 constexpr auto DefaultMarginLeft     { 1.0 };
 constexpr auto DefaultMarginRight    { 1.0 };
@@ -81,7 +81,7 @@ constexpr auto DefaultSceneTag       { "scene" };
 constexpr auto DefaultSounds         { false };
 constexpr auto DefaultToolbarVisible { true };
 constexpr auto DefaultTheme          { 2 };
-constexpr auto DefaultUnderline      { "_\x1F_"};
+constexpr auto DefaultUnderline      { "_,_"};
 constexpr auto DefaultVoice          { 0 };
 
 bool Preferences::load() {
@@ -338,9 +338,9 @@ bool Preferences::save() {
     settings.setValue(Theme,            mTheme);
     settings.setValue(ToolbarVisible,   mToolbarVisible);
     settings.setValue(TypingSounds,     mTypingSounds);
-    settings.setValue(U)
     settings.setValue(UiFontFamily,     mUiFontFamily);
     settings.setValue(UiFontSize,       mUiFontSize);
+    settings.setValue(Underline,        mUnderline);
     settings.setValue(Voice,            mVoice);
     settings.setValue(WindowLoc,        mWindow);
     return true;

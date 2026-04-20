@@ -64,8 +64,7 @@ SOURCES += \
     Start.cpp \
     TextEdit.cpp \
     TextExporter.cpp \
-    dict.cpp \
-    mainwindow.cpp
+    dict.cpp
 
 HEADERS += \
     5th.h \
@@ -96,8 +95,7 @@ HEADERS += \
     TextEdit.h \
     TextExporter.h \
     TreeWidget.h \
-    Words.h \
-    mainwindow.h
+    Words.h
 
 FORMS += \
     AboutDialog.ui \
@@ -112,8 +110,7 @@ FORMS += \
     ScriptDialog.ui \
     SpeechDialog.ui \
     SpellCheckDialog.ui \
-    dialog.ui \
-    mainwindow.ui
+    dialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

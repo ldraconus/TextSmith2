@@ -5,6 +5,10 @@
 
 #include "Main.h"
 
+static constexpr auto Bold      = 1;
+static constexpr auto Italic    = 2;
+static constexpr auto Underline = 3;
+
 bool TextExporter::convert() {
     static constexpr auto PageHeight = 11.0;
     static constexpr auto PointSize  = 72;
@@ -13,6 +17,7 @@ bool TextExporter::convert() {
     if (mFilename.isEmpty()) return false;
 
     const auto& defaults = collectMetadataDefaults();
+
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
@@ -46,9 +51,15 @@ bool TextExporter::convert() {
     bool useSep = prefs.useSeparator();
     QString sep = prefs.separator();
     bool firstScene = true;
-    StringList bold      { "*", "*" };
-    StringList italic    { "/", "/" };
-    StringList underline { "_", "_" };
+    StringList bold = fetchValue(Bold, defaults, prefs.bold()).split(",");
+    if (bold.count() == 0) bold.append("*");
+    if (bold.count() == 1) bold.append(bold[0]);
+    StringList italic = fetchValue(Italic, defaults, prefs.italic()).split(",");
+    if (italic.count() == 0) italic.append("/");
+    if (italic.count() == 1) italic.append(italic[0]);
+    StringList underline = fetchValue(Underline, defaults, prefs.underline()).split(",");
+    if (underline.count() == 0) underline.append("_");
+    if (underline.count() == 1) underline.append(underline[0]);
     for (auto&& id: mItemIds) {
         Item& item = Main::ref().novel().findItem(id);
         if (item.hasTag(coverTags)) continue;

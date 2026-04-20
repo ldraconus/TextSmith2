@@ -129,15 +129,15 @@ bool EpubBuilder::writeContentOpf() {
     opf += "  </metadata>\n";
 
     opf += "  <manifest>\n";
-    for (const auto& id: mItemIds) {
-        opf += "    <item id=\"" + QString::toString(id)
-        + "\" href=\"" + item.href.toHtmlEscaped()
-            + "\" media-type=\"" + item.mediaType.toHtmlEscaped() + "\"/>\n";
+    for (auto [i, id]: enumerate(mItemIds)) {
+        opf += "    <item id=\"" + QString::number(id)
+            + "\" href=\"chap" + QString::number(id) + ".xhtml\""
+            + "\" media-type=\"application/xhtml+xml" + "\" />\n";
     }
     opf += "  </manifest>\n";
 
     opf += "  <spine>\n";
-    for (const auto& id: mSpine) opf += "    <itemref idref=\"" + id.toHtmlEscaped() + "\"/>\n";
+    for (auto [i, id]: enumerate(mSpine)) opf += "    <itemref idref=\"" + id.toHtmlEscaped() + "\"/>\n";
     opf += "  </spine>\n";
 
     opf += "</package>\n";

@@ -80,7 +80,7 @@ public:
     QMap<QString, QString> collectMetadataDefaults() override {
         QMap<QString, QString> defaults;
 
-        for (int&& id: mItemIds) {
+        for (auto [i, id]: enumerate(mItemIds)) {
             Item& item = mNovel.findItem(id);
 
             for (auto&& tag: item.tags()) {
