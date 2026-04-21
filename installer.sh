@@ -16,8 +16,12 @@ cp -uf  ../Installer.ico config/Installer.ico
 cp -uf  ../Background.png config/Background.png
 
 # Update versions
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' config/config.xml
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' packages/com.vendor.product/package.xml
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' config/config.xml > config/config.xml2
+awk '/<Version>/{getline ver; getline; print "<Version>" ver "</Version>"; next} 1' config/config.xml2 > config/config.xml
+rm config/config.xml2
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' packages/com.vendor.product/meta/package.xml > packages/com.vendor.product/meta/package.xml2
+awk '/<Version>/{getline ver; getline; print "<Version>" ver "</Version>"; next} 1' packages/com.vendor.product/meta/package.xml2 > packages/com.vendor.product/meta/package.xml
+rm packages/com.vendor.product/meta/package.xml2
 
 # Handle platform differences
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
@@ -54,7 +58,10 @@ rm -rf repo
 echo "Building update repository"
 $REPOGEN -p packages repo
 cp ../repo/Updates.xml repo/Updates.xml
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml > repo/Updates.xml2
+sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml2 > repo/Updates.xml3
+awk '/<Version>/{getline ver; getline; print "<Version>" ver "</Version>"; next} 1' repo/Updates.xml3 > repo/Updates.xml
+rm repo/Updates.xml[23]
+
 echo "Building installer"
 $BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer${INSTALLER_EXT}
