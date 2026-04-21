@@ -6,6 +6,10 @@
 #include "Main.h"
 
 class TextExporter: public Exporter<TextExporter> {
+private:
+    QString outputFooter(int pageNo, int lineWidth, qlonglong id);
+    QString outputHeader(int pageNo, int lineWidth, qlonglong id);
+
 public:
     TextExporter(Novel& novel, const QList<qlonglong>& items)
         : Exporter<TextExporter>(novel, items) {

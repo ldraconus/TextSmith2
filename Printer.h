@@ -36,6 +36,7 @@ private:
     qreal                mXFactor;
     qreal                mYFactor;
 
+public:
     class Marginal {
     public:
         enum class Justify { Left, Center, Right };
@@ -77,6 +78,7 @@ private:
         QString   mText =    0;
     };
 
+private:
     const QPageLayout::Unit toPdfUnits(QPrinter::Unit unit) const {
         switch(unit) {
         case QPrinter::Millimeter:  return QPageLayout::Millimeter;
@@ -96,9 +98,9 @@ private:
     }
 
     QString                           nextWord(int& charFormat, const QList<QTextFragment>& fragments = { });
-    List<Marginal>                    parseMarginal(const QString& marginal);
     void                              printMarginal(QPainter* painter, qlonglong y, const Marginal& object);
-    QString                           resolveTag(const QString& key);
+
+    static QString resolveTag(const QString& key, List<qlonglong>& ids, qlonglong id);
 
 public:
     Printer(QPrinter::PrinterMode mode = QPrinter::ScreenResolution)
@@ -202,4 +204,6 @@ public:
                                       QList<QTextBlock>& paragraphs,
                                       bool isCover);
     void              renderLine(QPainter* painter, QFont font, qreal x, qreal at, QList<Word>& line, bool fill, Qt::Alignment para, int lineWidth, int left);
+
+    static List<Marginal> parseMarginal(const QString& marginal, int pageNo, List<qlonglong>& ids, qlonglong id);
 };

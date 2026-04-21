@@ -3,6 +3,7 @@
 #include <QRegularExpression>
 #include <QObject>
 
+#include "List.h"
 #include "Novel.h"
 
 struct ExportMetadataField {
@@ -27,7 +28,7 @@ public:
     virtual void                   setChapterTag(const QString& tag) = 0;
     virtual void                   setCoverTag(const QString& tag) = 0;
     virtual void                   setFilename(const QString& tag) = 0;
-    virtual void                   setIds(const QList<qlonglong>& ids) = 0;
+    virtual void                   setIds(const List<qlonglong>& ids) = 0;
     virtual void                   setInternalImages(const QMap<QUrl, QImage>& images) = 0;
     virtual void                   setMetadataValue(const QString& meta, const QString& value) = 0;
     virtual void                   setSceneSeparator(const QString& sep) = 0;
@@ -59,8 +60,7 @@ protected:
     }
 
     static void registerExporter(const QString& name, Factory factory) {
-        auto insert = getRegistry().insert(name, factory);
-        Q_ASSERT_X(insert.value(), "ExporterBase::registerExporter", qPrintable(QString("Duplicate '%1'").arg(name)));
+        getRegistry().insert(name, factory);
     }
 };
 
@@ -72,7 +72,7 @@ public:
     void setCoverTag(const QString& c) override                       { mCoverTag = c.toLower(); }
     void setInternalImages(const QMap<QUrl, QImage>& images) override { mImages = images; }
     void setFilename(const QString& f) override                       { mFilename = f; }
-    void setIds(const QList<qlonglong>& ids) override                 { mItemIds = ids; }
+    void setIds(const List<qlonglong>& ids) override                  { mItemIds = ids; }
     void setSceneSeparator(const QString& sep) override               { mSceneSeparator = sep; }
     void setSceneTag(const QString& s) override                       { mSceneTag = s.toLower(); }
     void setUseSceneSeparator(bool use) override                      { mUseSceneSeparator = use; }
@@ -134,7 +134,7 @@ protected:
     QString            mCoverTag;
     QString            mFilename;
     QMap<QUrl, QImage> mImages;
-    QList<qlonglong>   mItemIds;
+    List<qlonglong>    mItemIds;
     Novel&             mNovel;
     QString            mSceneSeparator;
     QString            mSceneTag;

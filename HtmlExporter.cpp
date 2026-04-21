@@ -77,7 +77,7 @@ static constexpr int Chapter = 0;
 static constexpr int Cover   = 2;
 static constexpr int Scene   = 1;
 
-QString HtmlExporter::convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, const QList<QString>& tag) {
+QString HtmlExporter::convert(Novel& novel, List<qlonglong>& ids, const QString& cover, const QList<QString>& tag) {
     QString html = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
                    "<html>\n"
                    "    <head>\n"

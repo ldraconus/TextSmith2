@@ -2,12 +2,140 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QRandomGenerator>
 
 #include "Main.h"
 
 static constexpr auto Bold      = 1;
 static constexpr auto Italic    = 2;
 static constexpr auto Underline = 3;
+
+QString TextExporter::outputFooter(int pageNo, int lineWidth, qlonglong id) {
+    auto& prefs = Main::ref().prefs();
+    auto marginals = Printer::parseMarginal(prefs.footer(), pageNo, mItemIds, id);
+    /*
+    // xx xx xx
+    // xx    xx
+    // xx
+    //
+    // for each left, center, and right columns in the marginal:
+    //   columnHeight[which] = maxlines in column
+    //   columns[which] = lines in column
+    // max = max of columnHeights
+    // for line 0 to max:
+    //   if line < columnStart[left]: print left marginal line (column[left, columnStart[left]]
+    //   if line < columnStart[center]: print center marginal line (column[center, columnStart[center]]
+    //   if line < coumnStart[right]: print center marginal line (column[right, columnStart[right]]
+    //   increment all columnStarts
+    */
+    constexpr auto left = 0;
+    constexpr auto center = 1;
+    constexpr auto right =2;
+    int columnHeight[3] { 0, 0, 0 };
+    StringList columnLeft;
+    StringList columnCenter;
+    StringList columnRight;
+    for (const auto& marginal: marginals) {
+        if (marginal.justify() == Printer::Marginal::Justify::Left) {
+            columnHeight[left] = std::max<int>(columnHeight[left], marginal.line());
+            columnLeft.append(marginal.text());
+        }
+        else if (marginal.justify() == Printer::Marginal::Justify::Center) {
+            columnHeight[center] = std::max<int>(columnHeight[center], marginal.line());
+            columnCenter.append(marginal.text());
+        }
+        else if (marginal.justify() == Printer::Marginal::Justify::Right) {
+            columnHeight[right] = std::max<int>(columnHeight[right], marginal.line());
+            columnRight.append(marginal.text());
+        }
+    }
+    int max = std::max<int>({ columnHeight[left], columnHeight[center], columnHeight[right] });
+    int columnStart[3];
+    QString result;
+    for (int ln = 0; ln < max; ++ln) {
+        QString line;
+        if (ln < columnHeight[left]) { line = columnLeft[ln]; }
+        if (ln < columnHeight[center]) {
+            QString text = columnCenter[ln];
+            int spaces = text.length() / 2 - line.length();
+            if (spaces > 0) for (int i = 0; i < spaces; ++i) line += " ";
+            line += text;
+        }
+        if (ln < columnHeight[right]) {
+            QString text = columnRight[ln];
+            int spaces = lineWidth - text.length() - line.length();
+            if (spaces > 0) for (int i = 0; i < spaces; ++i) line += " ";
+            line += text;
+        }
+        line += QChar::LineFeed;
+        result += line;
+    }
+    return result;
+}
+
+QString TextExporter::outputHeader(int pageNo, int lineWidth, qlonglong id) {
+    auto& prefs = Main::ref().prefs();
+    auto marginals = Printer::parseMarginal(prefs.footer(), pageNo, mItemIds, id);
+    /*
+    // xx xx xx
+    // xx    xx
+    // xx
+    //
+    // for each left, center, and right columns in the marginal:
+    //   columnHeight[which] = maxlines in column
+    //   columns[which] = lines in column
+    // max = max of columnHeights
+    // for line 0 to max:
+    //   if line < columnStart[left]: print left marginal line (column[left, columnStart[left]]
+    //   if line < columnStart[center]: print center marginal line (column[center, columnStart[center]]
+    //   if line < coumnStart[right]: print center marginal line (column[right, columnStart[right]]
+    //   increment all columnStarts
+    */
+    constexpr auto left = 0;
+    constexpr auto center = 1;
+    constexpr auto right =2;
+    int columnHeight[3] { 0, 0, 0 };
+    int columnStart[3];
+    QStringList columns[3];
+    for (const auto& marginal: marginals) {
+        if (marginal.justify() == Printer::Marginal::Justify::Left) {
+            columnHeight[left] = std::max<int>(columnHeight[left], marginal.line());
+            columns[left].append(marginal.text());
+        }
+        else if (marginal.justify() == Printer::Marginal::Justify::Center) {
+            columnHeight[center] = std::max<int>(columnHeight[center], marginal.line());
+            columns[center].append(marginal.text());
+        }
+        else if (marginal.justify() == Printer::Marginal::Justify::Right) {
+            columnHeight[right] = std::max<int>(columnHeight[right], marginal.line());
+            columns[right].append(marginal.text());
+        }
+    }
+    int max = std::max<int>({ columnHeight[left], columnHeight[center], columnHeight[right] });
+    columnStart[left] = columnHeight[left] - max;
+    columnStart[center] = columnHeight[center] - max;
+    columnStart[right] = columnHeight[right] - max;
+    QString result;
+    for (int ln = 0; ln < max; ++ln) {
+        QString line;
+        if (columnStart[left] >= 0) { line = columns[left][columnStart[left]]; }
+        if (columnStart[center] >= 0) {
+            QString text = columns[center][columnStart[center]];
+            int spaces = text.length() / 2 - line.length();
+            if (spaces > 0) for (int i = 0; i < spaces; ++i) line += " ";
+            line += text;
+        }
+        if (columnStart[right] >= 0) {
+            QString text = columns[right][columnStart[right]];
+            int spaces = lineWidth - text.length() - line.length();
+            if (spaces > 0) for (int i = 0; i < spaces; ++i) line += " ";
+            line += text;
+        }
+        line += QChar::LineFeed;
+        result += line;
+    }
+    return result;
+}
 
 bool TextExporter::convert() {
     static constexpr auto PageHeight = 11.0;
@@ -65,17 +193,20 @@ bool TextExporter::convert() {
     if (underline[1].isEmpty()) underline[1] = underline[0];
 
     QString document;
-    int line = 0;
+    int lineNo = 0;
     bool firstLineEver = true;
-
+    int pageNo = 1;
     for (auto&& id: mItemIds) {
         Item& item = Main::ref().novel().findItem(id);
         if (item.hasTag(coverTags)) continue;
         if (item.hasTag(chapterTags)) {
             if (firstLineEver) firstLineEver = false;
             else {
+                for (; lineNo < linesPerPage; ++lineNo) document += QChar::LineFeed;
+                outputFooter(pageNo, lineWidth, id);
                 document += QChar::FormFeed;
-                line = 0;
+                lineNo = 0;
+                outputHeader(++pageNo, lineWidth, id);
             }
             firstScene = true;
         }
@@ -84,8 +215,10 @@ bool TextExporter::convert() {
             else if (useSep) {
                 int leading = (lineWidth - metrics.horizontalAdvance(sep)) / (2 * spaceWidth);
                 document += QChar::LineFeed;
+                lineNo++;
                 for (int i = 0; i < leading; ++i) document += space;
                 document += sep + QChar::LineFeed + QChar::LineFeed;
+                lineNo += 2;
             }
         }
 
@@ -116,9 +249,11 @@ bool TextExporter::convert() {
                 for (const auto& word: words) {
                     int wordLen = metrics.horizontalAdvance(word);
                     if (wordLen + (firstWord ? 0 : spaceWidth) + width >= lineWidth) {
-                        if (line == linesPerPage) {
+                        if (lineNo == linesPerPage) {
+                            text += outputFooter(pageNo, lineWidth, id);
                             text += QChar::FormFeed;
-                            line = 0;
+                            lineNo = 0;
+                            text += outputHeader(++pageNo, lineWidth, id);
                         }
                         lines.append(text);
                         text.clear();
@@ -141,7 +276,7 @@ bool TextExporter::convert() {
             }
             if (!text.isEmpty()) lines.append(text);
 
-            for (const auto& line: lines) {
+            for (auto line: lines) {
                 int spaces = 0;
                 switch (blockFmt.alignment()) {
                 case Qt::AlignVCenter:
@@ -149,7 +284,28 @@ bool TextExporter::convert() {
                 case Qt::AlignHCenter: spaces = (lineWidth - metrics.horizontalAdvance(line)) / (2 * spaceWidth); break;
                 case Qt::AlignRight:   spaces = (lineWidth - metrics.horizontalAdvance(line)) / spaceWidth;       break;
                 case Qt::AlignJustify:
-                case Qt::AlignAbsolute:                                                                           break;
+                case Qt::AlignAbsolute:
+                    spaces = (lineWidth - metrics.horizontalAdvance(line)) / spaceWidth;
+                    {
+                        StringList words { line.split(space) };
+                        if (words.count() > 1) {
+                            int eachWord = spaces / (words.count() - 1);
+                            int extra = spaces % (words.count() - 1);
+                            for (int i = 1; i < eachWord; ++i) words[i] = " " + words[i];
+                            QList<int> wordsAvailable;
+                            for (auto i = 1; i < words.count(); ++i) wordsAvailable.append(i);
+                            while (extra) {
+                                int pick = QRandomGenerator::global()->bounded(extra);
+                                int which = wordsAvailable[pick];
+                                words[which] = " " + words[which];
+                                wordsAvailable.remove(pick);
+                                --extra;
+                            }
+                        }
+                        line = words.join(" ");
+                    }
+                    spaces = 0;
+                    break;
                 case Qt::AlignBaseline:
                 case Qt::AlignTop:
                 case Qt::AlignBottom:
@@ -161,6 +317,8 @@ bool TextExporter::convert() {
             }
         }
     }
+    for (; lineNo != linesPerPage; ++lineNo) document += QChar::LineFeed;
+    document += outputFooter(pageNo, lineWidth, mItemIds.last());
 
     QFile file(dir + "/" + base + ext);
     if (file.open(QIODeviceBase::WriteOnly)) return file.write(document.toUtf8()) != -1;

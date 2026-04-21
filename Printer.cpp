@@ -83,7 +83,7 @@ static constexpr int image =     1 << 3;
 static QMap<QString, QImage> lineImages;
 
 void Printer::footer(QPainter* painter) {
-    auto marginals = parseMarginal(mPrefs->footer());
+    auto marginals = parseMarginal(mPrefs->footer(), mPageNo, mIds, mId);
     qreal bottom = mPrefs->margins()[Preferences::Bottom] * PointsPerInch * mYFactor;
     qreal y = pageRect(QPrinter::Point).height() * mYFactor - bottom;
     QFont font(mPrefs->fontFamily(), mPrefs->fontSize());
@@ -97,7 +97,7 @@ void Printer::footer(QPainter* painter) {
 }
 
 void Printer::header(QPainter* painter) {
-    auto marginals = parseMarginal(mPrefs->header());
+    auto marginals = parseMarginal(mPrefs->header(), mPageNo, mIds, mId);
     if (marginals.size() < 1) return;
 
     qreal y = mPrefs->margins(Preferences::Units::Points)[Preferences::Top] * mYFactor;
@@ -258,7 +258,7 @@ void Printer::page(QPainter* painter,
     painter->fillRect(paperRect(QPrinter::DevicePixel).toRect(), Qt::white);
 }
 
-List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
+List<Printer::Marginal> Printer::parseMarginal(const QString &marginal, int pageNo, List<qlonglong>& ids, qlonglong id) {
     List<Marginal> marginals;
     StringList htmls { marginal.split(Preferences::sep, Qt::KeepEmptyParts) };
     if (htmls.size() != 3) return marginals;
@@ -287,7 +287,7 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
     for (auto& margin: marginals) {
         QString text = margin.text();
         text.replace("\\\\", QChar(0x001e));
-        text.replace("\\#", QString::number(mPageNo));
+        text.replace("\\#", QString::number(pageNo));
         StringList tags { text.split("\\(") };
         text = "";
         bool first = true;
@@ -296,7 +296,7 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal) {
             else {
                 StringList parts { tag.split(")") };
                 QString value = "";
-                if (parts.size() != 1) text += resolveTag(parts[0]) + parts[1];
+                if (parts.size() != 1) text += Printer::resolveTag(parts[0], ids, id) + parts[1];
             }
             first = false;
         }
@@ -538,16 +538,16 @@ void Printer::renderLine(QPainter* painter, QFont font, qreal x, qreal at, QList
     }
 }
 
-QString Printer::resolveTag(const QString &key) {
+QString Printer::resolveTag(const QString& key, List<qlonglong>& ids, qlonglong id) {
     QString value;
-    for (const auto& id: mIds) {
+    for (const auto& i: ids) {
         const Item& item = Main::ref().novel().findItem(id);
         const auto& tags = item.tags();
         QString ret = "";
         for (const auto& tag: tags) {
             if (tag.startsWith(key + ":", Qt::CaseInsensitive)) value = tag.mid(key.length() + 1);
         }
-        if (mId == id) break;
+        if (i == id) break;
     }
     return value;
 }

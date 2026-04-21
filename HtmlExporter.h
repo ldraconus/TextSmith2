@@ -23,7 +23,7 @@ public:
     static QString Extension() { return "html"; }
     static QString Name()      { return "Html"; }
 
-    static QString convert(Novel& novel, QList<qlonglong>& ids, const QString& cover, const QList<QString>& tag);
+    static QString convert(Novel& novel, List<qlonglong>& ids, const QString& cover, const QList<QString>& tag);
     static void    extracted(QString& html, const QString& dir, QMap<QUrl, QImage>& images);
     static QString generateImageHtml(const QString& url);
     static QString addParagraphs(const QString& html);
