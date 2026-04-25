@@ -2406,14 +2406,13 @@ void Main::setupConnections() {
     for (const auto& file: gone) recent.remove(file);
     mPrefs.setRecentNovels(recent);
 
-    QMenu* exportMenu = new QMenu("Export", this);
-    mUi->actionExport->setMenu(exportMenu);
+    QMenu* saveAsMenu = mUi->menuSave_As;
 
     const auto& map = ExporterBase::registry();
 
     QString keysUsed;
     for (const QString& info: map.keys()) {
-        QAction* act = exportMenu->addAction(info);
+        QAction* act = saveAsMenu->addAction(info);
         QString key = findKey(keysUsed, info);
         if (!key.isEmpty()) act->setShortcut(QKeySequence("Ctrl+E, Ctrl+" + key));
         act->setShortcutContext(Qt::ApplicationShortcut);

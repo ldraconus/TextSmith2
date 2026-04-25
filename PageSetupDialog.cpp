@@ -71,6 +71,9 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
     mUi->orientationComboBox->setCurrentIndex((mPrinter->pageOrientation() == QPageLayout::Landscape) ? 1 : 0);
 
     mUi->useSeparatorCheckBox->setChecked(mPrefs->useSeparator());
+    mUi->chapterTagsLineEdit->setText(mPrefs->chapterTag());
+    mUi->sceneTagsLineEdit->setText(mPrefs->sceneTag());
+    mUi->coverTagsLineEdit->setText(mPrefs->coverTag());
     connect(mUi->useSeparatorCheckBox, &QCheckBox::checkStateChanged, this, [this]() {
         mPrefs->setUseSeparator(mUi->useSeparatorCheckBox->isChecked());
         mUi->separatorLineEdit->setEnabled(mPrefs->useSeparator());
@@ -143,6 +146,27 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
                 mPrefs->setOrientation(orientation);
                 updatePreview();
             });
+    connect(mUi->chapterTagsLineEdit, &QLineEdit::editingFinished, this,
+            [this]() {
+                mPrefs->setChapterTag(mUi->chapterTagsLineEdit->text());
+                mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->topLevelItem(0),
+                                                         { mUi->chapterTagsLineEdit->text(), mUi->sceneTagsLineEdit->text(), mUi->coverTagsLineEdit->text() }));
+                updatePreview();
+            });
+    connect(mUi->sceneTagsLineEdit, &QLineEdit::editingFinished, this,
+            [this]() {
+                mPrefs->setSceneTag(mUi->sceneTagsLineEdit->text());
+                mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->topLevelItem(0),
+                                                         { mUi->chapterTagsLineEdit->text(), mUi->sceneTagsLineEdit->text(), mUi->coverTagsLineEdit->text() }));
+                updatePreview();
+            });
+    connect(mUi->coverTagsLineEdit, &QLineEdit::editingFinished, this,
+            [this]() {
+                mPrefs->setChapterTag(mUi->chapterTagsLineEdit->text());
+                mPrinter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->topLevelItem(0),
+                                                         { mUi->chapterTagsLineEdit->text(), mUi->sceneTagsLineEdit->text(), mUi->coverTagsLineEdit->text() }));
+                updatePreview();
+            });
 
     connect(mUi->leftMarginDoubleSpinBox,   &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
     connect(mUi->rightMarginDoubleSpinBox,  &QDoubleSpinBox::editingFinished, this, [this]() { checkMargins(); });
@@ -181,6 +205,7 @@ PageSetupDialog::PageSetupDialog(QWidget* parent)
 }
 
 PageSetupDialog::~PageSetupDialog() {
+    delete mPrefs;
     delete mPreviewTimer;
     delete mPrinter;
     delete mUi;
