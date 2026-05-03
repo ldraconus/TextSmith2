@@ -7,6 +7,8 @@
 #include "Main.h"
 
 static constexpr auto Bold      = 1;
+static constexpr auto FontName  = "Courier";
+static constexpr auto FontSize  = 10;
 static constexpr auto Italic    = 2;
 static constexpr auto Underline = 3;
 
@@ -156,12 +158,12 @@ bool TextExporter::convert() {
     int pointWidth = pageSize.width() - pointMargins[Preferences::Left] - pointMargins[Preferences::Right];
     int pointHeight = pageSize.height() - pointMargins[Preferences::Top] - pointMargins[Preferences::Bottom];
 
-    QFont courier("Courier", 10);
+    QFont courier(FontName, FontSize);
     QFontMetrics metrics(courier);
 
     QChar space = QChar::Space;
     auto spaceWidth = metrics.horizontalAdvance(space);
-    int fontHeight = 12;
+    int fontHeight = FontSize;
 
     int linesPerPage = pointHeight / fontHeight;
     int lineWidth = pointWidth;
