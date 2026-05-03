@@ -288,10 +288,11 @@ bool TextExporter::convert() {
                     spaces = (lineWidth - metrics.horizontalAdvance(line)) / spaceWidth;
                     {
                         StringList words { line.split(space) };
-                        if (words.count() > 1) {
-                            int eachWord = spaces / (words.count() - 1);
-                            int extra = spaces % (words.count() - 1);
-                            for (int i = 1; i < eachWord; ++i) words[i] = " " + words[i];
+                        int count = words.count();
+                        if (count > 1) {
+                            int eachWord = spaces / (count - 1);
+                            int extra = spaces % (count - 1);
+                            for (int i = 1; i < count; ++i) for (int j = 0; j < eachWord; ++j) words[i] = " " + words[i];
                             QList<int> wordsAvailable;
                             for (auto i = 1; i < words.count(); ++i) wordsAvailable.append(i);
                             while (extra) {

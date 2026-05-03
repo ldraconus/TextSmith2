@@ -2321,7 +2321,7 @@ void Main::setupActions() {
     mActions.clear();
     mActions
         << mUi->actionSave
-        << mUi->actionSave_As
+        << mUi->actionNovel
         << mUi->actionAbout_TextSmith
         << mUi->actionas_Plain_text
         << mUi->actionas_EBook
@@ -2379,7 +2379,7 @@ void Main::setupConnections() {
     connect(mUi->actionPage_Setup, &QAction::triggered, this, &Main::pageSetup);
     connect(mUi->actionPrint,      &QAction::triggered, this, &Main::printAction);
     connect(mUi->actionSave,       &QAction::triggered, this, &Main::saveAction);
-    connect(mUi->actionSave_As,    &QAction::triggered, this, &Main::saveAsAction);
+    connect(mUi->actionNovel,      &QAction::triggered, this, &Main::saveAsAction);
 
     // Note: we remeber /all/ of the novels worked on, we just delete the ones that have been delete and suddenly you can see older novels!
     mUi->action_Clear_Recent_Novels->setShortcut(QKeySequence("Alt+C,Alt+R"));
