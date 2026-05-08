@@ -161,6 +161,7 @@ qt_add_executable(TextSmith2
     repo/Updates.xml
     TSVersion.h
     TSVersion
+    README.md
 
 )
 
