@@ -504,7 +504,8 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
     cursor.beginEditBlock();
     QJsonArray images = top[Images].toArray();
     QMap<QUrl, QUrl> in2Internal;
-    for (auto&& image: images) {
+    for (auto i = 0; i < images.size(); ++i) {
+        auto image = images[i];
         if (!image.isObject()) continue;
         QJsonObject img = image.toObject();
         if (!img.contains(Name) || !img[Name].isString()) continue;
@@ -528,7 +529,8 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
 
     QJsonArray paragraphs = top[Blocks].toArray();;
     bool first = true;
-    for (auto&& paragraph: paragraphs) {
+    for (int i = 0; i < paragraphs.size(); ++i) {
+        auto paragraph = paragraphs[i];
         if (!paragraph.isObject()) return;
         QJsonObject blk = paragraph.toObject();
         QTextBlockFormat format = fromTextBlockFormatObject(blk);
@@ -540,7 +542,8 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
         } else cursor.insertBlock(format, charFormat);
         if (!blk.contains(Fragments) || !blk[Fragments].isArray()) continue;
         QJsonArray fragments = blk[Fragments].toArray();
-        for (auto&& fragment: fragments) {
+        for (auto i = 0; i < fragments.size(); ++i) {
+            auto fragment = fragments[i];
             if (fragment.isObject()) {
                 QJsonObject frag = fragment.toObject();
                 if (frag.contains(Image)) {
@@ -620,7 +623,8 @@ QJsonDocument TextEdit::toJson(const QTextCursor& selection) const {
     data[Blocks] = slctBlks;
 
     QJsonArray slctImgs;
-    for (auto&& name: images) {
+    for (auto i = 0; i < images.size(); ++i) {
+        auto name = images[i];
         if (name.startsWith("internal://")) {
             QJsonObject img;
             img[Name] = name;

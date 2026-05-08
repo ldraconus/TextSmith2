@@ -82,7 +82,8 @@ void ExportDialog::loadFields() {
     bool create = mWidget.isEmpty();
     QLineEdit* lineEdit { nullptr };
     QComboBox* comboBox { nullptr };
-    for (auto&& [i, meta]: enumerate(metaData)) {
+    for (auto i = 0; i < metaData.count(); ++i) {
+        auto& meta = metaData[i];
         if (create) {
             auto* label = new QLabel(this);
             label->setText(meta.label);

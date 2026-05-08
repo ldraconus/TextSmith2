@@ -268,14 +268,18 @@ List<Printer::Marginal> Printer::parseMarginal(const QString &marginal, int page
         edit.setHtml(html);
         lcr.append(edit.toPlainText());
     }
-    for (auto&& [i, str]: enumerate(lcr)) {
+    for (auto i = 0; i < lcr.size(); ++i) {
+        auto& str = lcr[i];
         StringList lines { str.split("\n", Qt::KeepEmptyParts) };
         Marginal::Justify justify = Marginal::Justify::Left;
         switch (i) {
         case 1: justify = Marginal::Justify::Center; break;
         case 2: justify = Marginal::Justify::Right;  break;
         }
-        for (auto&& [lineNum, line]: enumerate(lines)) marginals.append({ justify, lineNum, line });
+        for (auto lineNum = 0; lineNum < lines.size(); ++lineNum) {
+            auto line = lines[lineNum];
+            marginals.append({ justify, lineNum, line });
+        }
     }
 
     /*
@@ -388,7 +392,8 @@ void Printer::printParagraphs(QPainter* painter,
     int indent = 4 * en;
     int baseLine = fontMetrics.descent();
 
-    for (auto&& [num, paragraph]: enumerate(paragraphs)) {
+    for (auto i = 0; i < paragraphs.size(); ++i) {
+        auto paragraph = paragraphs[i];
         QList<QTextFragment> fragments;
         for (QTextBlock::iterator it = paragraph.begin(); !it.atEnd(); ++it) fragments << it.fragment();
 

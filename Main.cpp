@@ -379,7 +379,8 @@ void Main::doClearRecentNovels() {
     QMenu* recentMenu = mUi->menu_Recent_Novels;
     auto actions = recentMenu->actions();
     QAction* clearAction = mUi->action_Clear_Recent_Novels;
-    for (auto&& action: actions) {
+    for (auto i = 0; i < actions.count(); ++i) {
+        auto& action = actions[i];
         if (action != clearAction) recentMenu->removeAction(action);
     }
 }
@@ -1244,7 +1245,8 @@ void Main::doSpellcheckNext() {
                 delete btn;
             }
             QPushButton* button { nullptr };
-            for (auto&& [i, suggestion]: enumerate(suggestions)) {
+            for (auto i = 0; i < suggestions.count(); ++i) {
+                auto& suggestion = suggestions[i];
                 auto* contents = mSpellWidget->scrollAreaWidgetContents;
                 auto* button = new QPushButton(suggestion, contents);
                 button->setObjectName(mSpellcheckWord.mWord);

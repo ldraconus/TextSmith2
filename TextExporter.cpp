@@ -198,7 +198,8 @@ bool TextExporter::convert() {
     int lineNo = 0;
     bool firstLineEver = true;
     int pageNo = 1;
-    for (auto&& id: mItemIds) {
+    for (int i = 0; i < mItemIds.size(); ++i) {
+        auto id = mItemIds[i];
         Item& item = Main::ref().novel().findItem(id);
         if (item.hasTag(coverTags)) continue;
         if (item.hasTag(chapterTags)) {

@@ -119,7 +119,8 @@ bool Preferences::load() {
     mPosition =          settings.value(Position,         DefaultPosition).toLongLong();
     QJsonArray recent =  settings.value(RecentNovels,     DefaultRecentNovels).toJsonArray();
     mRecentNovels.clear();
-    for (auto&& novel: recent) {
+    for (auto i = 0; i < recent.size(); ++i) {
+        auto novel = recent[i];
         if (!novel.isObject()) continue;
         QJsonObject recentNovel = novel.toObject();
         if (recentNovel.contains(Title) && recentNovel.contains(Path)) addNovel(recentNovel[Title].toString(), recentNovel[Path].toString());
@@ -281,7 +282,8 @@ bool Preferences::read(Json5Object& obj) {
         }
         arr =               Item::hasArr(obj, RecentNovels,     { });
         mRecentNovels.clear();
-        for (auto&& i: arr) {
+        for (auto j = 0; j < arr.size(); ++j) {
+            auto i = arr[j];
             if (!i.isObject()) continue;
             Json5Object obj = i.toObject();
             if (obj.contains(Title) && obj.contains(Path)) addNovel(obj[Title].toString(), obj[Path].toString());
