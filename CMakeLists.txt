@@ -214,6 +214,10 @@ find_program(BINARY_CREATOR
              NAMES binarycreator
              PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin"
 )
+find_program(REPOGEN
+             NAMES repopgen
+             PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin"
+)
 find_program(WINDEPLOY
              NAMES windeployqt6 windeployqt6.exe
              PATHS "${QT_BIN_DIR}"
@@ -222,11 +226,10 @@ find_program(WINDEPLOY
 
 # 2. Call bash, passing the script as an argument
 add_custom_target(Installer
-# Pro-tip: Use CMAKE_CURRENT_SOURCE_DIR instead of hardcoding the D:/ drive
-# so you can move the project folder later without breaking the build.
                   COMMAND "${BASH_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/installer.sh"
                           "${CMAKE_CURRENT_BINARY_DIR}"
                           "${BINARY_CREATOR}"
+                          "${REPOGEN}"
                           "${WINDEPLOY}"
                           "TextSmith2"
                           "TextSmith"
