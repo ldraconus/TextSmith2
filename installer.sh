@@ -54,14 +54,14 @@ else
 fi
 
 cd ../../..
-rm -rf repo
-echo "Building update repository"
-$REPOGEN -p packages repo
-cp ../repo/Updates.xml repo/Updates.xml
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml > repo/Updates.xml2
-sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml2 > repo/Updates.xml3
-awk '/<Version>/{getline ver; getline; print "<Version>" ver "</Version>"; next} 1' repo/Updates.xml3 > repo/Updates.xml
-rm repo/Updates.xml[23]
+#rm -rf repo
+#echo "Building update repository"
+#$REPOGEN -p packages repo
+#cp ../repo/Updates.xml repo/Updates.xml
+#sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml > repo/Updates.xml2
+#sed -e '/<!-- VERSION -->/r ../TSVersion' -e '/<!-- VERSION -->/d' repo/Updates.xml2 > repo/Updates.xml3
+#awk '/<Version>/{getline ver; getline; print "<Version>" ver "</Version>"; next} 1' repo/Updates.xml3 > repo/Updates.xml
+#rm repo/Updates.xml[23]
 
 echo "Building installer"
 $BINARY_CREATOR -c config/config.xml -p packages --offline-only ${TO_PROG}Installer${INSTALLER_EXT}
