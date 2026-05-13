@@ -23,7 +23,8 @@ ExportDialog::ExportDialog(ExporterBase* exporter, QWidget* parent)
     mUi->sceneTagLineEdit->setPlaceholderText(prefs.sceneTag());
     mUi->coverTagLineEdit->setPlaceholderText(prefs.coverTag());
     mUi->sceneSeparatorLineEdit->setPlaceholderText(prefs.separator());
-    mUi->sceneSeparatorCheckBox->setChecked(prefs.useSeparator());    QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
+    mUi->sceneSeparatorCheckBox->setChecked(prefs.useSeparator());
+    QFont font(prefs.uiFontFamily(), prefs.uiFontSize());
     prefs.applyFontToTree(this, font);
     updateGeometry();
     repaint();
@@ -154,6 +155,7 @@ void ExportDialog::getFilename() {
                                                     Main::ref().docDir(),
                                                     name + " files (*." + ext + ");;All Files (*.*)");
     if (filename.isEmpty()) return;
+    if (!filename.endsWith(ext, Qt::CaseInsensitive)) filename = filename + "." + ext;
     mUi->exportFilenameLineEdit->setText(filename);
     filenameChanged();
 }
