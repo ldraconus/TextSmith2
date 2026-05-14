@@ -126,7 +126,7 @@ void ExportDialog::apply() {
     mExporter->setIds(Main::ref().vectorOfIds(Main::ref().ui()->treeWidget->currentItem(), { chapter, scene, cover }));
     auto& prefs = Main::ref().prefs();
     auto& metaData = mExporter->metadataFields();
-    for (auto [i, meta]: enumerate(metaData)) {
+    for (auto [i, meta]: enumerate(metaData)) {                                                                                  // NOLINT
         if (meta.getChoices != nullptr) {
             QComboBox* comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
             if (!comboBox->currentText().isEmpty()) meta.value = comboBox->currentText();

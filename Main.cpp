@@ -485,8 +485,8 @@ void Main::doExport(const QString& name) {
     exporter->setChapterTag(dlg.chapterTag());
     exporter->setCoverTag(dlg.coverTag());
     exporter->setSceneTag(dlg.sceneTag());
-    exporter->setUseSceneSeparator(mPrefs.useSeparator());
-    exporter->setSceneSeparator(mPrefs.separator());
+    exporter->setUseSceneSeparator(dlg.useSeparator());
+    exporter->setSceneSeparator(dlg.separator());
 
     exporter->setInternalImages(mUi->textEdit->internalImages());
     auto* rootItem = mUi->treeWidget->topLevelItem(0);

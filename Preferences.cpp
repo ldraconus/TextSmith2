@@ -46,6 +46,7 @@ constexpr auto Path             { "Path" };
 constexpr auto Position         { "Position" };
 constexpr auto RecentNovels     { "RecentNovels" };
 constexpr auto SceneTag         { "SceneTag" };
+constexpr auto Separator        { "Separator " };
 constexpr auto Theme            { "Theme" };
 constexpr auto Title            { "Title" };
 constexpr auto ToolbarVisible   { "ToolbarVisible" };
@@ -53,6 +54,7 @@ constexpr auto TypingSounds     { "TypingSounds" };
 constexpr auto UiFontFamily     { "UiFontFasmily" };
 constexpr auto UiFontSize       { "UiFontSize" };
 constexpr auto Underline        { "Underline" };
+constexpr auto UseSeparator     { "UseSeparator" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
@@ -75,6 +77,7 @@ const     auto DefaultOther          { QJsonArray() };
 constexpr auto DefaultPageSize       { "Letter" };
 constexpr auto DefaultPosition       { 0 };
 const     auto DefaultRecentNovels   { QJsonArray() };
+constexpr auto DefaultSeparator      { "###" };
 const     auto DefaultSplitter       { QJsonArray() };
 constexpr auto DefaultSave           { false };
 constexpr auto DefaultSceneTag       { "scene" };
@@ -82,6 +85,7 @@ constexpr auto DefaultSounds         { false };
 constexpr auto DefaultToolbarVisible { true };
 constexpr auto DefaultTheme          { 2 };
 constexpr auto DefaultUnderline      { "_,_"};
+constexpr auto DefaultUseSeparator   { false };
 constexpr auto DefaultVoice          { 0 };
 
 bool Preferences::load() {
@@ -126,12 +130,14 @@ bool Preferences::load() {
         if (recentNovel.contains(Title) && recentNovel.contains(Path)) addNovel(recentNovel[Title].toString(), recentNovel[Path].toString());
     }
     mSceneTag =          settings.value(SceneTag,         DefaultSceneTag).toString();
+    mSeparator =         settings.value(Separator,        DefaultSeparator).toString();
     mTheme =             settings.value(Theme,            DefaultTheme).toInt();
     mToolbarVisible =    settings.value(ToolbarVisible,   DefaultToolbarVisible).toBool();
     mTypingSounds =      settings.value(TypingSounds,     DefaultSounds).toBool();
     mUiFontFamily =      settings.value(UiFontFamily,     def.defaultFamily()).toString();
     mUiFontSize =        settings.value(UiFontSize,       def.pointSize()).toInt();
     mUnderline =         settings.value(Underline,        DefaultUnderline).toString();
+    mUseSeparator =      settings.value(UseSeparator,     DefaultUseSeparator).toBool();
     mVoice =             settings.value(Voice,            DefaultVoice).toInt();
     mWindow =            settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
@@ -218,10 +224,12 @@ bool Preferences::read(Json5Object& obj) {
         mPageSize = DefaultPageSize;
         mPosition = DefaultPosition;
         mSceneTag = DefaultSceneTag;
+        mSeparator = DefaultSeparator;
         mTheme = DefaultTheme;
         mToolbarVisible = DefaultToolbarVisible;
         mUiFontFamily = def.defaultFamily();
         mUiFontSize = def.pointSize();
+        mUseSeparator = DefaultUseSeparator;
         Json5Object window = Item::hasObj(obj, "windows", {});
         Json5Object mainWin = Item::hasObj(window, "mainwindow", { });
         Json5Array arr = Item::hasArr(mainWin, "splitter", {});;
@@ -255,11 +263,13 @@ bool Preferences::read(Json5Object& obj) {
         mPosition =         Item::hasNum(obj,  Position,         qlonglong(DefaultPosition));
         mPageSize =         Item::hasStr(obj,  PageSize,         DefaultPageSize);
         mSceneTag =         Item::hasStr(obj,  SceneTag,         DefaultSceneTag);
+        mSeparator =        Item::hasStr(obj,  Separator,        DefaultSeparator);
         mTheme =            Item::hasNum(obj,  Theme,            qlonglong(DefaultTheme));
         mToolbarVisible =   Item::hasBool(obj, ToolbarVisible,   DefaultToolbarVisible);
         mTypingSounds =     Item::hasBool(obj, TypingSounds,     DefaultSounds);
         mUiFontFamily =     Item::hasStr(obj,  UiFontFamily,     def.defaultFamily());
         mUiFontSize =       Item::hasNum(obj,  UiFontSize,       qlonglong(def.pointSize()));
+        mUseSeparator =     Item::hasBool(obj, UseSeparator,     DefaultUseSeparator);
         mUnderline =        Item::hasStr(obj,  Underline,        DefaultUnderline);
         mVoice =            Item::hasBool(obj, Voice,            DefaultVoice);
         arr =               Item::hasArr(obj,  MainSplitter,     { });
@@ -337,12 +347,14 @@ bool Preferences::save() {
     }
     settings.setValue(RecentNovels,     rnv);
     settings.setValue(SceneTag,         mSceneTag);
+    settings.setValue(Separator,        mSeparator);
     settings.setValue(Theme,            mTheme);
     settings.setValue(ToolbarVisible,   mToolbarVisible);
     settings.setValue(TypingSounds,     mTypingSounds);
     settings.setValue(UiFontFamily,     mUiFontFamily);
     settings.setValue(UiFontSize,       mUiFontSize);
     settings.setValue(Underline,        mUnderline);
+    settings.setValue(UseSeparator,     mUseSeparator);
     settings.setValue(Voice,            mVoice);
     settings.setValue(WindowLoc,        mWindow);
     return true;
@@ -669,12 +681,14 @@ Json5Object Preferences::write() {
     }
     obj[RecentNovels] =     rnv;
     obj[SceneTag] =         mSceneTag;
+    obj[Separator] =        mSeparator;
     obj[Theme] =            mTheme;
     obj[ToolbarVisible] =   mToolbarVisible;
     obj[TypingSounds] =     mTypingSounds;
     obj[UiFontFamily] =     mUiFontFamily;
     obj[UiFontSize] =       mUiFontSize;
     obj[Underline] =        mUnderline;
+    obj[UseSeparator] =     mUseSeparator;
     obj[Voice] =            mVoice;
     Json5Array arr;
     arr.append(qlonglong(mWindow.x()));

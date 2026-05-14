@@ -234,7 +234,7 @@ bool Printer::outputNovel(List<qlonglong> ids,
                 printLine(painter, pageSize, finishPage, margins, font, at, "\n", startingPage);
             }
         }
-        if (item.hasTag(coverTags) && startingPage && mPageNo == 1) {
+        if (item.hasTag(coverTags) && startingPage && mPageNo != 1) {
             ++mPageNo;
             at = margins.top();
             startingPage = true;
@@ -444,7 +444,7 @@ void Printer::printParagraphs(QPainter* painter,
                 int imgHeight = lineImages[word].height();
                 height = (height > imgHeight) ? height : imgHeight;
 
-                if (lineImages[word].width() + width > lineWidth || height + at > bottom) {
+                if (lineImages[word].width() + width > lineWidth || height + at - baseLine > bottom) {
                     renderLine(painter, font, x, at, line, fill, paraFormat, lineWidth, margins.left());
                     at += height;
                     height = lineHeight;
