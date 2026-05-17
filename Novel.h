@@ -3,6 +3,7 @@
 #include <QString>
 #include <QTextBlockFormat>
 #include <QTextDocument>
+#include <QTextDocumentFragment>
 
 #include "5th.h"
 #include "List.h"
@@ -88,6 +89,7 @@ public:
     void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
     void             toTextCharFormat(Json5Object& obj, QTextCharFormat& format);
 
+    virtual Json5Object toObject(QTextDocument* doc);
     virtual Json5Object toObject();
 
     static QString changeFont(QTextDocument* doc, const QFont& font);
@@ -95,6 +97,8 @@ public:
 
     static auto getNextID()                  { return sNextID; }
     static void resetLastID(qlonglong i = 0) { sNextID = i; }
+
+    static Json5Object fromDocumentFrgment(QTextDocumentFragment* fragment);
 
     static Json5Array  hasArr(Json5Object& obj,  const QString&    str,  const Json5Array&  def = { });
     static Json5Array  hasArr(Json5Object& obj,  const StringList& strs, const Json5Array&  def = { });

@@ -175,12 +175,12 @@ QString TextEdit::embedImagesAsBase64(const QString &html) {
         QString intUrl = match.captured(1);   // internal:///...
 
         // Convert file URL to local path
-        QByteArray byteArray;
-        QBuffer buffer(&byteArray);
+        QByteArray fileData;
+        QBuffer buffer(&fileData);
         buffer.open(QIODevice::WriteOnly);
 
         // Save as PNG
-        mOriginals[intUrl].save(&buffer, "PNG");        QByteArray fileData;
+        mOriginals[intUrl].save(&buffer, "PNG");
         buffer.close();
 
         // Determine MIME type from extension

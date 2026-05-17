@@ -93,7 +93,8 @@ Main* Main::sMain = nullptr;
 #ifdef QT_DEBUG
 static constexpr auto saveCompression = Json5Object::HumanReadable;
 #else
-static constexpr auto saveCompression = Json5Object::Compress;
+static constexpr auto saveCompression   = Json5Object::Compress;
+static constexpr auto saveNoCompression = Json5Object::HumanReadable;
 #endif
 
 
@@ -395,7 +396,9 @@ void Main::doCopy() {
 
     if (w == mUi->textEdit || mUi->textEdit->isAncestorOf(w)) {
         auto cursor = mUi->textEdit->textCursor();
-        if (cursor.hasSelection()) mUi->textEdit->copy();
+        if (cursor.hasSelection()) {
+            mUi->textEdit->copy();
+        }
         return;
     }
 
@@ -1989,7 +1992,7 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
-    if (!mNovel.save(saveCompression) && !noUi) {
+    if (!mNovel.save(saveNoCompression) && !noUi) {
         mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
                 [this]() { doNothing(); },
                 "Something unexpected has happened");

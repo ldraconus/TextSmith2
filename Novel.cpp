@@ -83,6 +83,14 @@ QString Item::setupDocument(const QFont& font, QTextDocument* doc) {
     return html;
 }
 
+Json5Object Item::fromDocumentFrgment(QTextDocumentFragment* fragment) {
+    QTextDocument text;
+    QTextCursor cursor(&text);
+    cursor.insertFragment(*fragment);
+    Item item;
+    return item.toObject(&text);
+}
+
 void Item::clear() {
     mCount = 0;
     mDoc = nullptr;
@@ -233,11 +241,11 @@ void Item::loadInternalImages() {
 
 }
 
-Json5Object Item::toObject() {
+Json5Object Item::toObject(QTextDocument* document) {
     Json5Object obj;
 
     Json5Array doc;
-    for (QTextBlock block = mDoc->begin(); block != mDoc->end(); block = block.next()) {
+    for (QTextBlock block = document->begin(); block != document->end(); block = block.next()) {
         Json5Object blk;
         auto format = block.blockFormat();
         toTextBlockFormat(blk, format);
@@ -273,6 +281,10 @@ Json5Object Item::toObject() {
     for (auto i = 0; i < mTags.count(); ++i) tags.append(mTags[i]);
     obj[Novel::Tags] =     tags;
     return obj;
+}
+
+Json5Object Item::toObject() {
+    return toObject(mDoc);
 }
 
 Json5Array Item::hasArr(Json5Object& obj, const QString& str, const Json5Array& def) {

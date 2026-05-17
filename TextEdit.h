@@ -25,20 +25,21 @@ public:
     void                setSoundPool(SoundPool* s)                        { mSoundPool = s; }
 
     // Serialization: internal images only
-    void       addInternalImage(const QUrl& url, const QImage& image, bool add = true);
-    bool       canInsertFromMimeData(const QMimeData *source) const override;
-    void       clearInternalImages();
-    void       registerInternalImages();
-    void       removeInternalImage(const QUrl& url);
-    QJsonArray serializeExternalImagesToJson();
-    QJsonArray serializeInternalImagesToJson();
-    void       setWrapMargin();
+    void          addInternalImage(const QUrl& url, const QImage& image, bool add = true);
+    bool          canInsertFromMimeData(const QMimeData *source) const override;
+    void          clearInternalImages();
+    QString       embedImagesAsBase64(const QString &html);
+    void          registerInternalImages();
+    void          removeInternalImage(const QUrl& url);
+    QJsonArray    serializeExternalImagesToJson();
+    QJsonArray    serializeInternalImagesToJson();
+    void          setWrapMargin();
+    QJsonDocument toJson(const QTextCursor& selection) const;
 
 protected:
     QMimeData* createMimeDataFromSelection() const override;
     void       dragEnterEvent(QDragEnterEvent* event) override;
     void       dropEvent(QDropEvent* event) override;
-    QString    embedImagesAsBase64(const QString &html);
     void       insertFromMimeData(const QMimeData* source) override;
     void       keyPressEvent(QKeyEvent* key) override;
     void       resizeEvent(QResizeEvent* event) override;
@@ -65,7 +66,6 @@ private:
     void             resizeImagesToFit();
     void             scheduleResize();
     QJsonObject      serializeInteralImageToJson(const QUrl& url, const QImage& img);
-    QJsonDocument    toJson(const QTextCursor& selection) const;
     void             toTextBlockFormat(QJsonObject& obj, const QTextBlockFormat format) const;
     void             toTextCharFormat(QJsonObject& obj, const QTextCharFormat format) const;
 
