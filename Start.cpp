@@ -2,6 +2,10 @@
 
 #include <QApplication>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
@@ -10,8 +14,10 @@ int main(int argc, char *argv[]) {
 #ifdef Q_OS_WIN
     FILE* nul = nullptr;
     freopen_s(&nul, "NUL", "w", stderr);
+    FreeConsole();
 #endif
 #endif
+
 
     Main w(&a);
     w.show();

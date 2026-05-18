@@ -199,6 +199,10 @@ else()
     endif()
 endif()
 
+set_target_properties(TextSmith2 PROPERTIES WIN32_EXECUTABLE TRUE)
+get_target_property(props TextSmith2 WIN32_EXECUTABLE)
+message(STATUS "WIN32_EXECUTABLE: ${props}")
+
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE
     QT_DISABLE_DEPRECATED_BEFORE=0x060000
