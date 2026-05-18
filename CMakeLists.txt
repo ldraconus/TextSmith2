@@ -162,7 +162,6 @@ qt_add_executable(TextSmith2
     TSVersion.h
     TSVersion
     README.md
-
 )
 
 # Link Qt + libzip
