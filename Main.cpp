@@ -2083,8 +2083,8 @@ void Main::setTitle() {
     if (!mNovel.filename().isEmpty()) {
         QFileInfo info(mNovel.filename());
         title += " - " + info.fileName();
+        if (!mNovel.isChanged()) title += " [Saved]";
     }
-    if (!mNovel.isChanged()) title += " [Saved]";
     mUi->actionSave->setEnabled(mNovel.isChanged());
     setWindowTitle(title);
 }
