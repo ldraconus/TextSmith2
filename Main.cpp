@@ -806,7 +806,7 @@ void Main::doMoveDown() {
         parent->insertChild(idxOther, treeItem);
     }
     mUi->treeWidget->setCurrentItem(treeItem);
-    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, oldIdx, idxOther));
+//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, oldIdx, idxOther));
 }
 
 void Main::doMoveOut() {
@@ -820,7 +820,7 @@ void Main::doMoveOut() {
     auto* grandParent = parent->parent();
     auto parentIdx = grandParent->indexOfChild(parent);
     grandParent->insertChild(parentIdx, treeItem);
-    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, parentIdx));
+//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, parentIdx));
     mUi->treeWidget->setCurrentItem(treeItem);
 }
 
@@ -835,14 +835,14 @@ void Main::doMoveUp() {
     if (idx == 0) {
         if (parent == mUi->treeWidget->topLevelItem(0)) return;
         grandParent = parent->parent();
-        parent->takeChild(idx);
+        treeItem = parent->takeChild(idx);
         idxOther = grandParent->indexOfChild(parent);
         grandParent->insertChild(idxOther, treeItem);
     } else {
-        parent->takeChild(idx);
+        treeItem = parent->takeChild(idx);
         parent->insertChild(idxOther, treeItem);
     }
-    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, idxOther));
+//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, idxOther));
     mUi->treeWidget->setCurrentItem(treeItem);
 }
 
