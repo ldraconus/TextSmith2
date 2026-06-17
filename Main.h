@@ -242,6 +242,7 @@ private:
     void           registerImages(const QString& html, QTextDocument* doc);
     void           replaceText(QTextCursor cursor, const QString& text);
     void           save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
+    QString        saveFileWithOption(QWidget *parent, const QString& prompt, const QString& dir, bool &optionChecked);
     TreeNode       saveTree(QTreeWidgetItem* node);
     QSize          scrollBarSize(QScrollBar* bar);
     void           selectionItems();

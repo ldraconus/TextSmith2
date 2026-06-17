@@ -91,11 +91,11 @@ constexpr qlonglong Second = 1000;
 Main* Main::sMain = nullptr;
 
 #ifdef QT_DEBUG
-static constexpr auto saveCompression = Json5Object::HumanReadable;
+static constexpr auto saveCompression   = Json5Object::HumanReadable;
 #else
 static constexpr auto saveCompression   = Json5Object::Compress;
-static constexpr auto saveNoCompression = Json5Object::HumanReadable;
 #endif
+static constexpr auto saveNoCompression = Json5Object::HumanReadable;
 
 
 class EditItemCommand
@@ -1174,8 +1174,42 @@ void Main::doSave() {
     setTitle();
 }
 
+QString Main::saveFileWithOption(QWidget *parent, const QString& prompt, const QString& dir, bool &optionChecked) {
+    QFileDialog dialog(parent, "Save As");
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setNameFilter("Novel Files (*.novel)");
+    dialog.setDefaultSuffix("novel");
+
+    // Qt's QFileDialog uses a QGridLayout internally
+dialog.show();
+for (auto *child : dialog.findChildren<QWidget*>()) qDebug() << child->metaObject()->className() << child->objectName();
+auto* layout = dialog.layout();
+if (layout == nullptr) qDebug() << "Layout is null";
+auto* metaObject = layout->metaObject();
+if (metaObject == nullptr) qDebug() << "metaObject is null";
+auto className = metaObject->className();
+qDebug() << className;
+    QGridLayout* mainLayout = qobject_cast<QGridLayout*>(dialog.layout());
+    if (mainLayout) {
+        QCheckBox* checkBox = new QCheckBox("Save a backup copy", &dialog);
+        // Insert a new row at the bottom, spanning all columns
+        int row = mainLayout->rowCount();
+        mainLayout->addWidget(checkBox, row, 0, 1, mainLayout->columnCount());
+
+        if (dialog.exec() == QDialog::Accepted) {
+            optionChecked = checkBox->isChecked();
+            auto selected = dialog.selectedFiles();
+            return selected.first();
+        }
+    }
+
+    optionChecked = false;
+    return {};
+}
+
 bool Main::doSaveAs() {
-    QString filename = QFileDialog::getSaveFileName(this, "Save the Novel as?", mDocDir, "Novels (*.novel);;All Files (*.*)");
+    bool binary = false;
+    QString filename = saveFileWithOption(this, "Save the Novel as?", mDocDir, binary);
     if (filename.isEmpty()) return false;
     if (!filename.endsWith(".novel", Qt::CaseInsensitive)) filename.append(".novel");
     mNovel.setFilename(filename);

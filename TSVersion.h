@@ -1,1 +1,1 @@
-static constexpr auto TSVersion = "2.0.16";
+static constexpr auto TSVersion = "2.0.18";
