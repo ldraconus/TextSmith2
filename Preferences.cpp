@@ -22,6 +22,7 @@
 #include <StringList.h>
 
 constexpr auto ActingScripts    { "ActingScripts" };
+constexpr auto BinarySaveFormat { "BinarySaveFormat" };
 constexpr auto Bold             { "Bold" };
 constexpr auto ChapterTag       { "ChapterTag" };
 constexpr auto Company          { "SoftwareOnHand" };
@@ -58,35 +59,36 @@ constexpr auto UseSeparator     { "UseSeparator" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
-const     auto DefaultActingScripts  { QJsonArray() };
-constexpr auto DefaultBold           { "*,*" };
-constexpr auto DefaultChapterTag     { "chapter" };
-constexpr auto DefaultCoverTag       { "cover" };
-constexpr auto DefaultFont           { "Segoe UI" };
-constexpr auto DefaultFontSize       { 9 };
-constexpr auto DefaultFooter         { "\x1F\x1F" };
-constexpr auto DefaultHeader         { "\x1F\x1F" };
-constexpr auto DefaultInterval       { 5 * 60 };
-constexpr auto DefaultItalic         { "/,/" };
-constexpr auto DefaultMarginBottom   { 1.0 };
-constexpr auto DefaultMarginLeft     { 1.0 };
-constexpr auto DefaultMarginRight    { 1.0 };
-constexpr auto DefaultMarginTop      { 1.0 };
-constexpr auto DefaultOrientation    { QPageLayout::Portrait };
-const     auto DefaultOther          { QJsonArray() };
-constexpr auto DefaultPageSize       { "Letter" };
-constexpr auto DefaultPosition       { 0 };
-const     auto DefaultRecentNovels   { QJsonArray() };
-constexpr auto DefaultSeparator      { "###" };
-const     auto DefaultSplitter       { QJsonArray() };
-constexpr auto DefaultSave           { false };
-constexpr auto DefaultSceneTag       { "scene" };
-constexpr auto DefaultSounds         { false };
-constexpr auto DefaultToolbarVisible { true };
-constexpr auto DefaultTheme          { 2 };
-constexpr auto DefaultUnderline      { "_,_"};
-constexpr auto DefaultUseSeparator   { false };
-constexpr auto DefaultVoice          { 0 };
+const     auto DefaultActingScripts    { QJsonArray() };
+constexpr auto DefaultBinarySaveFormat { false };
+constexpr auto DefaultBold             { "*,*" };
+constexpr auto DefaultChapterTag       { "chapter" };
+constexpr auto DefaultCoverTag         { "cover" };
+constexpr auto DefaultFont             { "Segoe UI" };
+constexpr auto DefaultFontSize         { 9 };
+constexpr auto DefaultFooter           { "\x1F\x1F" };
+constexpr auto DefaultHeader           { "\x1F\x1F" };
+constexpr auto DefaultInterval         { 5 * 60 };
+constexpr auto DefaultItalic           { "/,/" };
+constexpr auto DefaultMarginBottom     { 1.0 };
+constexpr auto DefaultMarginLeft       { 1.0 };
+constexpr auto DefaultMarginRight      { 1.0 };
+constexpr auto DefaultMarginTop        { 1.0 };
+constexpr auto DefaultOrientation      { QPageLayout::Portrait };
+const     auto DefaultOther            { QJsonArray() };
+constexpr auto DefaultPageSize         { "Letter" };
+constexpr auto DefaultPosition         { 0 };
+const     auto DefaultRecentNovels     { QJsonArray() };
+constexpr auto DefaultSeparator        { "###" };
+const     auto DefaultSplitter         { QJsonArray() };
+constexpr auto DefaultSave             { false };
+constexpr auto DefaultSceneTag         { "scene" };
+constexpr auto DefaultSounds           { false };
+constexpr auto DefaultToolbarVisible   { true };
+constexpr auto DefaultTheme            { 2 };
+constexpr auto DefaultUnderline        { "_,_"};
+constexpr auto DefaultUseSeparator     { false };
+constexpr auto DefaultVoice            { 0 };
 
 bool Preferences::load() {
     QFont def;
@@ -99,6 +101,7 @@ bool Preferences::load() {
     }
     mAutoSave =          settings.value(AutoSave,         DefaultSave).toBool();
     mAutoSaveInterval =  settings.value(AutoSaveInterval, DefaultInterval).toLongLong();
+    mBinary =            settings.value(BinarySaveFormat, DefaultBinarySaveFormat).toBool();
     mBold =              settings.value(Bold,             DefaultBold).toString();
     mChapterTag =        settings.value(ChapterTag,       DefaultChapterTag).toString();
     mCoverTag =          settings.value(CoverTag ,        DefaultCoverTag).toString();
@@ -213,6 +216,7 @@ bool Preferences::read(Json5Object& obj) {
         }
         mVoice =             Item::hasNum(obj,  "voice",           qlonglong(DefaultVoice));
         mActingScripts.clear();
+        mBinary           = DefaultBinarySaveFormat;
         mBold             = DefaultBold;
         mItalic           = DefaultItalic;
         mUnderline        = DefaultUnderline;
@@ -252,6 +256,7 @@ bool Preferences::read(Json5Object& obj) {
         for (const auto& script: scripts) mActingScripts.append(script.toString());
         mAutoSave =         Item::hasBool(obj, AutoSave,         DefaultSave);
         mAutoSaveInterval = Item::hasNum(obj,  AutoSaveInterval, qlonglong(DefaultInterval));
+        mBinary =           Item::hasBool(obj, BinarySaveFormat, DefaultBinarySaveFormat);
         mBold =             Item::hasStr(obj,  Bold,             DefaultBold);
         mChapterTag =       Item::hasStr(obj,  ChapterTag,       DefaultChapterTag);
         mCoverTag =         Item::hasStr(obj,  CoverTag,         DefaultCoverTag);
@@ -317,6 +322,7 @@ bool Preferences::save() {
     settings.setValue(ActingScripts,    act);
     settings.setValue(AutoSave,         mAutoSave);
     settings.setValue(AutoSaveInterval, mAutoSaveInterval);
+    settings.setValue(BinarySaveFormat, mBinary);
     settings.setValue(Bold,             mBold);
     settings.setValue(ChapterTag,       mChapterTag);
     settings.setValue(CoverTag,         mCoverTag);
@@ -651,6 +657,7 @@ Json5Object Preferences::write() {
     obj[ActingScripts] =    ac;
     obj[AutoSave] =         mAutoSave;
     obj[AutoSaveInterval] = mAutoSaveInterval;
+    obj[BinarySaveFormat] = mBinary;
     obj[Bold] =             mBold;
     obj[ChapterTag] =       mChapterTag;
     obj[CoverTag] =         mCoverTag;

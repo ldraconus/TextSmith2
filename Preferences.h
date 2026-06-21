@@ -57,6 +57,7 @@ public:
     StringList   actingScripts() const     { return mActingScripts; }
     bool         autoSave() const          { return mAutoSave; }
     qlonglong    autoSaveIntyerval() const { return mAutoSaveInterval; }
+    bool         binary() const            { return mBinary; }
     QString      bold() const              { return mBold; }
     QString      chapterTag() const        { return mChapterTag.isEmpty() ? "Chapter" : mChapterTag; }
     QString      coverTag() const          { return mCoverTag.isEmpty() ? "Cover" : mCoverTag; }
@@ -91,6 +92,7 @@ public:
     void setApplicaiton(QApplication* a)                     { mApp = a; }
     void setAutoSave(bool a)                                 { mAutoSave = a; }
     void setAutoSaveInterval(qlonglong i)                    { mAutoSaveInterval = i; }
+    void setBinary(bool b)                                   { mBinary = b; }
     void setBold(const QString& b)                           { mBold = b; }
     void setChapterTag(const QString& c)                     { mChapterTag = c; }
     void setCoverTag(const QString& c)                       { mCoverTag = c; }
@@ -122,6 +124,7 @@ public:
 private:
     QApplication*            mApp              { nullptr };
     qlonglong                mAutoSaveInterval { 5 * 60 };
+    bool                     mBinary           { false };
     qlonglong                mFontSize         { 9 };
     qlonglong                mPosition         { 0 };
     qlonglong                mTheme            { 2 };

@@ -127,7 +127,7 @@ qlonglong Item::count() {
     return mCount = words.count();
 }
 
-bool Item::fromDocArray(Json5Array &arr){
+bool Item::fromDocArray(Json5Array &arr) {
     QTextCursor cursor(mDoc);
     bool first = true;
     for (auto& blk: arr) {
@@ -502,9 +502,17 @@ Novel::Novel(Json5Object obj) {
 
 Novel::Novel(const QString& filename) {
     sNovel = this;
-    Json5Document doc;
-    bool readOk = doc.read(filename);
-    if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
+    auto& prefs = Main::ref().prefs();
+    if (fileIsBinary()) {
+        QFile file(filename);
+        (void) file.open(QIODevice::ReadOnly | QIODevice::Text);
+        QByteArray bin = file.readAll();
+        fromBinary(bin);
+    } else {
+        Json5Document doc;
+        bool readOk = doc.read(filename);
+        if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
+    }
 }
 
 Json5Object Novel::toObject() {
@@ -517,6 +525,20 @@ Json5Object Novel::toObject() {
     obj[Items] =    items;
     obj[Branches] = mBranches.toObject();
     return obj;
+}
+
+bool Novel::fileIsBinary() {
+    QString jsonStr;
+    QFile file(mFilename);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
+
+    char id[4];
+    if (file.read(id, sizeof(id)) != 4) {
+        file.close();
+        return false;
+    }
+    file.close();
+    return QString(id) == "NVL";
 }
 
 void Novel::changeFont(const QFont& font) {
@@ -577,11 +599,19 @@ void Novel::init() {
 bool Novel::open() {
     Json5Document doc;
     noChanges();
-    if (bool success = doc.read(mFilename) && doc.top().isObject(); success) {
-        auto& obj = doc.top().toObject();
-        if (obj.contains(Document)) fromV1Object(obj);
-        else fromObject(obj);
-    } else return false;
+    if (fileIsBinary()) {
+        QFile file(mFilename);
+        if (bool success = file.open(QIODevice::ReadOnly | QIODevice::Text); success) {
+            QByteArray bin = file.readAll();
+            fromBinary(bin);
+        } else return false;
+    } else {
+        if (bool success = doc.read(mFilename) && doc.top().isObject(); success) {
+            auto& obj = doc.top().toObject();
+            if (obj.contains(Document)) fromV1Object(obj);
+            else fromObject(obj);
+        } else return false;
+    }
     return true;
 }
 
@@ -777,11 +807,78 @@ void Novel::setupScripting(fifth::vm* vm) {
     });
 }
 
+static bool bytecopy(void* to, char*& from, qlonglong need, qlonglong& have) {
+    if (need > have) return false;
+    memcpy(to, from, need);
+    from += need;
+    have -= need;
+    return true;
+}
+
+bool Novel::fromBinary(QByteArray& bin) {
+    char* data = bin.data();
+    qlonglong max = bin.size();
+    // first 4 are NVL\0
+    data += 4;
+    max -= 4;
+    qlonglong size;
+    if (!bytecopy(&size, data, sizeof(qlonglong), max)) return false;
+    mExtraBin.reserve(size);
+    if (!bytecopy(mExtraBin.data(), data, size, max)) return false;
+    // ok, since we made images per document, not per file now since document central now,
+    // need to grab the images and put them some place safe until each image is loaded
+    // in the appropriate document.
+    // [size] - number of images
+    // [size][url][size][base64data]
+    Item::sImages.clear();
+    char* images = mExtraBin.data();
+    qlonglong extraSize = mExtraBin.size();
+    qlonglong num;
+    if (!bytecopy(&num, images, sizeof(qlonglong), extraSize)) return false;
+    for (int i = 0; i < num; ++i) {
+        qlonglong imgSize;
+        if (!bytecopy(&imgSize, images, sizeof(qlonglong), extraSize)) return false;
+        QString url;
+        url.reserve(imgSize);
+        if (!bytecopy(url.data(), images, imgSize, extraSize)) return false;
+        if (!bytecopy(&imgSize, images, sizeof(qlonglong), extraSize)) return false;
+        QByteArray imgData;
+        imgData.reserve(imgSize);
+        if (!bytecopy(imgData.data(), images, imgSize, extraSize)) return false;
+        QImage img;
+        img.loadFromData(imgData);
+        Item::sImages[url] = img;
+    }
+    // now binary load the novel
+
+    // load images into Item::sImages;
+    mItems.clear();
+    if (!bytecopy(&mRoot, data, sizeof(qlonglong), max)) return false;
+
+    // from here down
+    Json5Object items = Item::hasObj(obj, Items, {});
+    for (auto& node: items) {
+        if (!node.second.isObject()) continue;
+        auto& branch = node.second.toObject();
+        if (node.first.toLongLong() != branch[Id].toInt()) continue;
+        Item item(branch);
+        addItem(item);
+    }
+    if (Json5Object treeNode = Item::hasObj(obj, Branches, {}); treeNode.empty()) return false;
+    else {
+        TreeNode tree(treeNode);
+        mBranches = tree;
+    }
+    countAll();
+    Item::sImages.clear();
+    return true;
+}
+
 bool Novel::fromObject(Json5Object& obj) {
     mFilename = Item::hasStr(obj, Filename, "");
     mExtra =    Item::hasObj(obj, Extra, {});
-    // ok, since we nede images per document, not per file now since document central now,
-    // need to grab the images and put them someplace safe until each image is loaded
+    // ok, since we made images per document, not per file now since document central now,
+    // need to grab the images and put them some place safe until each image is loaded
     // in the appropriate document.
     auto images = Item::hasArr(mExtra, Images, {});
     Item::sImages.clear();

@@ -184,25 +184,27 @@ public:
     static constexpr auto Width      = "Width";
     static constexpr auto Windows    = "windows";
 
-    void        addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
-    TreeNode    branches()                     { return mBranches; }
-    void        change()                       { mChanged = true; }
-    void        clear()                        { init(); }
-    Json5Object extra()                        { return mExtra; }
-    auto        filename()                     { return mFilename; }
-    auto        isChanged()                    { return mChanged; }
-    void        noChanges()                    { mChanged = false; }
-    qlonglong   root()                         { return mRoot; }
-    bool        saveAs(const QString& f)       { mFilename = f; return save(); }
-    void        setBranches(const TreeNode& b) { mBranches = b; }
-    void        setExtra(Json5Object& obj)     { mExtra = obj; change(); }
-    void        setFilename(const QString& f)  { mFilename = f; change(); }
+    void         addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
+    TreeNode     branches()                     { return mBranches; }
+    void         change()                       { mChanged = true; }
+    void         clear()                        { init(); }
+    Json5Object  extra()                        { return mExtra; }
+    QByteArrayy& extrabin()                     { return mExtraBin; }
+    auto         filename()                     { return mFilename; }
+    auto         isChanged()                    { return mChanged; }
+    void         noChanges()                    { mChanged = false; }
+    qlonglong    root()                         { return mRoot; }
+    bool         saveAs(const QString& f)       { mFilename = f; return save(); }
+    void         setBranches(const TreeNode& b) { mBranches = b; }
+    void         setExtra(Json5Object& obj)     { mExtra = obj; change(); }
+    void         setFilename(const QString& f)  { mFilename = f; change(); }
 
     void        changeFont(const QFont& font);
     qlonglong   count(qlonglong id);
     qlonglong   countAll();
     void        deleteItem(qlonglong id);
     Item&       fifthItem(fifth::stack& user);
+    bool        fileIsBinary();
     Item&       findItem(qlonglong id);
     void        init();
     bool        open();
@@ -218,10 +220,12 @@ private:
     TreeNode             mBranches;
     bool                 mChanged { false };
     Json5Object          mExtra;
+    QByteArray           mExtraBin;
     QString              mFilename;
     Map<qlonglong, Item> mItems;
     qlonglong            mRoot { 0 };
 
+    bool fromBinary(QByteArray& bin);
     bool fromObject(Json5Object& obj);
     bool fromV1Object(Json5Object& obj);
 

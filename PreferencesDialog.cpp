@@ -27,6 +27,7 @@ PreferencesDialog::PreferencesDialog(Preferences& prefs, QWidget* parent)
     setUiFont(defaultFont);
     mUi->uiFontPushButton->setText(QString("%1:%2").arg(mPrefs->uiFontFamily()).arg(mPrefs->uiFontSize()));
     mUi->displayThemeComboBox->setCurrentIndex(mPrefs->theme());
+    mUi->binaryCheckBox->setChecked(mPrefs->binary());
     theme(mPrefs->theme());
 
     setupConnections();
@@ -46,6 +47,7 @@ void PreferencesDialog::autoSaveChanged(Qt::CheckState) {
 void PreferencesDialog::saveChanges() {
     mPrefs->setAutoSave(mUi->autoSaveCheckBox->isChecked());
     mPrefs->setAutoSaveInterval(mUi->autoSaveIntervalSpinBox->value());
+    mPrefs->setBinary(mUi->binaryCheckBox->isChecked());
     auto font = mUi->novelFontPushButton->font();
     mPrefs->setFontFamily(font.family());
     mPrefs->setFontSize(font.pointSize());
