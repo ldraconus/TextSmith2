@@ -46,6 +46,7 @@ public:
 
     Item(bool noId = GiveID);
     Item(Json5Object& obj);
+    Item(char* obj, qlonglong size);
 
     Item& operator=(const Item& i) { if (this != &i) copy(i); return *this; }
     Item& operator=(Item&& i)      { move(std::move(i)); return *this; }
@@ -77,10 +78,14 @@ public:
     void             clearTag(const QString& tag);
     qlonglong        count();
     bool             fromDocArray(Json5Array& arr);
+    bool             fromDocArray(char* obj, qlonglong& size);
     bool             fromDocObject(Json5Object& obj);
+    bool             fromDocObject(char* obj, qlonglong& size);
     bool             fromObject(Json5Object& obj);
     QTextBlockFormat fromTextBlockFormatObject(Json5Object& obj);
+    QTextBlockFormat fromTextBlockFormatObject(char*& obj, qlonglong& size);
     QTextCharFormat  fromTextCharFormatObject(Json5Object& obj);
+    QTextCharFormat  fromTextCharFormatObject(char*& obj, qlonglong& size);
     void             fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     bool             hasTag(const StringList& tags) const;
     void             loadInternalImages();
@@ -184,20 +189,20 @@ public:
     static constexpr auto Width      = "Width";
     static constexpr auto Windows    = "windows";
 
-    void         addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
-    TreeNode     branches()                     { return mBranches; }
-    void         change()                       { mChanged = true; }
-    void         clear()                        { init(); }
-    Json5Object  extra()                        { return mExtra; }
-    QByteArrayy& extrabin()                     { return mExtraBin; }
-    auto         filename()                     { return mFilename; }
-    auto         isChanged()                    { return mChanged; }
-    void         noChanges()                    { mChanged = false; }
-    qlonglong    root()                         { return mRoot; }
-    bool         saveAs(const QString& f)       { mFilename = f; return save(); }
-    void         setBranches(const TreeNode& b) { mBranches = b; }
-    void         setExtra(Json5Object& obj)     { mExtra = obj; change(); }
-    void         setFilename(const QString& f)  { mFilename = f; change(); }
+    void        addItem(const Item& i)         { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
+    TreeNode    branches()                     { return mBranches; }
+    void        change()                       { mChanged = true; }
+    void        clear()                        { init(); }
+    Json5Object extra()                        { return mExtra; }
+    QByteArray& extrabin()                     { return mExtraBin; }
+    auto        filename()                     { return mFilename; }
+    auto        isChanged()                    { return mChanged; }
+    void        noChanges()                    { mChanged = false; }
+    qlonglong   root()                         { return mRoot; }
+    bool        saveAs(const QString& f)       { mFilename = f; return save(); }
+    void        setBranches(const TreeNode& b) { mBranches = b; }
+    void        setExtra(Json5Object& obj)     { mExtra = obj; change(); }
+    void        setFilename(const QString& f)  { mFilename = f; change(); }
 
     void        changeFont(const QFont& font);
     qlonglong   count(qlonglong id);

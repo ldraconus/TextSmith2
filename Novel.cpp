@@ -10,6 +10,14 @@
 qsizetype            Item::sNextID = 0;
 Map<QString, QImage> Item::sImages;
 
+static bool bytecopy(void* to, char*& from, qlonglong need, qlonglong& have) {
+    if (need > have) return false;
+    memcpy(to, from, need);
+    from += need;
+    have -= need;
+    return true;
+}
+
 Item::Item(bool noId)
     : mCount(0)
     , mDoc(new QTextDocument())
@@ -20,6 +28,11 @@ Item::Item(Json5Object& obj)
     : mCount(0) {
     if (obj.contains(Novel::NakedDoc)) fromDocObject(obj);
     else fromObject(obj);
+}
+
+Item::Item(char* obj, qlonglong size)
+    : mCount(0) {
+    fromDocObject(obj, size);
 }
 
 void Item::changeFont(const QFont& font) {
@@ -167,6 +180,71 @@ bool Item::fromDocArray(Json5Array &arr) {
     return true;
 }
 
+bool Item::fromDocArray(char* obj, qlonglong& size) {
+    QTextCursor cursor(mDoc);
+    bool first = true;
+    qlonglong blks;
+    if (!bytecopy(&blks, obj, sizeof(blks), size)) return false;
+    for (int i = 0; i < blks; ++ i) {
+        qlonglong blkSize;
+        if (!bytecopy(&blkSize, obj, sizeof(blkSize), size)) return false;
+        QByteArray blkData;
+        blkData.reserve(blkSize);
+        if (!bytecopy(blkData.data(), obj, blkSize, size)) return false;
+        char* blk = blkData.data();
+        QTextBlockFormat format = fromTextBlockFormatObject(blk, size);
+        QTextCharFormat charFormat = fromTextCharFormatObject(blk, size);
+        if (first) {
+            first = false;
+            cursor.setBlockFormat(format);
+            cursor.setBlockCharFormat(charFormat);
+        } else cursor.insertBlock(format, charFormat);
+        cursor.movePosition(QTextCursor::End);
+        qlonglong sizeFrags;
+        if (!bytecopy(&sizeFrags, blk, sizeof(sizeFrags), blkSize)) return false;
+        QByteArray fragmentsData;
+        fragmentsData.reserve(sizeFrags);
+        if (!bytecopy(fragmentsData.data(), blk, sizeFrags, blkSize)) return false;
+        char* fragments = fragmentsData.data();
+        qlonglong numFragments;
+        if (!bytecopy(&numFragments, fragments, sizeof(numFragments), sizeFrags)) return false;
+        for (int j = 0; j < numFragments; ++j) {
+            qlonglong fragmentSize;
+            if (!bytecopy(&fragmentSize, fragments, sizeof(fragmentSize), sizeFrags)) return false;
+            QByteArray fragmentData;
+            fragmentData.reserve(fragmentSize);
+            if (!bytecopy(fragmentData.data(), fragments, fragmentSize, sizeFrags)) return false;
+            char* fragment = fragmentData.data();
+            if (*fragment == 'I') {
+                qlonglong strlen;
+                if (!bytecopy(&strlen, fragment, sizeof(strlen), fragmentSize)) return false;
+                QString imageId;
+                imageId.reserve(strlen);
+                if (!bytecopy(imageId.data(), fragment, strlen, fragmentSize)) return false;
+                QTextImageFormat imgFmt;
+                imgFmt.setName(imageId);
+                qlonglong height;
+                if (!bytecopy(&height, fragment, sizeof(height), fragmentSize)) return false;
+                qlonglong width;
+                if (!bytecopy(&width, fragment, sizeof(width), fragmentSize)) return false;
+                if (height != -1) imgFmt.setHeight(height);
+                if (width != -1) imgFmt.setWidth(width);
+                cursor.insertImage(imgFmt);
+                if (imageId.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, imageId, sImages[imageId]);
+            } else {
+                qlonglong strlen;
+                if (!bytecopy(&strlen, fragment, sizeof(strlen), fragmentSize)) return false;
+                QString text;
+                text.reserve(strlen);
+                if (!bytecopy(text.data(), fragment, strlen, fragmentSize)) return false;
+                charFormat = fromTextCharFormatObject(fragment, fragmentSize);
+                cursor.insertText(text, charFormat);
+            }
+        }
+    }
+    return true;
+}
+
 bool Item::fromDocObject(Json5Object &obj) {
     delete mDoc;
     mDoc = new QTextDocument();
@@ -195,6 +273,56 @@ bool Item::fromDocObject(Json5Object &obj) {
     }
     Novel::ref().addItem(*this);
     return true;
+}
+
+bool Item::fromDocObject(char* obj, qlonglong& size) {
+    delete mDoc;
+    mDoc = new QTextDocument();
+    mDoc->setParent(nullptr);
+    Preferences* prefs = &Main::ref().prefs();
+    QFont font(prefs->fontFamily(), prefs->fontSize());
+    mDoc->setDefaultFont(font);
+
+    qlonglong arraySize;
+    if (!bytecopy(&arraySize, obj, sizeof(qlonglong), size)) return false;
+    QByteArray doc;
+    doc.reserve(arraySize);
+    qlonglong id;
+    qlonglong nameLen;
+    char* data;
+    if (bytecopy(doc.data(), obj, arraySize, size) &&
+        fromDocArray(doc.data(), arraySize) &&
+        bytecopy(&mPosition, obj, sizeof(mPosition), size) &&
+        bytecopy(&id, obj, sizeof(id), size) &&
+        bytecopy(&nameLen, obj, sizeof(nameLen), size)) {
+        mName.reserve(nameLen);
+        if (bytecopy(mName.data(), obj, nameLen, size)) {
+            setId(id);
+            if (mName.isEmpty()) mName = name();
+            qlonglong tagSize;
+            if (bytecopy(&tagSize, obj, sizeof(tagSize), size)) {
+                mTags.clear();
+                for (int i = 0; i < tagSize; ++i) {
+                    QString tag;
+                    qlonglong tagLen;
+                    if (!bytecopy(&tagLen, obj, sizeof(tagLen), size)) {
+                        delete mDoc;
+                        return false;
+                    }
+                    tag.reserve(tagLen);
+                    if (!bytecopy(tag.data(), obj, tagLen, size)) {
+                        delete mDoc;
+                        return false;
+                    }
+                    mTags.append(tag);
+                }
+                Novel::ref().addItem(*this);
+            }
+        }
+    }
+
+    delete mDoc;
+    return false;
 }
 
 void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
@@ -430,6 +558,29 @@ QTextBlockFormat Item::fromTextBlockFormatObject(Json5Object &obj) {
     return format;
 }
 
+QTextBlockFormat Item::fromTextBlockFormatObject(char*& obj, qlonglong& size) {
+    QTextBlockFormat format;
+    Preferences* prefs = &Main::ref().prefs();
+    QFont font(prefs->fontFamily(), prefs->fontSize());
+    QFontMetrics metrics(font);
+    int lineHeight =  metrics.lineSpacing();
+    int paraIndent =  4 * metrics.averageCharWidth();
+    char alignment = '\0';
+    char indent = '\0';
+    if (!bytecopy(&alignment, obj, sizeof(char), size)) return { };
+    if (!bytecopy(&indent, obj, sizeof(char), size)) return { };
+    Qt::Alignment align = Qt::AlignLeft;
+    if (alignment == 1) align = Qt::AlignLeft;
+    if (alignment == 3) align = Qt::AlignRight;
+    if (alignment == 4) align = Qt::AlignJustify;
+    if (alignment == 2) align = Qt::AlignHCenter;
+    format.setAlignment(align);
+    format.setBottomMargin(lineHeight);
+    format.setTextIndent(paraIndent);
+    format.setIndent(indent);
+    return format;
+}
+
 QTextCharFormat Item::fromTextCharFormatObject(Json5Object &obj) {
     QTextCharFormat format;
     Preferences* prefs = &Main::ref().prefs();
@@ -438,6 +589,23 @@ QTextCharFormat Item::fromTextCharFormatObject(Json5Object &obj) {
     bool bold =      hasBool(obj, Novel::Bold,      false);
     bool italic =    hasBool(obj, Novel::Italic,    false);
     bool underline = hasBool(obj, Novel::Underline, false);
+    if (bold) format.setFontWeight(QFont::Bold);
+    else format.setFontWeight(QFont::Normal);
+    format.setFontItalic(italic);
+    format.setFontUnderline(underline);
+    return format;
+}
+
+QTextCharFormat Item::fromTextCharFormatObject(char*& obj, qlonglong& size) {
+    QTextCharFormat format;
+    Preferences* prefs = &Main::ref().prefs();
+    format.setFontFamilies({ prefs->fontFamily() });
+    format.setFontPointSize(prefs->fontSize());
+    char fmt = '\0';
+    if (!bytecopy(&fmt, obj, sizeof(char), size)) return { };
+    bool bold =      fmt & 0x01;
+    bool italic =    fmt & 0x02;
+    bool underline = fmt & 0x04;
     if (bold) format.setFontWeight(QFont::Bold);
     else format.setFontWeight(QFont::Normal);
     format.setFontItalic(italic);
@@ -807,14 +975,6 @@ void Novel::setupScripting(fifth::vm* vm) {
     });
 }
 
-static bool bytecopy(void* to, char*& from, qlonglong need, qlonglong& have) {
-    if (need > have) return false;
-    memcpy(to, from, need);
-    from += need;
-    have -= need;
-    return true;
-}
-
 bool Novel::fromBinary(QByteArray& bin) {
     char* data = bin.data();
     qlonglong max = bin.size();
@@ -854,9 +1014,23 @@ bool Novel::fromBinary(QByteArray& bin) {
     // load images into Item::sImages;
     mItems.clear();
     if (!bytecopy(&mRoot, data, sizeof(qlonglong), max)) return false;
-
-    // from here down
-    Json5Object items = Item::hasObj(obj, Items, {});
+    if (!bytecopy(&size, data, sizeof(qlonglong), max)) return false;
+    QByteArray itemsStore;
+    itemsStore.reserve(size);
+    if (!bytecopy(itemsStore.data(), data, size, max)) return false;
+    char* items = itemsStore.data();
+    if (!bytecopy(&num, items, sizeof(qlonglong), size)) return false;
+    for (int i = 0; i < num; ++i) {
+        qlonglong itemSize;
+        if (!bytecopy(&itemSize, items, sizeof(qlonglong), size)) return false;
+        QByteArray nodeStore;
+        nodeStore.reserve(itemSize);
+        if (!bytecopy(nodeStore.data(), items, itemSize, size)) return false;
+        char* node = nodeStore.data();
+        Item item(node, itemSize);
+        addItem(item);
+    }
+    /* from here down
     for (auto& node: items) {
         if (!node.second.isObject()) continue;
         auto& branch = node.second.toObject();
@@ -869,6 +1043,7 @@ bool Novel::fromBinary(QByteArray& bin) {
         TreeNode tree(treeNode);
         mBranches = tree;
     }
+    */
     countAll();
     Item::sImages.clear();
     return true;
