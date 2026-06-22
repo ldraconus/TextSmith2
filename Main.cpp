@@ -915,7 +915,13 @@ void Main::loadFile(const QString& filename) {
     mNovel.setFilename(filename);
     mNovel.open();
     mUi->treeWidget->clearUndo();
-    Json5Object obj = mNovel.extra();
+
+    Json5Object obj;
+    if (mPrefs.binary()) {
+        Json5Document doc(mNovel.extraBin());
+        if (!doc.top().isObject()) return;
+        obj = doc.top().toObject();
+    } else obj = mNovel.extra();
     auto savedRecents = mPrefs.recentNovels();
     if (obj.contains(Novel::Prefs)) {
         Json5Object prefs = Item::hasObj(obj, Novel::Prefs, {} );
@@ -931,22 +937,31 @@ void Main::loadFile(const QString& filename) {
             bool expanded = Item::hasBool(item, 1);
             mState[id] = expanded;
         }
-        Json5Array images = Item::hasArr(obj, Novel::Images, {});
         mImageStore.clear();
-        for (auto& obj: images) {
-            if (!obj.isObject()) continue;
-            Json5Object image = obj.toObject();
-            QString url = Item::hasStr(image, { Novel::V1Url, Novel::Url }, {});
-            if (url.isEmpty()) continue;
-            QString str = Item::hasStr(image, { Novel::V1Data, Novel::Data }, {});
-            if (str.isEmpty()) continue;
-            QByteArray data = QByteArray::fromBase64(str.toUtf8());
-            if (data.isEmpty()) continue;
-            QImage img;
-            img.loadFromData(data);
-            if (img.isNull()) continue;
-            mImageStore[url] = img;
-            mUi->textEdit->addInternalImage(url, img, false);
+        if (mPrefs.binary()) {
+            auto& images = mNovel.images();
+            for (const auto& img: images) {
+                QString url = img.first;
+                mImageStore[url] = img.second;
+                mUi->textEdit->addInternalImage(url, img.second, false);
+            }
+        } else {
+            Json5Array images = Item::hasArr(obj, Novel::Images, {});
+            for (auto& obj: images) {
+                if (!obj.isObject()) continue;
+                Json5Object image = obj.toObject();
+                QString url = Item::hasStr(image, { Novel::V1Url, Novel::Url }, {});
+                if (url.isEmpty()) continue;
+                QString str = Item::hasStr(image, { Novel::V1Data, Novel::Data }, {});
+                if (str.isEmpty()) continue;
+                QByteArray data = QByteArray::fromBase64(str.toUtf8());
+                if (data.isEmpty()) continue;
+                QImage img;
+                img.loadFromData(data);
+                if (img.isNull()) continue;
+                mImageStore[url] = img;
+                mUi->textEdit->addInternalImage(url, img, false);
+            }
         }
         Json5Array words = Item::hasArr(obj, Novel::Dictionary);
         for (auto i = 0; i < words.count(); ++i) {
@@ -1988,6 +2003,7 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     QString name = info.fileName();
     mDocDir = info.absolutePath();
     mPrefs.addNovel(name, mNovel.filename());
+
     Json5Object extra;
     extra[Novel::Current] = mCurrentNode;
     extra[Novel::Position] = qlonglong(pos);
@@ -2002,23 +2018,6 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
         state.append(item);
     }
     extra["State"] = state;
-    Json5Array arr;
-    auto& images = mUi->textEdit->internalImages();
-    auto keys = images.keys();
-    for (auto i = 0; i < keys.count(); ++i) {
-        auto& key = keys[i];
-        Json5Object obj;
-        obj[Novel::Url] = key.toString();
-        QImage& img = images[key];
-        QByteArray bytes;
-        QBuffer buffer(&bytes);
-        buffer.open(QIODevice::WriteOnly);
-        img.save(&buffer, "PNG");
-        buffer.close();
-        obj[Novel::Data] = QString(bytes.toBase64());
-        arr.append(obj);
-    }
-    extra[Novel::Images] = arr;
     StringList dictionary = mSpelling.words();
     Json5Array words;
     for (const auto& word: dictionary) words.append(word);
@@ -2026,11 +2025,43 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
-    if (!mNovel.save(saveNoCompression) && !noUi) {
-        mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
-                [this]() { doNothing(); },
-                "Something unexpected has happened");
-    } else if (!noUi) setTitle();
+    auto& images = mUi->textEdit->internalImages();
+
+    if (mPrefs.binary()) {
+        Json5Document doc;
+        doc.setTop(extra);
+        mNovel.setExtraBin(doc.toJson5());
+        QMap<QString, QImage> saveImages;
+        auto keys = images.keys();
+        for (const auto& key: std::as_const(keys)) saveImages[key.toString()] = images[key];
+        if (!mNovel.save(saveImages) && !noUi) {
+            mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
+                    [this]() { doNothing(); },
+                    "Something unexpected has happened");
+        } else if (!noUi) setTitle();
+    } else {
+        Json5Array arr;
+        auto keys = images.keys();
+        for (auto i = 0; i < keys.count(); ++i) {
+            auto& key = keys[i];
+            Json5Object obj;
+            obj[Novel::Url] = key.toString();
+            QImage& img = images[key];
+            QByteArray bytes;
+            QBuffer buffer(&bytes);
+            buffer.open(QIODevice::WriteOnly);
+            img.save(&buffer, "PNG");
+            buffer.close();
+            obj[Novel::Data] = QString(bytes.toBase64());
+            arr.append(obj);
+        }
+        extra[Novel::Images] = arr;
+        if (!mNovel.save(saveNoCompression) && !noUi) {
+            mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
+                    [this]() { doNothing(); },
+                    "Something unexpected has happened");
+        } else if (!noUi) setTitle();
+    }
 }
 
 TreeNode Main::saveTree(QTreeWidgetItem* node) {
