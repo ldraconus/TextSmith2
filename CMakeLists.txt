@@ -201,7 +201,7 @@ endif()
 
 set_target_properties(TextSmith2 PROPERTIES WIN32_EXECUTABLE TRUE)
 get_target_property(props TextSmith2 WIN32_EXECUTABLE)
-message(STATUS "WIN32_EXECUTABLE: ${props}")
+message(STATUS "WIN32_EXECUTABLE: ${props}")z
 
 # Disable deprecated Qt APIs before 6.0
 target_compile_definitions(TextSmith2 PRIVATE
@@ -241,7 +241,7 @@ else()
 endif()
 
 # 2. Call bash, passing the script as an argument
-add_custom_target(Installer
+add_custom_target(InstallerCreator
                   COMMAND "${BASH_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/installer.sh"
                           "${CMAKE_CURRENT_BINARY_DIR}"
                           "${BINARY_CREATOR}"
