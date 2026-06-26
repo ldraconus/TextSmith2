@@ -1195,27 +1195,9 @@ QString Main::saveFileWithOption(QWidget *parent, const QString& prompt, const Q
     dialog.setNameFilter("Novel Files (*.novel)");
     dialog.setDefaultSuffix("novel");
 
-    // Qt's QFileDialog uses a QGridLayout internally
-dialog.show();
-for (auto *child : dialog.findChildren<QWidget*>()) qDebug() << child->metaObject()->className() << child->objectName();
-auto* layout = dialog.layout();
-if (layout == nullptr) qDebug() << "Layout is null";
-auto* metaObject = layout->metaObject();
-if (metaObject == nullptr) qDebug() << "metaObject is null";
-auto className = metaObject->className();
-qDebug() << className;
-    QGridLayout* mainLayout = qobject_cast<QGridLayout*>(dialog.layout());
-    if (mainLayout) {
-        QCheckBox* checkBox = new QCheckBox("Save a backup copy", &dialog);
-        // Insert a new row at the bottom, spanning all columns
-        int row = mainLayout->rowCount();
-        mainLayout->addWidget(checkBox, row, 0, 1, mainLayout->columnCount());
-
-        if (dialog.exec() == QDialog::Accepted) {
-            optionChecked = checkBox->isChecked();
-            auto selected = dialog.selectedFiles();
-            return selected.first();
-        }
+    if (dialog.exec() == QDialog::Accepted) {
+        auto selected = dialog.selectedFiles();
+        return selected.first();
     }
 
     optionChecked = false;
