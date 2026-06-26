@@ -2004,7 +2004,6 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     Json5Array words;
     for (const auto& word: dictionary) words.append(word);
     extra[Novel::Dictionary] = words;
-    mNovel.setExtra(extra);
     TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
     mNovel.setBranches(tree);
     auto& images = mUi->textEdit->internalImages();
@@ -2038,6 +2037,7 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
             arr.append(obj);
         }
         extra[Novel::Images] = arr;
+        mNovel.setExtra(extra);
         if (!mNovel.save(saveNoCompression) && !noUi) {
             mMsg.OK("Unable to save the file.\n\nTry and save it under a different name\nor save it to a different directory.",
                     [this]() { doNothing(); },
