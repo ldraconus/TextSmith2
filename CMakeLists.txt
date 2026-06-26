@@ -212,20 +212,33 @@ target_compile_definitions(TextSmith2 PRIVATE
 get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
 
-find_program(BASH_EXECUTABLE bash)
-find_program(BINARY_CREATOR
-             NAMES binarycreator
-             PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin"
-)
-find_program(REPOGEN
-             NAMES repopgen
-             PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.10/bin"
-)
-find_program(WINDEPLOY
-             NAMES windeployqt6 windeployqt6.exe
-             PATHS "${QT_BIN_DIR}"
-             NO_DEFAULT_PATH
-)
+if (UNIX)
+    find_program(BASH_EXECUTABLE bash)
+    find_program(BINARY_CREATOR
+                 NAMES binarycreator
+                 PATHS "/home/chris//Qt/Tools/QtInstallerFramework/4.11/bin"
+    )
+    find_program(REPOGEN
+                 NAMES repopgen
+                 PATHS "/home/chris/Qt/Tools/QtInstallerFramework/4.11/bin"
+    )
+    set(WINDEPLOY "echo")
+else()
+    find_program(BASH_EXECUTABLE bash)
+    find_program(BINARY_CREATOR
+                 NAMES binarycreator
+                 PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.11/bin"
+    )
+    find_program(REPOGEN
+                 NAMES repopgen
+                 PATHS "D:/ProgramFiles/Qt/Tools/QtInstallerFramework/4.11/bin"
+    )
+    find_program(WINDEPLOY
+                 NAMES windeployqt6 windeployqt6.exe
+                 PATHS "${QT_BIN_DIR}"
+                 NO_DEFAULT_PATH
+    )
+endif()
 
 # 2. Call bash, passing the script as an argument
 add_custom_target(Installer
