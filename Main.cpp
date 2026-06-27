@@ -313,12 +313,14 @@ void Main::doAboutToShowFileMenu() {
 }
 
 void Main::doAboutToShowNovelMenu() {
-    mUi->actionOpen_Current_Item->setEnabled(mUi->treeWidget->currentItem() && mUi->treeWidget->currentItem()->childCount() != 0);
-    mUi->actionOpen_Current_Item->setText((mUi->treeWidget->currentItem() && mUi->treeWidget->currentItem()->isExpanded()) ? "Close Current Item" : "Open Current Item");
-    mUi->actionRemove_Item->setEnabled(!(mUi->treeWidget->currentItem() == mUi->treeWidget->topLevelItem(0)));
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* item = mUi->treeWidget->currentItem();
+    mUi->actionOpen_Current_Item->setEnabled(item != nullptr && mUi->treeWidget->currentItem()->childCount() != 0);
+    mUi->actionOpen_Current_Item->setText((item != nullptr && mUi->treeWidget->currentItem()->isExpanded()) ? "Close Current Item" : "Open Current Item");
+    mUi->actionRemove_Item->setEnabled(!(item == root));
     mUi->actionMove_an_Item_Up->setEnabled(!nothingAbove());
     mUi->actionMove_Current_Item_Down->setEnabled(!nothingBelow());
-    mUi->actionMove_Current_Item_Out->setEnabled(!nothingAbove());
+    mUi->actionMove_Current_Item_Out->setEnabled(!parentIsRoot());
 }
 
 void Main::doAboutToShowViewMenu() {
@@ -728,6 +730,13 @@ void Main::doItemChanged(QTreeWidgetItem* current) {
 
     mPosition = item.position();
     setPosition(mPosition);
+
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* treeItem = mUi->treeWidget->currentItem();
+    mUi->deleteItemToolButton->setEnabled(!(treeItem == root));
+    mUi->upToolButton->setEnabled(!nothingAbove());
+    mUi->downToolButton->setEnabled(!nothingBelow());
+    mUi->outToolButton->setEnabled(!parentIsRoot());
 
     mUi->actionOpen_Current_Item->setText(current->isExpanded() ? "Close Current Item" : "Open Current Item");
 
@@ -1768,38 +1777,30 @@ Main::WordPos Main::nextWord(const QString& str, qlonglong pos) {
 }
 
 bool Main::nothingAbove() {
-    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* item = findItem(root, mCurrentNode);
     if (item == nullptr) return true;
     auto* parent = item->parent();
     if (parent == nullptr) return true;
-    if (item == mUi->treeWidget->topLevelItem(0)) return true;
+    if (item == root) return true;
     auto itemIdx = parent->indexOfChild(item);
     if (itemIdx != 0) return false;
-    for (; ; ) {
-        auto* grandparent = parent->parent();
-        if (grandparent == nullptr) return true;
-        auto parentIndex = grandparent->indexOfChild(parent);
-        if (parentIndex != 0) return false;
-        parent = grandparent;
-    }
+    auto* grandparent = parent->parent();
+    if (grandparent == nullptr) return true;
     return false;
 }
 
 bool Main::nothingBelow() {
-    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* item = findItem(root, mCurrentNode);
     if (item == nullptr) return true;
     auto* parent = item->parent();
     if (parent == nullptr) return true;
-    if (item == mUi->treeWidget->topLevelItem(0)) return true;
+    if (item == root) return true;
     auto itemIdx = parent->indexOfChild(item);
-    if (itemIdx < parent->childCount() ) return false;
-    for (; ; ) {
-        auto* grandparent = parent->parent();
-        if (grandparent == nullptr) return true;
-        auto parentIndex = grandparent->indexOfChild(parent);
-        if (parentIndex < grandparent->childCount()) return false;
-        parent = grandparent;
-    }
+    if (itemIdx < parent->childCount()) return false;
+    auto* grandparent = parent->parent();
+    if (grandparent == nullptr) return true;
     return true;
 }
 
@@ -1817,11 +1818,10 @@ void Main::replaceText(QTextCursor cursor, const QString& text) {
 }
 
 bool Main::parentIsRoot() {
-    auto* item = findItem(mUi->treeWidget->topLevelItem(0), mCurrentNode);
+    auto* root = mUi->treeWidget->topLevelItem(0);
+    auto* item = findItem(root, mCurrentNode);
     if (item == nullptr) return true;
-    auto* parent = item->parent();
-    if (parent == nullptr) return true;
-    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    if (auto* parent = item->parent(); parent == nullptr || parent == root) return true;
     return false;
 }
 

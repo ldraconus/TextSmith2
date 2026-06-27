@@ -686,7 +686,7 @@ Novel::Novel(const QString& filename) {
         QFile file(filename);
         (void) file.open(QIODevice::ReadOnly);
         QDataStream bin(&file);
-        bin.setVersion(QDataStream::Qt_6_11);
+        bin.setVersion(QDataStream::Qt_6_10);
         fromBinary(bin);
         file.close();
     } else {
@@ -788,7 +788,7 @@ bool Novel::open() {
         QFile file(mFilename);
         if (bool success = file.open(QIODevice::ReadOnly); success) {
             QDataStream bin(&file);
-            bin.setVersion(QDataStream::Qt_6_11);
+            bin.setVersion(QDataStream::Qt_6_10);
             fromBinary(bin);
         } else return false;
     } else {
@@ -815,7 +815,7 @@ bool Novel::save(QMap<QString, QImage>& images) {
     QFile file(mFilename);
     if (bool success = file.open(QIODevice::WriteOnly); success) {
         QDataStream bin(&file);
-        bin.setVersion(QDataStream::Qt_6_11);
+        bin.setVersion(QDataStream::Qt_6_10);
         toBinary(bin, images);
         file.close();
     } else return false;
