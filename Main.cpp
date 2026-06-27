@@ -806,7 +806,6 @@ void Main::doMoveDown() {
         parent->insertChild(idxOther, treeItem);
     }
     mUi->treeWidget->setCurrentItem(treeItem);
-//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, oldIdx, idxOther));
 }
 
 void Main::doMoveOut() {
@@ -820,7 +819,6 @@ void Main::doMoveOut() {
     auto* grandParent = parent->parent();
     auto parentIdx = grandParent->indexOfChild(parent);
     grandParent->insertChild(parentIdx, treeItem);
-//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, parentIdx));
     mUi->treeWidget->setCurrentItem(treeItem);
 }
 
@@ -842,7 +840,6 @@ void Main::doMoveUp() {
         treeItem = parent->takeChild(idx);
         parent->insertChild(idxOther, treeItem);
     }
-//    mUi->treeWidget->saveUndo(new MoveItemCommand(grandParent, parent, idx, idxOther));
     mUi->treeWidget->setCurrentItem(treeItem);
 }
 
@@ -1775,7 +1772,16 @@ bool Main::nothingAbove() {
     if (item == nullptr) return true;
     auto* parent = item->parent();
     if (parent == nullptr) return true;
-    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    if (item == mUi->treeWidget->topLevelItem(0)) return true;
+    auto itemIdx = parent->indexOfChild(item);
+    if (itemIdx != 0) return false;
+    for (; ; ) {
+        auto* grandparent = parent->parent();
+        if (grandparent == nullptr) return true;
+        auto parentIndex = grandparent->indexOfChild(parent);
+        if (parentIndex != 0) return false;
+        parent = grandparent;
+    }
     return false;
 }
 
@@ -1784,13 +1790,16 @@ bool Main::nothingBelow() {
     if (item == nullptr) return true;
     auto* parent = item->parent();
     if (parent == nullptr) return true;
-    if (parent == mUi->treeWidget->topLevelItem(0)) return true;
+    if (item == mUi->treeWidget->topLevelItem(0)) return true;
     auto itemIdx = parent->indexOfChild(item);
     if (itemIdx < parent->childCount() ) return false;
-    auto* grandparent = parent->parent();
-    if (grandparent == nullptr) return true;
-    auto parentIndex = grandparent->indexOfChild(parent);
-    if (parentIndex < grandparent->childCount()) return false;
+    for (; ; ) {
+        auto* grandparent = parent->parent();
+        if (grandparent == nullptr) return true;
+        auto parentIndex = grandparent->indexOfChild(parent);
+        if (parentIndex < grandparent->childCount()) return false;
+        parent = grandparent;
+    }
     return true;
 }
 
