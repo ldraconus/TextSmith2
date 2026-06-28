@@ -920,6 +920,7 @@ void Main::loadFile(const QString& filename) {
     mState.clear();
     mNovel.setFilename(filename);
     mNovel.open();
+    mNovel.setFilename(filename);
     mUi->treeWidget->clearUndo();
 
     Json5Object obj;
