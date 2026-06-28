@@ -64,12 +64,12 @@ public:
     public:
         auto currentItem()      { return mCurrentItem; }
         auto sinceLastCounted() { return mLastCounted; }
-        auto sinceOpened()      { return mOpen; }
+        auto sinceOpened()      { return mTotal - mOpen; }
         auto total()            { return mTotal; }
 
         void setCurrentItem(qlonglong c)      { mCurrentItem = c; }
         void setSinceLastCounted(qlonglong c) { mLastCounted = c; }
-        void setSinceOpened(qlonglong c)      { mOpen = c; }
+        void setOpened(qlonglong c)           { mOpen = c; }
         void setTotal(qlonglong c)            { mTotal = c; }
     };
 

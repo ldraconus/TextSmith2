@@ -880,7 +880,7 @@ void Main::doNew() {
     update();
     mWordCount.setCurrentItem(0);
     mWordCount.setTotal(0);
-    mWordCount.setSinceOpened(0);
+    mWordCount.setOpened(0);
     mWordCount.setSinceLastCounted(0);
     doCursorPositionChanged();
 }
@@ -995,7 +995,7 @@ void Main::loadFile(const QString& filename) {
     auto count = item.count();
     auto total = mNovel.countAll();
     mWordCount.setSinceLastCounted(0);
-    mWordCount.setSinceOpened(0);
+    mWordCount.setOpened(total);
     mWordCount.setCurrentItem(count);
     mWordCount.setTotal(total);
     clearChanged();
@@ -2374,8 +2374,7 @@ void Main::wordCounts() {
     auto current = mNovel.count(mCurrentNode);
     mWordCount.setCurrentItem(current);
     mWordCount.setTotal(newCount);
-    mWordCount.setSinceOpened(mWordCount.sinceOpened() + difference);
-    mWordCount.setSinceLastCounted(mWordCount.sinceLastCounted() + difference);
+    mWordCount.setSinceLastCounted(difference);
 }
 
 void Main::setupActions() {
