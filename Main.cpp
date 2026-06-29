@@ -525,8 +525,9 @@ void Main::doFindChanged() {
         QString text = mFindWidget->findLineEdit->text();
         mSearch->setText(text);
         QString replace = mFindWidget->replaceLineEdit->text();
-        mFindWidget->replacePushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
-        mFindWidget->replaceAllPushButton->setDisabled(text.isEmpty() || text.compare(replace, sense) == 0);
+        bool replaceable = text.isEmpty() || text.compare(replace, sense) == 0;
+        mFindWidget->replacePushButton->setDisabled(replaceable);
+        mFindWidget->replaceAllPushButton->setDisabled(replaceable);
         doFindNext();
     }
 }
@@ -599,9 +600,9 @@ void Main::doFindReplace() {
     }
 
     auto sense = sensitivity ? Qt::CaseSensitive : Qt::CaseInsensitive;
-    bool replaceAble = find.isEmpty() || !find.compare(replace, sense);
-    mFindWidget->replacePushButton->setDisabled(replaceAble);
-    mFindWidget->replaceAllPushButton->setDisabled(replaceAble);
+    bool replaceable = find.isEmpty() || !find.compare(replace, sense);
+    mFindWidget->replacePushButton->setDisabled(replaceable);
+    mFindWidget->replaceAllPushButton->setDisabled(replaceable);
 
     connect(mFindWidget->findLineEdit,            &QLineEdit::textEdited,        this, &Main::findChanged);
     connect(mFindWidget->caseInsensitiveCheckBox, &QCheckBox::checkStateChanged, this, &Main::findChanged);
@@ -1131,13 +1132,10 @@ void Main::doReplace() {
     if (replace.compare(find, sensitive) == 0 || find.isEmpty()) return;
 
     auto cursor = mUi->textEdit->textCursor();
-    QString text = mUi->textEdit->toPlainText();
-    QString textAtPosition = text.mid(cursor.position());
-    QString left = textAtPosition.left(find.length());
-    if (left.compare(find, sensitive)) return;
+    auto textAtPosition = cursor.selectedText();
+    if (textAtPosition.compare(find, sensitive) != 0) return;
 
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, replace.length());
-    cursor.removeSelectedText();
+    cursor.insertText(replace);
 }
 
 void Main::doReplaceAll() {
@@ -2460,9 +2458,7 @@ void Main::setupConnections() {
         act->setShortcut(QKeySequence("Ctrl+" + QString::number((count == 10) ? 0 : count)));
         act->setShortcutContext(Qt::ApplicationShortcut);
 
-        connect(act, &QAction::triggered, this, [this, novel]() {
-            loadFile(novel.sPath);
-        });
+        connect(act, &QAction::triggered, this, [this, novel]() { loadFile(novel.sPath); });
     }
     for (const auto& file: gone) recent.remove(file);
     mPrefs.setRecentNovels(recent);
@@ -2478,9 +2474,7 @@ void Main::setupConnections() {
         if (!key.isEmpty()) act->setShortcut(QKeySequence("Ctrl+E, Ctrl+" + key));
         act->setShortcutContext(Qt::ApplicationShortcut);
 
-        connect(act, &QAction::triggered, this, [this, info]() {
-            doExport(info);
-        });
+        connect(act, &QAction::triggered, this, [this, info]() { doExport(info); });
     }
 
     connect(mUi->actionBold,               &QAction::triggered, this, &Main::boldAction);
@@ -2599,9 +2593,9 @@ void Main::setupConnections() {
     QShortcut* findDoneShortcut =   new QShortcut(QKeySequence("Esc"), this);
     connect(mFindWidget->replaceLineEdit,      &QLineEdit::textEdited, this, &Main::replaceChanged);
     connect(replaceShortcut,                   &QShortcut::activated,  this, &Main::replace);
-    connect(mFindWidget->replacePushButton,    &QPushButton::toggled,  this, &Main::replace);
+    connect(mFindWidget->replacePushButton,    &QPushButton::clicked,  this, &Main::replace);
     connect(replaceAllShortcut,                &QShortcut::activated,  this, &Main::replaceAll);
-    connect(mFindWidget->replaceAllPushButton, &QPushButton::toggled,  this, &Main::replaceAll);
+    connect(mFindWidget->replaceAllPushButton, &QPushButton::clicked,  this, &Main::replaceAll);
     connect(findDoneShortcut,                  &QShortcut::activated,  this, &Main::barDone);
 
     mSpellcheck = new QWidget();

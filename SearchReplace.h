@@ -31,9 +31,12 @@ public:
 
 class SearchCore {
 protected:
-    bool    mCaseInsensitive { true };
-    Novel&  mNovel;
-    QString mSearchString;
+    bool            mCaseInsensitive { true };
+    bool            mNewSearch       { true };
+    Novel&          mNovel;
+    QString         mSearchString;
+    List<qlonglong> mResults;
+    qlonglong       mPos             { -1 };
 
     virtual void buildResults(const QString& ref) { }
     virtual void buildResults(qlonglong id)       { }
@@ -48,13 +51,26 @@ public:
     SearchCore(Novel& novel, const QString& str, bool caseInsensitive = NotCaseInsensitive)
         : mCaseInsensitive(caseInsensitive)
         , mNovel(novel)
-        , mSearchString(str) { }
+        , mSearchString(str)
+        , mPos(-1)        { }
     virtual ~SearchCore() { }
 
     virtual const NovelPosition findNext() = 0;
 
+    int  findPosition(qlonglong p) {
+        for (auto i = 0; i < mResults.size(); ++i) {
+            auto pos = mResults[i];
+            if (pos >= p) return i;
+        }
+        return -1;
+    }
     void setSensitivity(bool s)    { mCaseInsensitive = s; buildResults(); }
-    void setText(const QString& s) { mSearchString = s; buildResults(); }
+    void setText(const QString& s) {
+        mNewSearch = s.isEmpty() || (s.size() > mSearchString.size() && s.left(s.size() - 1) != mSearchString) ||
+                                    (mSearchString.size() > s.size() && mSearchString.left(mSearchString.size() - 1) != s);
+        mSearchString = s;
+        buildResults();
+    }
 
     QString text() const { return mSearchString; }
 };
@@ -66,7 +82,6 @@ protected:
     qlonglong       mId;
     qlonglong       mIndex;
     QString         mTarget;
-    List<qlonglong> mResults;
 
     void setBegin(qlonglong b) { mBegin = b; }
     void setEnd(qlonglong e)   { mEnd = e; }
@@ -98,7 +113,6 @@ protected:
     qlonglong       mId;
     List<qlonglong> mFlattenedTree;
     bool            mNeverFound { true };
-    List<qlonglong> mResults;
     qlonglong       mTarget { -1 };
     qlonglong       mBranchIndex;
 

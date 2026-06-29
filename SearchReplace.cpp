@@ -35,6 +35,7 @@ SearchSelection::SearchSelection(Novel& novel,
     , mBegin(begin)
     , mEnd(end)
     , mId(id) {
+    mPos = begin;
     Item& item = mNovel.findItem(mId);
     mTarget = item.doc()->toPlainText().mid(mBegin, mEnd - mBegin);
     mIndex = 0;
@@ -42,16 +43,15 @@ SearchSelection::SearchSelection(Novel& novel,
 
 const NovelPosition SearchSelection::findNext() {
     if (mResults.size() < 1) return invalid;
-    if (mIndex >= mResults.size()) mIndex = 0;
+    int mIndex = findPosition(mPos);
+    mPos = mResults[mIndex];
     return NovelPosition(mId, mResults[mIndex++]);
 }
 
 SearchItem::SearchItem(Novel& novel, qlonglong id, qlonglong start, const QString& str, bool caseInsensitive)
     : SearchSelection(novel, id, str, 0, 0, caseInsensitive) {
     Item& item = mNovel.findItem(mId);
-    TextEdit edit;
-    edit.setHtml(item.html());
-    auto text = edit.toPlainText();
+    auto text = item.doc()->toPlainText();
     mEnd = text.length();
     buildResults(text);
 
