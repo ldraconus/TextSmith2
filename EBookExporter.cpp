@@ -89,7 +89,7 @@ bool EBookExporter::convert() {
     return true;
 }
 
-bool EBookExporter::addEntry(const QString& name, const QString& value) {
+bool EBookExporter::addEntry(const QString& name, const QString& value, bool compressed) {
     if (!mZip) return false;
 
     QByteArray bytes(value.toUtf8());
@@ -107,10 +107,15 @@ bool EBookExporter::addEntry(const QString& name, const QString& value) {
         return false;
     }
 
+    if (!compressed && zip_set_file_compression(mZip, idx, ZIP_CM_STORE, 0)) {
+        zip_source_free(src);
+        return false;
+    }
+
     return true;
 }
 
-bool EBookExporter::addEntry(const QString& name, const QByteArray& value) {
+bool EBookExporter::addEntry(const QString& name, const QByteArray& value, bool compressed) {
     if (!mZip) return false;
 
     QByteArray path(name.toUtf8());
@@ -123,6 +128,11 @@ bool EBookExporter::addEntry(const QString& name, const QByteArray& value) {
     zip_int64_t idx = zip_file_add(mZip, path.constData(), src, ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
 
     if (idx < 0) {
+        zip_source_free(src);
+        return false;
+    }
+
+    if (!compressed && zip_set_file_compression(mZip, idx, ZIP_CM_STORE, 0)) {
         zip_source_free(src);
         return false;
     }
@@ -285,7 +295,7 @@ bool EBookExporter::writeCover() {
 }
 
 bool EBookExporter::writeMimetype() {
-    return addEntry("mimetype", QString("application/epub+zip"));
+    return addEntry("mimetype", QString("application/epub+zip"), false);
 }
 
 bool EBookExporter::writePageTemplate() {

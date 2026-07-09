@@ -36,8 +36,8 @@ private:
     QString                 mYear;
     zip*                    mZip { nullptr };
 
-    bool    addEntry(const QString& name, const QString& value);
-    bool    addEntry(const QString& name, const QByteArray& value);
+    bool    addEntry(const QString& name, const QString& value, bool compressed = true);
+    bool    addEntry(const QString& name, const QByteArray& value, bool compressed = true);
     QString chapterManifest();
     int     chapterNumWidth();
     QString convertHTML(const QString& qHtml);
