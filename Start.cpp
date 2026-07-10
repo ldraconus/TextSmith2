@@ -18,7 +18,6 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 
-
     Main w(&a);
     w.show();
     return a.exec();

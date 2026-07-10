@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QStack>
 #include <QTextEdit>
 
 #include "Exporter.h"
@@ -25,7 +26,9 @@ private:
     QString                 mAuthor;
     Map<qlonglong, QString> mBook;
     QString                 mCover;
+    QList<QByteArray>       mData;
     Map<qlonglong, QString> mHtml;
+    QStack<QString>         mTags;
     QString                 mId;
     Map<QString, QString>   mImages;
     Map<QUrl, QByteArray>   mJpg;
@@ -36,23 +39,26 @@ private:
     QString                 mYear;
     zip*                    mZip { nullptr };
 
-    bool    addEntry(const QString& name, const QString& value, bool compressed = true);
-    bool    addEntry(const QString& name, const QByteArray& value, bool compressed = true);
-    QString chapterManifest();
-    int     chapterNumWidth();
-    QString convertHTML(const QString& qHtml);
-    QString fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
-    QString navPoints();
-    void    novelToBook();
-    QString replace(const QString& qHtml, const QString& front, const QString& back, const QString& with);
-    QString spineTOC();
-    bool    writeContentOpf();
-    bool    writeContainerXml();
-    bool    writeCover();
-    bool    writeMimetype();
-    bool    writePageTemplate();
-    bool    writeStylesheet();
-    bool    writeToc();
+    bool        addEntry(const QString& name, const QString& value, bool compressed = true);
+    bool        addEntry(const QString& name, const QByteArray& value, bool compressed = true);
+    QString     chapterManifest();
+    int         chapterNumWidth();
+    QString     close();
+    QString     convertHTML(const QString& qHtml);
+    QString     fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
+    QString     navPoints();
+    QByteArray& newData(const QByteArray& from);
+    void        novelToBook();
+    QString     open(const QString& tag);
+    QString     replace(const QString& qHtml, const QString& front, const QString& back, const QString& with);
+    QString     spineTOC();
+    bool        writeContentOpf();
+    bool        writeContainerXml();
+    bool        writeCover();
+    bool        writeMimetype();
+    bool        writePageTemplate();
+    bool        writeStylesheet();
+    bool        writeToc();
 
 public:
     EBookExporter(Novel& novel, const QList<qlonglong>& items)
