@@ -26,6 +26,8 @@ private:
     QString                 mAuthor;
     Map<qlonglong, QString> mBook;
     QString                 mCover;
+    QString                 mCoverHtml;
+    QString                 mCoverImage;
     QList<QByteArray>       mData;
     Map<qlonglong, QString> mHtml;
     QStack<QString>         mTags;
@@ -43,13 +45,14 @@ private:
     bool        addEntry(const QString& name, const QByteArray& value, bool compressed = true);
     QString     chapterManifest();
     int         chapterNumWidth();
-    QString     close();
+    QString     closeIt();
     QString     convertHTML(const QString& qHtml);
     QString     fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
     QString     navPoints();
     QByteArray& newData(const QByteArray& from);
     void        novelToBook();
-    QString     open(const QString& tag);
+    QString     openCloseIt(const QString& tag, const QString& args);
+    QString     openIt(const QString& tag, const QString& args = "");
     QString     replace(const QString& qHtml, const QString& front, const QString& back, const QString& with);
     QString     spineTOC();
     bool        writeContentOpf();

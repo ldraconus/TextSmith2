@@ -13,6 +13,10 @@
 #include "ui_Main.h"
 #include "TextEdit.h"
 
+const QString operator<<(const QString& a, const QString& b) { return a + b; }
+const QString operator<<(const QString& a, const char* b)    { return a + b; }
+const QString operator<<(const char* a, const QString& b)    { return a + b; }
+
 EBookExporter::~EBookExporter() {
     if (mZip) zip_close(mZip);
     mZip = nullptr;
@@ -45,11 +49,27 @@ bool EBookExporter::convert() {
         QDate date;
         mYear = QString::asprintf("%d", date.currentDate().year());
     }
+    mCoverTag = mCoverImage = "";
+    if (!mCover.isEmpty()) {
+        if (mCover.endsWith(".png", Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpg", Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpeg", Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpe", Qt::CaseInsensitive) ||
+            mCover.endsWith(".bmp", Qt::CaseInsensitive) ||
+            mCover.endsWith(".gif", Qt::CaseInsensitive) ||
+            mCover.endsWith(".webp", Qt::CaseInsensitive) ||
+            mCover.endsWith(".pgm", Qt::CaseInsensitive) ||
+            mCover.endsWith(".ppm", Qt::CaseInsensitive) ||
+            mCover.endsWith(".pbm", Qt::CaseInsensitive) ||
+            mCover.endsWith(".xpm", Qt::CaseInsensitive) ||
+            mCover.endsWith(".xbm", Qt::CaseInsensitive)) mCoverImage = mCover;
+        else mCoverTag = mCover;
+    }
 
     // create the zip file from the book
     writeMimetype();
     writeContainerXml();
-    if (!mCover.isEmpty()) writeCover();
+    writeCover();
     writePageTemplate();
     writeStylesheet();
     writeContentOpf();
@@ -63,7 +83,7 @@ bool EBookExporter::convert() {
     QList<QUrl> urlList = urls.values();
     for (auto i = 0; i < urlList.size(); ++i) {
         auto url = urlList[i];
-        auto& imgData = newData({ });
+//        auto& imgData = newData({ });
         Main::ref().loadImageBytesFromUrl(url, [&](QByteArray data){ QImage img(data); images[url] = img; });
     }
     auto keys = images.keys();
@@ -93,7 +113,7 @@ bool EBookExporter::convert() {
 bool EBookExporter::addEntry(const QString& name, const QString& value, bool compressed) {
     if (!mZip) return false;
 
-    qDebug().noquote().nospace() << name + ": \n" + value;
+qDebug().noquote().nospace() << name + ":\n" + value + "\n";
     auto& bytes = newData(value.toUtf8());
     zip_source_t* src = zip_source_buffer(mZip, bytes.constData(), mData.last().size(), 0);   // 0 = do NOT free the buffer when done
 
@@ -119,7 +139,7 @@ bool EBookExporter::addEntry(const QString& name, const QString& value, bool com
 bool EBookExporter::addEntry(const QString& name, const QByteArray& value, bool compressed) {
     if (!mZip) return false;
 
-    qDebug().noquote().nospace() << name + ": [BINARY]";
+    qDebug().noquote().nospace() << name + ":\n[BINARY]\n";
     mData.append(value);
     zip_source_t* src = zip_source_buffer(mZip, mData.last().constData(), mData.last().size(), 0);   // 0 = do NOT free the buffer when done
 
@@ -146,10 +166,7 @@ bool EBookExporter::addEntry(const QString& name, const QByteArray& value, bool 
 QString EBookExporter::chapterManifest() {
     QString manifest = "";
     int len = chapterNumWidth();
-    for (size_t i = 1; i <= mBook.size(); ++i) {
-        manifest += QString("        <item id=\"chapter%1\" href=\"chap%1.xhtml\" media-type=\"application/xhtml+xml\" />\n")
-                        .arg(i, len);
-    }
+    for (size_t i = 1; i <= mBook.size(); ++i) manifest += QString("        " << openCloseIt("item", "id=\"chapter%1\" href=\"chap%1.xhtml\" media-type=\"application/xhtml+xml\"")).arg(i, len, 10, QChar('0'));
     return manifest;
 }
 
@@ -158,7 +175,7 @@ int EBookExporter::chapterNumWidth() {
     return (int) QString::number(mBook.size() + start).length();
 }
 
-QString EBookExporter::close() {
+QString EBookExporter::closeIt() {
     return "</" + mTags.pop() + ">\n";
 }
 
@@ -167,7 +184,7 @@ QString EBookExporter::convertHTML(const QString& qHtml) {
     html = replace(html, "<!DOCTYPE", ">", "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
     html = replace(html, "<html", ">", "<html xmlns=\"http://www.w3.org/1999/xhtml\">");
     html = replace(html, "<style ", ">", "");
-    return replace(html, "<head", ">","<head><title>" + mTitle + "</title>");
+    return replace(html, "<head", ">","<head><title>" + mTitle + "</title></head>");
 }
 
 QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qHtml) {
@@ -186,12 +203,12 @@ QString EBookExporter::navPoints() {
     int i = start;
     for (auto& entry: mBook) {
         Item& item = mNovel.findItem(entry.first);
-        nav += QString("      <navPoint id=\"chapter%1\" playOrder=\"%2\">\n"
-                       "          " + open("navLabel") +
-                       "              " + open("text") + "%3" + close() +
-                       "          " + close() +
-                       "          <content src=\"chap%1.xhtml\"/>\n"
-                       "      </navPoint>\n").arg(i - (start - 1), len, 10, QChar(0)).arg(i).arg(item.name());
+        nav += QString("      " << openIt("navPoint ", "id=\"chapter%1\" playOrder=\"%2\"") <<
+                       "          " << openIt("navLabel") <<
+                       "              " << openIt("text") << "%3" << closeIt() <<
+                       "          " << closeIt() <<
+                       "          " << openCloseIt("content", "src=\"chap%1.xhtml\"") <<
+                       "      " << closeIt()).arg(i - (start - 1), len, 10, QChar(0)).arg(i).arg(item.name());
         ++i;
     }
     return nav;
@@ -222,15 +239,24 @@ void EBookExporter::novelToBook() {
                 if (firstScene) firstScene = false;
                 else if (prefs.useSeparator()) cursor.insertHtml("<br/><center>" + prefs.separator() + "</center><br/>");
                 cursor.insertHtml(item.html());
+                if (item.hasTag(mCoverTag)) mCoverHtml = item.html();
             }
         }
     }
     if (currentId != -1) mHtml[currentId] = convertHTML(build.toHtml());
 }
 
-QString EBookExporter::open(const QString& tag) {
+QString EBookExporter::openCloseIt(const QString& tag, const QString& args) {
+    QString value = "<" + tag;
+    if (!args.isEmpty()) value += " " + args + " ";
+    return value + " />\n";
+}
+
+QString EBookExporter::openIt(const QString& tag, const QString& args) {
     mTags.push(tag);
-    return "<" + tag + ">\n";
+    QString value = "<" + tag;
+    if (!args.isEmpty()) value += " " + args + " ";
+    return value + ">\n";
 }
 
 QString EBookExporter::replace(const QString& qHtml, const QString& front, const QString& back, const QString& with) {
@@ -249,7 +275,7 @@ QString EBookExporter::spineTOC() {
     QString spine;
     int len = chapterNumWidth();
     for (size_t i = 1; i <= mBook.size(); ++i) {
-        spine += QString("        <itemref idref=\"chapter%1\" />\n").arg(i, len);
+        spine += "        " + openCloseIt("itemref", QString("idref=\"chapter%1\"").arg(i, len, 0, QChar('0')));
     }
     return spine;
 }
@@ -257,55 +283,78 @@ QString EBookExporter::spineTOC() {
 bool EBookExporter::writeContentOpf() {
     bool hasCover = !mCover.isEmpty();
     return addEntry("OEBPS/content.opf",
-                   ("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-                    "<package xmlns=\"http://www.idpf.org/2007/opf\" unique-identifier=\"BookID\" version=\"2.0\" >\n"
-                    "    <metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:opf=\"http://www.idpf.org/2007/opf\">\n"
-                    "        " + open("dc:title") + mTitle + close() +
-                    "        <dc:creator opf:role=\"aut\">" + mAuthor + "</dc:creator>\n"
-                    "        " + open("dc:language") + mLanguage + close() +
-                    "        " + open("dc:rights") + mRights + close() +
-                    "        " + open("dc:publisher") + mPublisher + close() +
-                     "        " + open("dc:date") + mYear + close() +
-                    "        <dc:identifier id=\"BookID\" opf:scheme=\"UUID\">" + mId +"</dc:identifier>\n" +
-                   (hasCover ? "        <meta name=\"cover\" content=\"images/Cover.jpg\" />\n" : "") +
-                    "    </metadata>\n"
-                    "    " + open("manifest") +
-                   (hasCover ? "        <item id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\" />" : "") +
-                    "        <item id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\" />\n"
-                    "        <item id=\"style\" href=\"stylesheet.css\" media-type=\"text/css\" />\n"
-                    "        <item id=\"pagetemplate\" href=\"page-template.xpgt\" media-type=\"application/vnd.adobe-page-template+xml\" />\n" +
-                   (hasCover ? "        <item id=\"cover_html\" href=\"Cover.xhtml\" media-type=\"application/xhtml+xml\" />\n" : "") +
-                    chapterManifest() + "\n"
-                    "    " + close() +
-                    "    <spine toc=\"ncx\">\n" +
-                   (hasCover ? "        <itemref idref=\"cover_html\" />\n" : "") +
-                    spineTOC() +
-                    "    </spine>\n"
-                    "</package>"));
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" <<
+                     openIt("package", "xmlns=\"http://www.idpf.org/2007/opf\" unique-identifier=\"BookID\" version=\"2.0\"") <<
+                     "    " << openIt("metadata", "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:opf=\"http://www.idpf.org/2007/opf\"") <<
+                     "        " << openIt("dc:title") << mTitle << closeIt() <<
+                     "        " << openIt("dc:creator", "opf:role=\"aut\"") << mAuthor << closeIt() <<
+                     "        " << openIt("dc:language") << mLanguage << closeIt() <<
+                     "        " << openIt("dc:rights") << mRights << closeIt() <<
+                     "        " << openIt("dc:publisher") << mPublisher << closeIt() <<
+                     "        " << openIt("dc:date") << mYear << closeIt() <<
+                     "        " << openIt("dc:identifier", "id=\"BookID\" opf:scheme=\"UUID\"") << mId << closeIt() <<
+                    (hasCover ? "        " << openCloseIt("meta", "name=\"cover\" content=\"images/Cover.jpg\"") : "") <<
+                     "    " << closeIt() <<
+                     "    " << openIt("manifest") <<
+                    (hasCover ? "        " << openCloseIt("item" , "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
+                     "        " << openCloseIt("item", "id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"") <<
+                     "        " << openCloseIt("item", "id=\"style\" href=\"stylesheet.css\" media-type=\"text/css\"") <<
+                     "        " << openCloseIt("item", "id=\"pagetemplate\" href=\"page-template.xpgt\" media-type=\"application/vnd.adobe-page-template+xml\"") <<
+                    (hasCover ? "        " << openCloseIt("item", "id=\"cover_html\" href=\"Cover.xhtml\" media-type=\"application/xhtml+xml\"") : "") <<
+                     chapterManifest() << "\n" <<
+                     "    " << closeIt() <<
+                     "    " << openIt("spine", "toc=\"ncx\">\n") <<
+                    (hasCover ? "        " << openCloseIt("itemref", "idref=\"cover_html\"") : "") <<
+                     spineTOC() <<
+                     "    " << closeIt() <<
+                     closeIt());
 }
 
 bool EBookExporter::writeContainerXml() {
-    return addEntry("META-INF/container.xml", QString("") +
-                    "<?xml version=\"1.0\"?>"
-                    "<container xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\" version=\"1.0\">"
-                    "  " + open("rootfiles") +
-                    "    <rootfile media-type=\"application/oebps-package+xml\" full-path=\"OEBPS/content.opf\"/>"
-                    "  " + close() +
-                    "</container>");
+    return addEntry("META-INF/container.xml", QString("") <<
+                    "<?xml version=\"1.0\"?>" <<
+                    openIt("container", "xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\" version=\"1.0\"") <<
+                    "  " << openIt("rootfiles") <<
+                    "    " << openCloseIt("rootfile", "media-type=\"application/oebps-package+xml\" full-path=\"OEBPS/content.opf\"") <<
+                    "  " << closeIt() <<
+                    closeIt());
 }
 
 bool EBookExporter::writeCover() {
     if (!mCover.isEmpty()) {
+        TextEdit edit;
         auto& data = newData({ });
-        Main::ref().loadImageBytesFromUrl({ mCover }, [&](QByteArray qBA) { data = qBA; });
+        if (mCoverHtml.isEmpty()) {
+            QImage img;
+            img.load(mCoverImage);
+            auto size = img.size();
+            if (size.width() > size.height()) img = img.scaledToWidth(1600, Qt::SmoothTransformation);
+            else img = img.scaledToHeight(2560, Qt::SmoothTransformation);
+            Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
+        }
+        else {
+            auto& images = Main::ref().ui()->textEdit->internalImages();
+            edit.setInternalImages(images);
+            edit.setHtml(mCoverHtml);
+            QTextDocument *doc = edit.document();
+            doc->setPageSize(QSizeF(2560, 1600));
+            QImage img(2560, 1600, QImage::Format_ARGB32);
+            img.setDotsPerMeterX(11811); // 300 DPI
+            img.setDotsPerMeterY(11811);
+            img.fill(Qt::transparent);
+            QPainter p(&img);
+            doc->drawContents(&p);
+            p.end();
+            Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
+        }
         return addEntry("OEBPS/images/Cover.jpg", data) &&
-               addEntry("OEBPS/Cover.xhtml", QString("") +
+               addEntry("OEBPS/Cover.xhtml", QString("") <<
                         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-                        + open("html") +
-                        "   " + open("<body>") +
-                        "     <img align=\"center\" height=\"100%\" src=\"images/Cover.jpg\"/><br/>&nbsp;\n"
-                        "   " + close()
-                        + close());
+                        << openIt("html") <<
+                        "   " << openIt("<body>") <<
+                        "     " << openCloseIt("img", "align=\"center\" height=\"100%\" src=\"images/Cover.jpg\"") << "<br/>&nbsp;\n" <<
+                        "   " << closeIt() <<
+                        closeIt());
     }
     return true;
 }
@@ -315,46 +364,46 @@ bool EBookExporter::writeMimetype() {
 }
 
 bool EBookExporter::writePageTemplate() {
-    return addEntry("OEBPS/page-template.xpgt", QString("") +
-                    "<ade:template xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ade=\"http://ns.adobe.com/2006/ade\"\n"
-                    "         xmlns:fo=\"http://www.w3.org/1999/XSL/Format\">\n"
-                    "  <fo:layout-master-set>\n"
-                    "    <fo:simple-page-master master-name=\"single_column\">\n"
-                    "        <fo:region-body margin-bottom=\"3pt\" margin-top=\"0.5em\" margin-left=\"3pt\" margin-right=\"3pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:simple-page-master master-name=\"single_column_head\">\n"
-                    "        <fo:region-before extent=\"8.3em\"/>\n"
-                    "        <fo:region-body margin-bottom=\"3pt\" margin-top=\"6em\" margin-left=\"3pt\" margin-right=\"3pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:simple-page-master master-name=\"two_column\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\">\n"
-                    "        <fo:region-body column-count=\"2\" column-gap=\"10pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:simple-page-master master-name=\"two_column_head\" margin-bottom=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\">\n"
-                    "        <fo:region-before extent=\"8.3em\"/>\n"
-                    "        <fo:region-body column-count=\"2\" margin-top=\"6em\" column-gap=\"10pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:simple-page-master master-name=\"three_column\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\">\n"
-                    "        <fo:region-body column-count=\"3\" column-gap=\"10pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:simple-page-master master-name=\"three_column_head\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\">\n"
-                    "        <fo:region-before extent=\"8.3em\"/>\n"
-                    "        <fo:region-body column-count=\"3\" margin-top=\"6em\" column-gap=\"10pt\"/>\n"
-                    "    </fo:simple-page-master>\n"
-                    "    <fo:page-sequence-master>\n"
-                    "        <fo:repeatable-page-master-alternatives>\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"three_column_head\" page-position=\"first\" ade:min-page-width=\"80em\"/>\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"three_column\" ade:min-page-width=\"80em\"/>\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"two_column_head\" page-position=\"first\" ade:min-page-width=\"50em\"/>\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"two_column\" ade:min-page-width=\"50em\"/>\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"single_column_head\" page-position=\"first\" />\n"
-                    "            <fo:conditional-page-master-reference master-reference=\"single_column\"/>\n"
-                    "        </fo:repeatable-page-master-alternatives>\n"
-                    "    </fo:page-sequence-master>\n"
-                    "  </fo:layout-master-set>\n"
-                    "  <ade:style>\n"
-                    "    <ade:styling-rule selector=\".title_box\" display=\"adobe-other-region\" adobe-region=\"xsl-region-before\"/>\n"
-                    "  </ade:style>\n"
-                    "</ade:template>\n");
+    return addEntry("OEBPS/page-template.xpgt", QString("") <<
+                    openIt("ade:template", QString("xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ade=\"http://ns.adobe.com/2006/ade\"\n") <<
+                                                          "         xmlns:fo=\"http://www.w3.org/1999/XSL/Format\"") <<
+                    "  " << openIt("fo:layout-master-set") <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"single_column\"") <<
+                    "      " << openCloseIt("fo:region-body", "margin-bottom=\"3pt\" margin-top=\"0.5em\" margin-left=\"3pt\" margin-right=\"3pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"single_column_head\"") <<
+                    "      " << openCloseIt("fo:region-before", "extent=\"8.3em\"") <<
+                    "      " << openCloseIt("fo:region-body", "margin-bottom=\"3pt\" margin-top=\"6em\" margin-left=\"3pt\" margin-right=\"3pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"two_column\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\"") <<
+                    "      " << openCloseIt("fo:region-body", "column-count=\"2\" column-gap=\"10pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"two_column_head\" margin-bottom=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\"") <<
+                    "      " << openCloseIt("fo:region-before", "extent=\"8.3em\"") <<
+                    "      " << openCloseIt("fo:region-body", "column-count=\"2\" margin-top=\"6em\" column-gap=\"10pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"three_column\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\"") <<
+                    "      " << openCloseIt("fo:region-body", "column-count=\"3\" column-gap=\"10pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:simple-page-master", "master-name=\"three_column_head\" margin-bottom=\"0.5em\" margin-top=\"0.5em\" margin-left=\"0.5em\" margin-right=\"0.5em\"") <<
+                    "      " << openCloseIt("fo:region-before", "extent=\"8.3em\"") <<
+                    "      " << openCloseIt("fo:region-body", "column-count=\"3\" margin-top=\"6em\" column-gap=\"10pt\"") <<
+                    "    " << closeIt() <<
+                    "    " << openIt("fo:page-sequence-master>") <<
+                    "      " << openIt("fo:repeatable-page-master-alternatives>") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "master-reference=\"three_column_head\" page-position=\"first\" ade:min-page-width=\"80em\"") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "master-reference=\"three_column\" ade:min-page-width=\"80em\"") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "master-reference=\"two_column_head\" page-position=\"first\" ade:min-page-width=\"50em\"") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "aster-reference=\"two_column\" ade:min-page-width=\"50em\"") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "master-reference=\"single_column_head\" page-position=\"first\"") <<
+                    "        " << openCloseIt("fo:conditional-page-master-reference", "master-reference=\"single_column\"") <<
+                    "      " << closeIt() <<
+                    "    " << closeIt() <<
+                    "  " << closeIt() <<
+                    "  " << openIt("ade:style") <<
+                    "    " << openCloseIt("ade:styling-rule", "selector=\".title_box\" display=\"adobe-other-region\" adobe-region=\"xsl-region-before\"") <<
+                    "  " << closeIt() <<
+                    closeIt());
 }
 
 bool EBookExporter::writeStylesheet() {
@@ -374,35 +423,35 @@ bool EBookExporter::writeStylesheet() {
                     "    margin-top:0px;\n"
                     "    margin-bottom:0px;\n"
                     "    padding:0px;\n"
-                    "    }\n"
-                    ".center   {text-align: center;}\n"
-                    ".smcap    {font-variant: small-caps;}\n"
-                    ".u        {text-decoration: underline;}\n"
-                    ".bold     {font-weight: bold;}\n");
+                    "}\n"
+                    ".center   { text-align: center; }\n"
+                    ".smcap    { font-variant: small-caps; }\n"
+                    ".u        { text-decoration: underline; }\n"
+                    ".bold     { font-weight: bold; }\n");
 }
 
 bool EBookExporter::writeToc() {
     return addEntry("OEBPS/toc.ncx",
-                   ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                    "<ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\" version=\"2005-1\">\n"
-                     "   " + open("head") +
-                    "       <meta name=\"dtb:uid\" content=\"" + mId + "\"/>\n"
-                    "       <meta name=\"dtb:depth\" content=\"1\"/>\n"
-                    "       <meta name=\"dtb:totalPageCount\" content=\"0\"/>\n"
-                    "       <meta name=\"dtb:maxPageNumber\" content=\"0\"/>\n"
-                    "   " + close() +
-                    "   " + open("docTitle") +
-                    "       " + open("text") + mTitle + close() +
-                    "   " + close() +
-                    "   " + open("navMap") +
+                   ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n") <<
+                    openIt("ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\"", "version=\"2005-1\"") <<
+                    "   " << openIt("head") <<
+                    "      " << openCloseIt("meta", "name=\"dtb:uid\" content=\"" << mId << "\"") <<
+                    "      " << openCloseIt("meta", "name=\"dtb:depth\" content=\"1\"") <<
+                    "      " << openCloseIt("meta", "name=\"dtb:totalPageCount\" content=\"0\"") <<
+                    "      " << openCloseIt("meta", "name=\"dtb:maxPageNumber\" content=\"0\"") <<
+                    "   " << closeIt() <<
+                    "   " << openIt("docTitle") <<
+                    "      " << openIt("text") << mTitle << closeIt() <<
+                    "   " << closeIt() <<
+                    "   " << openIt("navMap") <<
                    (!mCover.isEmpty() ?
-                    "      <navPoint id=\"cover\" playOrder=\"1\">\n"
-                    "          " + open("navLabel") +
-                    "              " + open("text") + "Cover" + close() +
-                    "          " + close() +
-                    "          <content src=\"Cover.xhtml\"/>\n"
-                    "      </navPoint>\n" : "") +
-                    navPoints() +
-                    "   " + close() +
-                    "</ncx>"));
+                    "      " << openIt("navPoint", "id=\"cover\" playOrder=\"1\"") <<
+                    "         " << openIt("navLabel") <<
+                    "            " << openIt("text") << "Cover" << closeIt() <<
+                    "         " << closeIt() <<
+                    "         " << openCloseIt("content", "src=\"Cover.xhtml\"") <<
+                    "      " << closeIt() : "") <<
+                    navPoints() <<
+                    "   " << closeIt() <<
+                    closeIt());
 }
