@@ -194,6 +194,10 @@ bool TextExporter::convert() {
     if (underline.count() == 1) underline.append(underline[0]);
     if (underline[1].isEmpty()) underline[1] = underline[0];
 
+    if (bold.join(",") != prefs.bold())           prefs.setBold(bold.join(","));
+    if (italic.join(",") != prefs.italic())       prefs.setItalic(italic.join(","));
+    if (underline.join(",") != prefs.underline()) prefs.setUnderline(underline.join(","));
+
     QString document;
     int lineNo = 0;
     bool firstLineEver = true;

@@ -27,9 +27,15 @@ bool HtmlExporter::convert() {
 
     const auto& defaults = collectMetadataDefaults();
     QString cover = fetchValue(1, defaults, "cover");
+    QString title = fetchValue(0, defaults, "title");
+
+    auto& prefs = Main::ref().prefs();
+    QString ext = "." + fileExtension();
+    prefs["title" + ext] = title;
+    prefs["cover" + ext] = cover;
+
     QList<QString> tags = { mChapterTag, mSceneTag, (cover.isEmpty()) ? mCoverTag : "" };
     QString html = convert(mNovel, mItemIds, cover, tags);
-    QString title = fetchValue(0, defaults, "title");
     if (!title.isEmpty()) {
         if (html.contains("<head>")) html.replace("<head>", QString("<head><title>%1</title>").arg(title.toHtmlEscaped()));
         else html.prepend(QString("<title>%1</title>").arg(title.toHtmlEscaped()));
@@ -40,7 +46,6 @@ bool HtmlExporter::convert() {
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
-    QString ext = "." + info.completeSuffix();
     Main::ref().setDocDir(path);
 
     QString dir = path + "/" + base;
@@ -112,10 +117,13 @@ QString HtmlExporter::convert(Novel& novel, List<qlonglong>& ids, const QString&
     QString final = "    </body>\n"
                     "</html>";
     auto& prefs = Main::ref().prefs();
-    if (!cover.isEmpty()) html += generateImageHtml(cover);
     StringList chapterTags = tag[Chapter].trimmed().split(",");
     StringList sceneTags = tag[Scene].trimmed().split(",");
     StringList coverTags = tag[Cover].trimmed().split(",");
+    if (!cover.isEmpty()) {
+        html += generateImageHtml(cover);
+        coverTags.clear();
+    }
     bool firstScene = true;
     for (auto& id: ids) {
         Item& item = novel.findItem(id);

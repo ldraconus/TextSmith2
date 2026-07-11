@@ -30,6 +30,9 @@ bool MarkdownExporter::convert() {
 
     const auto& defaults = collectMetadataDefaults();
     QString cover = fetchValue(0, defaults, "cover");
+    auto& prefs = Main::ref().prefs();
+    QString ext = "." + fileExtension();
+    prefs["cover" + ext] = cover;
     QString html = HtmlExporter::convert(mNovel, mItemIds, cover, { mChapterTag, mSceneTag, mCoverTag });
 
     // create the <path>/<basename>
@@ -37,7 +40,6 @@ bool MarkdownExporter::convert() {
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     QString base = info.baseName();
-    QString ext =  "." + info.completeSuffix();
     Main::ref().setDocDir(path);
 
     QString dir = path + "/" + base;

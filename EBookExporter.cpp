@@ -44,14 +44,15 @@ bool EBookExporter::convert() {
     mYear =      fetchValue(7, defaults, "year");
 
     auto& prefs = Main::ref().prefs();
-    prefs["title." + Extension()] =     mTitle;
-    prefs["author." + Extension()] =    mAuthor;
-    prefs["cover." + Extension()] =     mCover;
-    prefs["rights." + Extension()] =    mRights;
-    prefs["language." + Extension()] =  mLanguage;
-    prefs["id." + Extension()] =        mId;
-    prefs["publisher." + Extension()] = mPublisher;
-    prefs["year." + Extension()] =      mYear;
+    QString ext = "." + fileExtension();
+    prefs["title" + ext] =     mTitle;
+    prefs["author" + ext] =    mAuthor;
+    prefs["cover" + ext] =     mCover;
+    prefs["rights" + ext] =    mRights;
+    prefs["language" + ext] =  mLanguage;
+    prefs["id" + ext] =        mId;
+    prefs["publisher" + ext] = mPublisher;
+    prefs["year" + ext] =      mYear;
 
     mCoverImage = "";
     if (!mCover.isEmpty()) {

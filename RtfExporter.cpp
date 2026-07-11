@@ -151,6 +151,10 @@ bool RtfExporter::convert() {
     StringList inputMargins { fetchValue(Margins, defaults, "margins").split(",") };
     mMargins = PdfExporter::parseMargins(inputMargins);
 
+    auto& prefs = Main::ref().prefs();
+    QString ext = "." + fileExtension();
+    prefs["cover" + ext] = cover;
+
     QFileInfo info(mFilename);
     QString path = info.absolutePath();
     Main::ref().setDocDir(path);

@@ -54,13 +54,18 @@ bool PdfExporter::convert() {
     if (mFilename.isEmpty()) return false;
 
     const auto& defaults = collectMetadataDefaults();
-    mCover = fetchValue(Cover, defaults, "cover");
+    mCover  = fetchValue(Cover,  defaults, "cover");
+    mTitle  = fetchValue(Title,  defaults, "title");
+    mAuthor = fetchValue(Author, defaults, "author");
+
+    auto& prefs = Main::ref().prefs();
+    QString ext = "." + fileExtension();
+    prefs["title" + ext] =     mTitle;
+    prefs["author" + ext] =    mAuthor;
+    prefs["cover" + ext] =     mCover;
 
     // Note: we are looking for matches in the base order because the matches
     // are more natural than in alphabetical order.
-
-    mTitle  = fetchValue(Title, defaults, "title");
-    mAuthor = fetchValue(Author, defaults, "author");
 
     render();
 
