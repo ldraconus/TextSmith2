@@ -83,6 +83,16 @@ void ExportDialog::loadFields() {
     const auto& defaults = mExporter->collectMetadataDefaults();
     const auto& metaData = mExporter->metadataFields();
 
+    QList<QWidget*> tabOrder {
+        mUi->exportFilenameLineEdit,
+        mUi->getFilePushButton,
+        mUi->chapterTagLineEdit,
+        mUi->sceneTagLineEdit,
+        mUi->coverTagLineEdit,
+        mUi->sceneSeparatorCheckBox,
+        mUi->sceneSeparatorLineEdit
+    };
+
     bool create = mWidget.isEmpty();
     QLineEdit* lineEdit { nullptr };
     QComboBox* comboBox { nullptr };
@@ -99,11 +109,13 @@ void ExportDialog::loadFields() {
                 comboBox->addItems(choices.toQStringList());
                 mUi->formLayout->addRow(label, comboBox);
                 mWidget.append(comboBox);
+                tabOrder.append(comboBox);
             } else {
                 lineEdit = new QLineEdit(this);
                 lineEdit->setObjectName(meta.key);
                 mUi->formLayout->addRow(label, lineEdit);
                 mWidget.append(lineEdit);
+                tabOrder.append(lineEdit);
             }
         } else {
             if (meta.getChoices != nullptr) comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
@@ -121,6 +133,16 @@ void ExportDialog::loadFields() {
             if (lineEdit) lineEdit->setPlaceholderText(defaults[meta.key]);
             if (!value.isEmpty() && lineEdit) lineEdit->setText(value);
         }
+    }
+    tabOrder.append(mUi->buttonBox);
+    if (create) setTabOrder(tabOrder);
+}
+
+void ExportDialog::setTabOrder(QList<QWidget*>& widgets) {
+    QWidget* prev = nullptr;
+    for (auto* curr: std::as_const(widgets)) {
+        if (prev != nullptr) QWidget::setTabOrder(prev, curr);
+        prev = curr;
     }
 }
 

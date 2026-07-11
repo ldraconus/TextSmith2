@@ -34,6 +34,7 @@ private:
 
     QString getString(QLineEdit* field) const;
     void    loadFields();
+    void    setTabOrder(QList<QWidget*>& widgets);
 
 public slots:
     void    apply();
