@@ -230,10 +230,9 @@ bool TextExporter::convert() {
         }
 
         auto* doc = item.doc();
-        for (auto it = doc->begin(); it != doc->end(); it = it.next()) {
+        for (auto block = doc->begin(); block != doc->end(); block = block.next()) {
             StringList lines;
-            QTextBlock block = it;
-            auto blockFmt = block.blockFormat();
+            const auto& blockFmt = block.blockFormat();
             QString text;
             for (auto i = 0; i < 4; ++i) text += space;
             int indent = blockFmt.indent();
@@ -241,13 +240,12 @@ bool TextExporter::convert() {
             int width = metrics.horizontalAdvance(text);
             for (auto it2 = block.begin(); it2 != block.end(); it2++) {
                 bool firstWord = true;
-                QTextFragment frag = it2.fragment();
+                const QTextFragment& frag = it2.fragment();
                 if (!frag.isValid()) continue;
 
-                QTextCharFormat fmt = frag.charFormat();
-                if (fmt.isImageFormat()) continue;
+                const QTextCharFormat& format = frag.charFormat();
+                if (format.isImageFormat()) continue;
 
-                QTextCharFormat format = frag.charFormat();
                 if (format.fontWeight() > QFont::Normal) text += bold[0];
                 if (format.fontItalic())                 text += italic[0];
                 if (format.fontUnderline())              text += underline[0];
