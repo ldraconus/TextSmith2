@@ -29,6 +29,7 @@ private:
     QString                 mCoverHtml;
     QString                 mCoverImage;
     QList<QByteArray>       mData;
+    bool                    mHasCover;
     Map<qlonglong, QString> mHtml;
     QStack<QString>         mTags;
     QString                 mId;
@@ -53,8 +54,10 @@ private:
     QByteArray& newData(const QByteArray& from);
     void        novelToBook();
     QString     openCloseIt(const QString& tag, const QString& args);
-    QString     openIt(const QString& tag, const QString& args = "");
+    QString     openIt(const QString& tag, const QString& args, bool nl = false);
+    QString     openIt(const QString& tag, bool nl = false);
     QString     replace(const QString& qHtml, const QString& front, const QString& back, const QString& with);
+    QString     replaceAll(const QString& qHtml, const QString& front, const QString& back, const QString& with);
     QString     spineTOC();
     bool        writeContentOpf();
     bool        writeContainerXml();
