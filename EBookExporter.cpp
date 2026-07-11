@@ -33,8 +33,6 @@ bool EBookExporter::convert() {
         return false;
     }
 
-    novelToBook();
-
     auto defaults = collectMetadataDefaults();
     mTitle =     fetchValue(0, defaults, "title");
     mAuthor =    fetchValue(1, defaults, "author");
@@ -42,28 +40,42 @@ bool EBookExporter::convert() {
     mRights =    fetchValue(3, defaults, "title");
     mLanguage =  fetchValue(4, defaults, "language");
     mId =        fetchValue(5, defaults, "id");
-    mPublisher = fetchValue(6, defaults, "title");
-    mYear =      fetchValue(6, defaults, "year");
+    mPublisher = fetchValue(6, defaults, "publisher");
+    mYear =      fetchValue(7, defaults, "year");
+
+    auto& prefs = Main::ref().prefs();
+    prefs["title." + Extension()] =     mTitle;
+    prefs["author." + Extension()] =    mAuthor;
+    prefs["cover." + Extension()] =     mCover;
+    prefs["rights." + Extension()] =    mRights;
+    prefs["language." + Extension()] =  mLanguage;
+    prefs["id." + Extension()] =        mId;
+    prefs["publisher." + Extension()] = mPublisher;
+    prefs["year." + Extension()] =      mYear;
+
+    mCoverImage = "";
+    if (!mCover.isEmpty()) {
+        mCoverTag = "";
+        if (mCover.endsWith(".png",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpg",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpeg", Qt::CaseInsensitive) ||
+            mCover.endsWith(".jpe",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".bmp",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".gif",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".webp", Qt::CaseInsensitive) ||
+            mCover.endsWith(".pgm",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".ppm",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".pbm",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".xpm",  Qt::CaseInsensitive) ||
+            mCover.endsWith(".xbm",  Qt::CaseInsensitive)) mCoverImage = mCover;
+        else mCoverTag = mCover;
+    }
+    novelToBook();
+
     if (mId.isEmpty()) mId = QUuid::createUuid().toString(QUuid::WithoutBraces);
     if (mYear.isEmpty()) {
         QDate date;
         mYear = QString::asprintf("%d", date.currentDate().year());
-    }
-    mCoverTag = mCoverImage = "";
-    if (!mCover.isEmpty()) {
-        if (mCover.endsWith(".png", Qt::CaseInsensitive) ||
-            mCover.endsWith(".jpg", Qt::CaseInsensitive) ||
-            mCover.endsWith(".jpeg", Qt::CaseInsensitive) ||
-            mCover.endsWith(".jpe", Qt::CaseInsensitive) ||
-            mCover.endsWith(".bmp", Qt::CaseInsensitive) ||
-            mCover.endsWith(".gif", Qt::CaseInsensitive) ||
-            mCover.endsWith(".webp", Qt::CaseInsensitive) ||
-            mCover.endsWith(".pgm", Qt::CaseInsensitive) ||
-            mCover.endsWith(".ppm", Qt::CaseInsensitive) ||
-            mCover.endsWith(".pbm", Qt::CaseInsensitive) ||
-            mCover.endsWith(".xpm", Qt::CaseInsensitive) ||
-            mCover.endsWith(".xbm", Qt::CaseInsensitive)) mCoverImage = mCover;
-        else mCoverTag = mCover;
     }
 
     // create the zip file from the book
@@ -83,7 +95,6 @@ bool EBookExporter::convert() {
     QList<QUrl> urlList = urls.values();
     for (auto i = 0; i < urlList.size(); ++i) {
         auto url = urlList[i];
-//        auto& imgData = newData({ });
         Main::ref().loadImageBytesFromUrl(url, [&](QByteArray data){ QImage img(data); images[url] = img; });
     }
     auto keys = images.keys();
@@ -91,10 +102,10 @@ bool EBookExporter::convert() {
         auto& imgData = newData({ });
         QImage image = images[*i];
         QString name = i->fileName();
+        if (name.isEmpty()) name = i->host();
         Main::ref().loadImageBytes(image, "JPG", [&](QByteArray data) { imgData = data; });
-        StringList fileParts { name.split(".") };
-        fileParts.takeLast();
-        name = fileParts.join(".") + ".jpg";
+        StringList fileParts { name.split("/") };
+        name = fileParts.takeLast() + ".jpg";
         jpgs[i->toString()] = name;
         addEntry(QString("OEBPS/%1").arg(name), imgData);
     }
@@ -113,7 +124,7 @@ bool EBookExporter::convert() {
 bool EBookExporter::addEntry(const QString& name, const QString& value, bool compressed) {
     if (!mZip) return false;
 
-qDebug().noquote().nospace() << name + ":\n" + value + "\n";
+    qDebug().noquote().nospace() << name + ":\n" + value + "\n";
     auto& bytes = newData(value.toUtf8());
     zip_source_t* src = zip_source_buffer(mZip, bytes.constData(), mData.last().size(), 0);   // 0 = do NOT free the buffer when done
 
@@ -183,8 +194,10 @@ QString EBookExporter::convertHTML(const QString& qHtml) {
     QString html = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" + qHtml;
     html = replace(html, "<!DOCTYPE", ">", "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
     html = replace(html, "<html", ">", "<html xmlns=\"http://www.w3.org/1999/xhtml\">");
-    html = replace(html, "<style ", ">", "");
-    return replace(html, "<head", ">","<head><title>" + mTitle + "</title></head>");
+    html = replace(html, "<style", "</style>", "");
+    html = replace(html, "</head", ">", "");
+    html = replace(html, "<head", ">","<head><title>" + mTitle + "</title></head>");
+    return html;
 }
 
 QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qHtml) {
@@ -194,6 +207,22 @@ QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qH
         html = replace(html, "\"" + key, "\"", jpgs[key]);
     }
     return html;
+}
+
+QString EBookExporter::jpegManifest() {
+    QString manifest;
+    TextEdit* edit = Main::ref().ui()->textEdit;
+    auto images = edit->internalImages();
+    auto keys = images.keys();
+    for (auto i = keys.begin(); i != keys.end(); ++i) {
+        QImage image = images[*i];
+        QString name = i->fileName();
+        if (name.isEmpty()) name = i->host();
+        StringList fileParts { name.split("/") };
+        name = fileParts.takeLast();
+        manifest += QString("        " << openCloseIt("item", "id=\"%1_jpg\" href=\"%1.jpg\" media-type=\"image/jpeg\"")).arg(name);
+    }
+    return manifest;
 }
 
 QString EBookExporter::navPoints() {
@@ -275,7 +304,7 @@ QString EBookExporter::spineTOC() {
     QString spine;
     int len = chapterNumWidth();
     for (size_t i = 1; i <= mBook.size(); ++i) {
-        spine += "        " + openCloseIt("itemref", QString("idref=\"chapter%1\"").arg(i, len, 0, QChar('0')));
+        spine += "        " + openCloseIt("itemref", QString("idref=\"chapter%1\"").arg(i, len, 10, QChar('0')));
     }
     return spine;
 }
@@ -296,10 +325,11 @@ bool EBookExporter::writeContentOpf() {
                     (hasCover ? "        " << openCloseIt("meta", "name=\"cover\" content=\"images/Cover.jpg\"") : "") <<
                      "    " << closeIt() <<
                      "    " << openIt("manifest") <<
-                    (hasCover ? "        " << openCloseIt("item" , "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
+                    (hasCover ? "        " << openCloseIt("item", "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
                      "        " << openCloseIt("item", "id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"") <<
                      "        " << openCloseIt("item", "id=\"style\" href=\"stylesheet.css\" media-type=\"text/css\"") <<
                      "        " << openCloseIt("item", "id=\"pagetemplate\" href=\"page-template.xpgt\" media-type=\"application/vnd.adobe-page-template+xml\"") <<
+                     jpegManifest() <<
                     (hasCover ? "        " << openCloseIt("item", "id=\"cover_html\" href=\"Cover.xhtml\" media-type=\"application/xhtml+xml\"") : "") <<
                      chapterManifest() << "\n" <<
                      "    " << closeIt() <<

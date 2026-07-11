@@ -78,8 +78,11 @@ QString ExportDialog::getString(QLineEdit* field) const {
 }
 
 void ExportDialog::loadFields() {
+    auto& prefs = Main::ref().prefs();
+
     const auto& defaults = mExporter->collectMetadataDefaults();
     const auto& metaData = mExporter->metadataFields();
+
     bool create = mWidget.isEmpty();
     QLineEdit* lineEdit { nullptr };
     QComboBox* comboBox { nullptr };
@@ -106,12 +109,17 @@ void ExportDialog::loadFields() {
             if (meta.getChoices != nullptr) comboBox = dynamic_cast<QComboBox*>(mWidget[i]);
             else lineEdit = dynamic_cast<QLineEdit*>(mWidget[i]);
         }
+
+        auto value = meta.value;
+        auto key = meta.key + "." + mExporter->fileExtension();
+        if (prefs.contains(key) && prefs[key] != meta.defaultValue) value = prefs[key];
+
         if (meta.getChoices != nullptr) {
             if (comboBox) comboBox->setPlaceholderText(defaults[meta.key]);
-            if (!meta.value.isEmpty() && comboBox) comboBox->setCurrentText(meta.value);
+            if (!value.isEmpty() && comboBox) comboBox->setCurrentText(value);
         } else {
             if (lineEdit) lineEdit->setPlaceholderText(defaults[meta.key]);
-            if (!meta.value.isEmpty() && lineEdit) lineEdit->setText(meta.value);
+            if (!value.isEmpty() && lineEdit) lineEdit->setText(value);
         }
     }
 }

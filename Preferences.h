@@ -54,6 +54,9 @@ public:
     void                  setSystemTheme();
     Json5Object           write();
 
+    QString& operator[](const QString& var) { return mVars[var]; }
+    bool     contains(const QString& var)   { return mVars.contains(var); }
+
     StringList   actingScripts() const     { return mActingScripts; }
     bool         autoSave() const          { return mAutoSave; }
     qlonglong    autoSaveIntyerval() const { return mAutoSaveInterval; }
@@ -148,6 +151,7 @@ private:
     QString                  mUnderline        { "_\xF1_" };
     StringList               mActingScripts    { "" };
     QPageLayout::Orientation mOrientation      { QPageLayout::Portrait };
+    Map<QString, QString>    mVars;
     QRect                    mWindow;
     bool                     mAutoSave         { false };
     bool                     mIsDark           { false };

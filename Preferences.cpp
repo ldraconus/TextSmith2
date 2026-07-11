@@ -56,6 +56,7 @@ constexpr auto UiFontFamily     { "UiFontFasmily" };
 constexpr auto UiFontSize       { "UiFontSize" };
 constexpr auto Underline        { "Underline" };
 constexpr auto UseSeparator     { "UseSeparator" };
+constexpr auto Variables        { "Variables" };
 constexpr auto Voice            { "Voice" };
 constexpr auto WindowLoc        { "WindowLoc" };
 
@@ -144,6 +145,9 @@ bool Preferences::load() {
     mVoice =             settings.value(Voice,            DefaultVoice).toInt();
     mWindow =            settings.value(WindowLoc,        { }).toRect();
     if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
+    QJsonObject vars =   settings.value(Variables,        { }).toJsonObject();
+    auto keys = vars.keys();
+    for (const auto& var: std::as_const(keys)) mVars[var] = vars[var].toString();
     return true;
 }
 
@@ -250,6 +254,7 @@ bool Preferences::read(Json5Object& obj) {
             mOtherSplitter.append(i.toInt());
         }
         arr = Item::hasArr(obj, "windoLoc", { });
+        mVars.clear();
     } else {
         auto scripts =      Item::hasArr(obj,  ActingScripts,    { });
         mActingScripts.clear();
@@ -304,6 +309,8 @@ bool Preferences::read(Json5Object& obj) {
             if (obj.contains(Title) && obj.contains(Path)) addNovel(obj[Title].toString(), obj[Path].toString());
         }
         arr =               Item::hasArr(obj,  WindowLoc,        { });
+        Json5Object vars =  Item::hasObj(obj,  Variables,        { });
+        for (const auto& var: vars) mVars[var.first] = var.second.toString();
     }
     QRect geom;
     geom.setX(Item::hasNum(arr, 0, qlonglong(0)));
@@ -363,6 +370,9 @@ bool Preferences::save() {
     settings.setValue(UseSeparator,     mUseSeparator);
     settings.setValue(Voice,            mVoice);
     settings.setValue(WindowLoc,        mWindow);
+    QJsonObject vars;
+    for (const auto& var: mVars) vars[var.first] = var.second;
+    settings.setValue(Variables,        vars);
     return true;
 }
 void Preferences::setDarkTheme() {
@@ -703,7 +713,9 @@ Json5Object Preferences::write() {
     arr.append(qlonglong(mWindow.width()));
     arr.append(qlonglong(mWindow.height()));
     obj[WindowLoc] =        arr;
-
+    Json5Object vars;
+    for (const auto var: mVars) vars[var.first] = var.second;
+    obj[Variables] = vars;
     return obj;
 }
 

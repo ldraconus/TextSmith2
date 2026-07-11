@@ -48,6 +48,7 @@ private:
     QString     closeIt();
     QString     convertHTML(const QString& qHtml);
     QString     fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
+    QString     jpegManifest();
     QString     navPoints();
     QByteArray& newData(const QByteArray& from);
     void        novelToBook();
