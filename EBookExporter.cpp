@@ -215,6 +215,10 @@ QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qH
     return html;
 }
 
+bool EBookExporter::hasCover() {
+    return !mCoverHtml.isEmpty() || !mCoverImage.isEmpty();
+}
+
 QString EBookExporter::jpegManifest() {
     QString manifest;
     TextEdit* edit = Main::ref().ui()->textEdit;
@@ -277,16 +281,20 @@ void EBookExporter::novelToBook() {
             firstScene = true;
         } else if (currentId != -1) {
             if (item.hasTag(mCoverTag) || item.hasTag(mSceneTag)) {
+                if (item.hasTag(mCoverTag)) {
+                    mHasCover = true;
+                    mCoverHtml = convertHTML(item.html());
+                    continue;
+                }
                 auto cursor = QTextCursor(build.document());
                 cursor.movePosition(QTextCursor::End);
                 if (firstScene) firstScene = false;
                 else if (prefs.useSeparator()) cursor.insertHtml("<br/><center>" + prefs.separator() + "</center><br/>");
                 cursor.insertHtml(item.html());
-                if (item.hasTag(mCoverTag)) {
-                    mHasCover = true;
-                    mCoverHtml = item.html();
-                }
             }
+        } else if (item.hasTag(mCoverTag)) {
+            mHasCover = true;
+            mCoverHtml = convertHTML(item.html());
         }
     }
     if (currentId != -1) mHtml[currentId] = convertHTML(build.toHtml());
@@ -337,7 +345,6 @@ QString EBookExporter::spineTOC() {
 }
 
 bool EBookExporter::writeContentOpf() {
-    bool hasCover = mHasCover || !mCoverImage.isEmpty();
     return addEntry("OEBPS/content.opf",
                     "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" <<
                      openIt("package", "xmlns=\"http://www.idpf.org/2007/opf\" unique-identifier=\"BookID\" version=\"2.0\"", true) <<
@@ -349,19 +356,19 @@ bool EBookExporter::writeContentOpf() {
                      "        " << openIt("dc:publisher") << mPublisher << closeIt() <<
                      "        " << openIt("dc:date") << mYear << closeIt() <<
                      "        " << openIt("dc:identifier", "id=\"BookID\" opf:scheme=\"UUID\"", false) << mId << closeIt() <<
-                    (hasCover ? "        " << openCloseIt("meta", "name=\"cover\" content=\"images/Cover.jpg\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("meta", "name=\"cover\" content=\"images/Cover.jpg\"") : "") <<
                      "    " << closeIt() <<
                      "    " << openIt("manifest", true) <<
-                    (hasCover ? "        " << openCloseIt("item", "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("item", "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
                      "        " << openCloseIt("item", "id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"") <<
                      "        " << openCloseIt("item", "id=\"style\" href=\"stylesheet.css\" media-type=\"text/css\"") <<
                      "        " << openCloseIt("item", "id=\"pagetemplate\" href=\"page-template.xpgt\" media-type=\"application/vnd.adobe-page-template+xml\"") <<
                      jpegManifest() <<
-                    (hasCover ? "        " << openCloseIt("item", "id=\"cover_html\" href=\"Cover.xhtml\" media-type=\"application/xhtml+xml\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("item", "id=\"cover_html\" href=\"Cover.xhtml\" media-type=\"application/xhtml+xml\"") : "") <<
                      chapterManifest() << "\n" <<
                      "    " << closeIt() <<
                      "    " << openIt("spine", "toc=\"ncx\"", true) <<
-                    (hasCover ? "        " << openCloseIt("itemref", "idref=\"cover_html\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("itemref", "idref=\"cover_html\"") : "") <<
                      spineTOC() <<
                      "    " << closeIt() <<
                      closeIt());
@@ -378,7 +385,7 @@ bool EBookExporter::writeContainerXml() {
 }
 
 bool EBookExporter::writeCover() {
-    if (!mCoverHtml.isEmpty() || !mCoverImage.isEmpty()) {
+    if (hasCover()) {
         TextEdit edit;
         auto& data = newData({ });
         if (mCoverHtml.isEmpty()) {
@@ -404,12 +411,12 @@ bool EBookExporter::writeCover() {
             p.end();
             Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
         }
-        return addEntry("OEBPS/images/Cover.jpg", data) &&
+        return addEntry("OEBPS/Cover.jpg", data) &&
                addEntry("OEBPS/Cover.xhtml", QString("") <<
                         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
                         << openIt("html", true) <<
                         "   " << openIt("<body>", true) <<
-                        "     " << openCloseIt("img", "src=\"images/Cover.jpg\"") << "<br/>&nbsp;\n" <<
+                        "     " << openCloseIt("img", "src=\"Cover.jpg\"") << "<br/>&nbsp;\n" <<
                         "   " << closeIt() <<
                         closeIt());
     }
@@ -488,7 +495,6 @@ bool EBookExporter::writeStylesheet() {
 }
 
 bool EBookExporter::writeToc() {
-    int hasCover = !mCoverTag.isEmpty() || !mCoverImage.isEmpty();
     return addEntry("OEBPS/toc.ncx",
                     QString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n") <<
                     openIt("ncx", "xmlns=\"http://www.daisy.org/z3986/2005/ncx/\" version=\"2005-1\"", true) <<
@@ -502,7 +508,7 @@ bool EBookExporter::writeToc() {
                     "      " << openIt("text") << mTitle << closeIt() <<
                     "   " << closeIt() <<
                     "   " << openIt("navMap", true) <<
-                   (hasCover ?
+                   (hasCover() ?
                     "      " << openIt("navPoint", "id=\"cover_html\" playOrder=\"1\"", true) <<
                     "         " << openIt("navLabel", true) <<
                     "            " << openIt("text") << "Cover" << closeIt() <<

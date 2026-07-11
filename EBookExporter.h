@@ -49,6 +49,7 @@ private:
     QString     closeIt();
     QString     convertHTML(const QString& qHtml);
     QString     fixImages(QMap<QString, QString>& jpgs, const QString& qHtml);
+    bool        hasCover();
     QString     jpegManifest();
     QString     navPoints();
     QByteArray& newData(const QByteArray& from);
