@@ -26,7 +26,7 @@ private:
     QString                 mAuthor;
     Map<qlonglong, QString> mBook;
     QString                 mCover;
-    QString                 mCoverHtml;
+    qlonglong               mCoverId;
     QString                 mCoverImage;
     QList<QByteArray>       mData;
     bool                    mHasCover;

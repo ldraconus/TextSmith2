@@ -216,7 +216,7 @@ QString EBookExporter::fixImages(QMap<QString, QString>& jpgs, const QString& qH
 }
 
 bool EBookExporter::hasCover() {
-    return !mCoverHtml.isEmpty() || !mCoverImage.isEmpty();
+    return mCoverId != -1 || !mCoverImage.isEmpty();
 }
 
 QString EBookExporter::jpegManifest() {
@@ -270,6 +270,7 @@ void EBookExporter::novelToBook() {
     TextEdit build;
     Main::ref().setupHtml(build);
     qlonglong currentId = -1;
+    mCoverId = -1;
     bool firstScene = true;
     auto& prefs = Main::ref().prefs();
     for (int i = 0; i < mItemIds.count(); ++i) {
@@ -283,7 +284,7 @@ void EBookExporter::novelToBook() {
             if (item.hasTag(mCoverTag) || item.hasTag(mSceneTag)) {
                 if (item.hasTag(mCoverTag)) {
                     mHasCover = true;
-                    mCoverHtml = convertHTML(item.html());
+                    mCoverId = mItemIds[i];
                     continue;
                 }
                 auto cursor = QTextCursor(build.document());
@@ -294,7 +295,7 @@ void EBookExporter::novelToBook() {
             }
         } else if (item.hasTag(mCoverTag)) {
             mHasCover = true;
-            mCoverHtml = convertHTML(item.html());
+            mCoverId = mItemIds[i];
         }
     }
     if (currentId != -1) mHtml[currentId] = convertHTML(build.toHtml());
@@ -386,9 +387,8 @@ bool EBookExporter::writeContainerXml() {
 
 bool EBookExporter::writeCover() {
     if (hasCover()) {
-        TextEdit edit;
         auto& data = newData({ });
-        if (mCoverHtml.isEmpty()) {
+        if (mCoverId == -1) {
             QImage img;
             img.load(mCoverImage);
             auto size = img.size();
@@ -397,18 +397,20 @@ bool EBookExporter::writeCover() {
             Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
         }
         else {
-            auto& images = Main::ref().ui()->textEdit->internalImages();
-            edit.setInternalImages(images);
-            edit.setHtml(mCoverHtml);
-            QTextDocument *doc = edit.document();
-            doc->setPageSize(QSizeF(2560, 1600));
-            QImage img(2560, 1600, QImage::Format_ARGB32);
+            Item& item = mNovel.findItem(mCoverId);
+            auto prev = Main::ref().currentNode();
+            auto* edit = Main::ref().ui()->textEdit;
+            QTextDocument *doc = item.doc();
+            edit->setDocument(doc);
+            doc->setPageSize(QSizeF(1600, 2560));
+            QImage img(1600, 2560, QImage::Format_ARGB32);
             img.setDotsPerMeterX(11811); // 300 DPI
             img.setDotsPerMeterY(11811);
             img.fill(Qt::transparent);
             QPainter p(&img);
             doc->drawContents(&p);
             p.end();
+            edit->setDocument(mNovel.findItem(prev).doc());
             Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
         }
         return addEntry("OEBPS/Cover.jpg", data) &&
