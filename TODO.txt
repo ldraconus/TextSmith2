@@ -25,8 +25,11 @@
 [ ] Add context menus to tree and text widgets
     [ ] Update documentation
 [/] Write scripts
-[X] Fix EBookExport
 [%] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
+[/] Fixed EBookExport
+    [X] Pass epubcheck
+    [X] Cover loads.
+    [/] Get cover sizing correctly (try resizing the textEdit to 2560 height, 1600 width and see what happens, Restore when done.
 [X] consider moving the exports to a submenu uder the save as menu ... feels more natural
 [X] TextExport now honors margins (in it's way) and bold/italic/underline. does not take into account space size, easy fix.
 [X] Add bold/italic/underline support to text export
