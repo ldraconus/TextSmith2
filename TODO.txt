@@ -1,7 +1,8 @@
-[/] Paste is broken in wierd ways onlinus
+[/] Paste is broken in wierd ways on linux
     - You only get one paste. Not matter how many times you cut, only the first is always there.
     - Paste from one part of the novel to another can look wierd (fon't off, lline spacing is off. leave and return to the item and it's fixed.
-    [/] Now it awlays works inside the program, and it works right after a cut/paste inside, you can copy and paste external ... wierd. Looks like Qt?
+    [X] Now it awlays works inside the program, and it works right after a cut/paste inside, you can copy and paste external ... wierd.
+        [X] Since this works on windows flawlessly, it's a linux/Qt thing and I'm not going to be ableto fix it. USe workaround.
 [/] Printing is just another form of exporting and stuff not being there is confusing.
     - Add the chpater/scene/cover tag in the export dialog to the page setup one.
     [ ] add all of the nice little details from that dialog as well ...
@@ -26,10 +27,10 @@
     [ ] Update documentation
 [/] Write scripts
 [%] Paste an image. The scrollbars don't update and the text widget doesn't seem to realize it's size has changed internally.
-[/] Fixed EBookExport
+[X] Fixed EBookExport
     [X] Pass epubcheck
     [X] Cover loads.
-    [/] Get cover sizing correctly (try resizing the textEdit to 2560 height, 1600 width and see what happens, Restore when done.
+    [X] Get cover sizing correctly (try resizing the textEdit to 2560 height, 1600 width and see what happens, Restore when done.
 [X] consider moving the exports to a submenu uder the save as menu ... feels more natural
 [X] TextExport now honors margins (in it's way) and bold/italic/underline. does not take into account space size, easy fix.
 [X] Add bold/italic/underline support to text export

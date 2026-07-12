@@ -23,6 +23,8 @@ public:
     QSet<QUrl>&         externalImageUrls()                               { return mExternalUrls; }
     void                setInternalImages(const QMap<QUrl, QImage>& imgs) { mOriginals = imgs; }
     void                setSoundPool(SoundPool* s)                        { mSoundPool = s; }
+    void                setMaxWidth(qlonglong width)                      { mUseDefineWidth = true; mWidth = width; }
+    void                useWidgetWidth()                                  { mUseDefineWidth = false; }
 
     // Serialization: internal images only
     void          addInternalImage(const QUrl& url, const QImage& image, bool add = true);
@@ -31,6 +33,7 @@ public:
     QString       embedImagesAsBase64(const QString &html);
     void          registerInternalImages();
     void          removeInternalImage(const QUrl& url);
+    void          resizeImagesToFit();
     QJsonArray    serializeExternalImagesToJson();
     QJsonArray    serializeInternalImagesToJson();
     void          setWrapMargin();
@@ -53,6 +56,8 @@ private:
     int                mReentry =           0;
     bool               mResizing =          false;
     SoundPool*         mSoundPool =         nullptr;
+    bool               mUseDefineWidth =    false;
+    qlonglong          mWidth =             0;
     int                mWrapMarginPx =      0;
 
     int              contentMaxWidth() const;
@@ -63,7 +68,6 @@ private:
     void             insertInternalImage(const QImage& image);
     void             insertLocalImage(const QString& localFilePath);
     QUrl             makeInternalUrl();
-    void             resizeImagesToFit();
     void             scheduleResize();
     QJsonObject      serializeInteralImageToJson(const QUrl& url, const QImage& img);
     void             toTextBlockFormat(QJsonObject& obj, const QTextBlockFormat format) const;

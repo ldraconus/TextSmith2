@@ -404,9 +404,12 @@ void TextEdit::insertExternalUrlImage(const QUrl& url, bool createBlock) {
 }
 
 int TextEdit::contentMaxWidth() const {
-    const int w = viewport()->width();
-    const int margin = int(document()->documentMargin());
-    return w > 0 ? w - margin * 2 : w;
+    if (mUseDefineWidth) return mWidth;
+    else {
+        const int w = viewport()->width();
+        const int margin = int(document()->documentMargin());
+        return w > 0 ? w - margin * 2 : w;
+    }
 }
 
 void TextEdit::resizeEvent(QResizeEvent *event) {
@@ -708,7 +711,7 @@ void TextEdit::resizeImagesToFit() {
         int newH;
 
         if (g.orig.isValid() && g.orig.width() > 0) {
-            if (newW > g.orig.width()) {
+            if (newW > g.orig.width() && !mUseDefineWidth) {
                 newW = g.orig.width();
                 newH = g.orig.height();
             } else {

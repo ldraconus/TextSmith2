@@ -402,14 +402,18 @@ bool EBookExporter::writeCover() {
             auto* edit = Main::ref().ui()->textEdit;
             QTextDocument *doc = item.doc();
             edit->setDocument(doc);
+            edit->setMaxWidth(1600);
             doc->setPageSize(QSizeF(1600, 2560));
             QImage img(1600, 2560, QImage::Format_ARGB32);
             img.setDotsPerMeterX(11811); // 300 DPI
             img.setDotsPerMeterY(11811);
             img.fill(Qt::transparent);
+            edit->resizeImagesToFit();
             QPainter p(&img);
             doc->drawContents(&p);
             p.end();
+            edit->useWidgetWidth();
+            edit->resizeImagesToFit();
             edit->setDocument(mNovel.findItem(prev).doc());
             Main::ref().loadImageBytes(img, "JPG", [&](const QByteArray& from) { data = from; });
         }
