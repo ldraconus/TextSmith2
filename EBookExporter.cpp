@@ -356,10 +356,10 @@ bool EBookExporter::writeContentOpf() {
                      "        " << openIt("dc:publisher") << mPublisher << closeIt() <<
                      "        " << openIt("dc:date") << mYear << closeIt() <<
                      "        " << openIt("dc:identifier", "id=\"BookID\" opf:scheme=\"UUID\"", false) << mId << closeIt() <<
-                    (hasCover() ? "        " << openCloseIt("meta", "name=\"cover\" content=\"images/Cover.jpg\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("meta", "name=\"cover\" content=\"Cover.jpg\"") : "") <<
                      "    " << closeIt() <<
                      "    " << openIt("manifest", true) <<
-                    (hasCover() ? "        " << openCloseIt("item", "id=\"cover_jpg\" href=\"images/Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
+                    (hasCover() ? "        " << openCloseIt("item", "id=\"cover_jpg\" href=\"Cover.jpg\" media-type=\"image/jpeg\"") : "") <<
                      "        " << openCloseIt("item", "id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"") <<
                      "        " << openCloseIt("item", "id=\"style\" href=\"stylesheet.css\" media-type=\"text/css\"") <<
                      "        " << openCloseIt("item", "id=\"pagetemplate\" href=\"page-template.xpgt\" media-type=\"application/vnd.adobe-page-template+xml\"") <<
@@ -413,10 +413,14 @@ bool EBookExporter::writeCover() {
         }
         return addEntry("OEBPS/Cover.jpg", data) &&
                addEntry("OEBPS/Cover.xhtml", QString("") <<
-                        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-                        << openIt("html", true) <<
-                        "   " << openIt("<body>", true) <<
-                        "     " << openCloseIt("img", "src=\"Cover.jpg\"") << "<br/>&nbsp;\n" <<
+                        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" <<
+                        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">" <<
+                        openIt("html", "xmlns=\"http://www.w3.org/1999/xhtml\"", true) <<
+                        "   " << openIt("head") << openIt("title") << mTitle << closeIt() << closeIt() <<
+                        "   " << openIt("body", "style=\" font-family:'Liberation Sans'; font-size:12pt; font-weight:400; font-style:normal;\"", true) <<
+                        "      " << openIt("p") <<
+                        "         " << openCloseIt("img", "src=\"Cover.jpg\" alt=\"Cover\"") <<
+                        "      " << closeIt() <<
                         "   " << closeIt() <<
                         closeIt());
     }
