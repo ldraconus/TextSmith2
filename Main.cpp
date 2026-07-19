@@ -2460,7 +2460,7 @@ void Main::setupConnections() {
 
         connect(act, &QAction::triggered, this, [this, novel]() { loadFile(novel.sPath); });
     }
-    for (const auto& file: gone) recent.remove(file);
+    for (auto& file: gone) recent.remove(file);
     mPrefs.setRecentNovels(recent);
 
     QMenu* saveAsMenu = mUi->menuSave_As;

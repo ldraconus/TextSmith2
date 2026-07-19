@@ -175,7 +175,7 @@ target_link_libraries(TextSmith2 PRIVATE
     /usr/local/lib/libz.a
     /usr/local/lib/libzip.so
     /usr/local/lib/libhunspell-1.7.a
-    /usr/local/lib/libparsers.a
+#    /usr/local/lib/libparsers.a
 )
 else()
     target_link_libraries(TextSmith2 PRIVATE
