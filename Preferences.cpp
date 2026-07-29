@@ -714,7 +714,7 @@ Json5Object Preferences::write() {
     arr.append(qlonglong(mWindow.height()));
     obj[WindowLoc] =        arr;
     Json5Object vars;
-    for (const auto var: mVars) vars[var.first] = var.second;
+    for (const auto& var: std::as_const(mVars)) vars[var.first] = var.second;
     obj[Variables] = vars;
     return obj;
 }

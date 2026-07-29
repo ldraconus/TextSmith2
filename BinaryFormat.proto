@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package TextSmith;
+
+message Prefs {
+    bool autoSave = 1;
+    uint64 autoSaveInterval = 2;
+    bool binary = 3;
+    string bold = 4;
+    string chapterTag = 5;
+    string fontFamily = 6;
+    int32 fontSIze = 7;
+    string footer = 8;
+    string header = 9;
+    string italic = 10;
+    repeated uint64 mainSplitter = 11;
+    double marginBottom = 12;
+    double marginLeft = 13;
+    double marginRight = 14;
+    double marginTop = 15;
+    repeated uint64 otherSplitter = 16;
+    string pageSize = 17;
+    int64 position = 18;
+    repeated string recentNovels = 19;
+    string sceneTag = 20;
+    string separator = 21;
+    int32 theme = 22;
+    bool toolbarVisible = 23;
+    bool typingSounds = 24;
+    string uiFontFamily = 25;
+    int32 uiFontSize = 26;
+    string underline = 27;
+    bool useSeparator = 28;
+    int32 voice = 29;
+    repeated int32 window = 30;
+    map<string, string> vars = 31;
+}
+
+message Image {
+    string url = 1;
+    repeated uint32 data = 2;
+}
+
+message Extra {
+    Prefs prefs = 1;
+    int64 currentNode = 2;
+    int64 position = 3;
+    map<int64, bool> state = 4;
+    repeated Image images = 5;
+    repeated string words = 6;
+}
+
+message BlockFormat {
+    int64 alignment = 1;
+    int64 indent = 2;
+}
+
+message TextCharFormat {
+    bool bold = 1;
+    bool italic = 2;
+    bool underline = 3;
+}
+
+message TextImageFormat {
+    string name = 1;
+    int64 width = 2;
+    int64 height = 3;
+}
+
+message TextFragment {
+    oneof is {
+        TextImageFormat imageFormat = 1;
+        TextCharFormat charFormat = 2;
+    }
+}
+
+message Block {
+    BlockFormat format = 1;
+    TextCharFormat charFormat = 2;
+    repeated TextFragment fragments = 3;
+}
+
+message TextDocument {
+    repeated Block blocks = 1;
+}
+
+message Item {
+    int64 count = 1;
+    TextDocument doc = 2;
+    uint64 id = 3;
+    string name = 4;
+    int64 position = 5;
+    repeated string tags = 6;
+}
+
+message TreeNode {
+    int64 id = 1;
+    repeated TreeNode branches = 2;
+}
+
+message Branches {
+    repeated TreeNode treeNode = 1;
+}
+
+message Novel {
+    string filename = 1;
+    Extra extra = 2;
+    int64 root = 3;
+    repeated Item items = 4;
+    Branches branches = 5;
+}

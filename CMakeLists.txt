@@ -22,6 +22,32 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 qt_standard_project_setup()
 
+find_package(Protobuf CONFIG QUIET)
+if(NOT Protobuf_FOUND)
+    find_package(Protobuf REQUIRED)   # falls back to CMake's bundled FindProtobuf.cmake
+endif()
+
+set(PROTO_FILES
+    BinaryFormat.proto
+)
+
+add_library(BinaryFormat STATIC)
+
+if(TARGET protobuf::protoc)
+    # modern config-mode path — protoc location resolved via imported target
+    protobuf_generate(
+        TARGET BinaryFormat
+        PROTOS ${PROTO_FILES}
+        LANGUAGE cpp
+    )
+    target_link_libraries(BinaryFormat PUBLIC protobuf::libprotobuf)
+else()
+    # legacy module-mode path — Protobuf_PROTOC_EXECUTABLE found via find_program on PATH
+    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
+    target_sources(BinaryFormat PRIVATE ${PROTO_SRCS} ${PROTO_HDRS})
+    target_include_directories(BinaryFormat PUBLIC ${Protobuf_INCLUDE_DIRS})
+    target_link_libraries(BinaryFormat PUBLIC ${Protobuf_LIBRARIES})
+endif()
 
 # Include directories
 if (UNIX)
@@ -162,20 +188,23 @@ qt_add_executable(TextSmith2
     TSVersion.h
     TSVersion
     README.md
+    BinaryFormat.proto
 )
+
+target_link_libraries(TextSmith2 PUBLIC BinaryFormat)
 
 # Link Qt + libzip
 if(UNIX)
-target_link_libraries(TextSmith2 PRIVATE
-    Qt6::Core
-    Qt6::DBus
-    Qt6::Widgets
-    Qt6::PrintSupport
-    Qt6::TextToSpeech
-    /usr/local/lib/libz.a
-    /usr/local/lib/libzip.so
-    /usr/local/lib/libhunspell-1.7.a
-#    /usr/local/lib/libparsers.a
+    target_link_libraries(TextSmith2 PRIVATE
+        Qt6::Core
+        Qt6::DBus
+        Qt6::Widgets
+        Qt6::PrintSupport
+        Qt6::TextToSpeech
+        /usr/local/lib/libz.a
+        /usr/local/lib/libzip.so
+        /usr/local/lib/libhunspell-1.7.a
+    #    /usr/local/lib/libparsers.a
 )
 else()
     target_link_libraries(TextSmith2 PRIVATE
