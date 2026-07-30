@@ -10,6 +10,8 @@
 #include "Map.h"
 #include "StringList.h"
 
+#include "BinaryFormat.pb.h"
+
 #include <Json5.h>
 
 class TreeNode {
@@ -31,7 +33,7 @@ public:
     TreeNode&   find(TreeNode& branch, qlonglong i);
     void        fromV1Object(Json5Object& o);
     Json5Object toObject();
-    void        toBinary(QDataStream& bin);
+    void        toBinary(TextSmith::TreeNode* bin);
 
 private:
     qlonglong      mId { 0 };
@@ -95,12 +97,12 @@ public:
     QString          toPlainText();
     void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
     void             toTextCharFormat(Json5Object& obj,  QTextCharFormat& format);
-    void             toTextCharFormat(QDataStream& obj,  QTextCharFormat& format);
-    void             toTextBlockFormat(QDataStream& obj, QTextBlockFormat& format);
+    void             toTextCharFormat(TextSmith::TextCharFormat* obj,  QTextCharFormat& format) const;
+    void             toTextBlockFormat(TextSmith::BlockFormat* obj, QTextBlockFormat& format) const;
 
     virtual Json5Object toObject(QTextDocument* doc);
     virtual Json5Object toObject();
-    virtual void        toBinary(QDataStream& doc, QTextDocument* document);
+    virtual void        toBinary(TextSmith::Item* bin) const;
 
 
     static auto getNextID()                  { return sNextID; }
@@ -193,21 +195,20 @@ public:
     static constexpr auto Width      = "Width";
     static constexpr auto Windows    = "windows";
 
-    void        addItem(const Item& i)          { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
-    TreeNode    branches()                      { return mBranches; }
-    void        change()                        { mChanged = true; }
-    void        clear()                         { init(); }
-    Json5Object extra()                         { return mExtra; }
-    QString&    extraBin()                      { return mExtraBin; }
-    auto        filename()                      { return mFilename; }
-    auto        isChanged()                     { return mChanged; }
-    void        noChanges()                     { mChanged = false; }
-    qlonglong   root()                          { return mRoot; }
-    bool        saveAs(const QString& f)        { mFilename = f; return save(); }
-    void        setBranches(const TreeNode& b)  { mBranches = b; }
-    void        setExtra(Json5Object& obj)      { mExtra = obj; change(); }
-    void        setExtraBin(const QString& obj) { mExtraBin = obj; change(); }
-    void        setFilename(const QString& f)   { mFilename = f; change(); }
+    void              addItem(const Item& i)           { auto s = Item::getNextID(); mItems[i.id()] = i; Item::resetLastID(s); }
+    TreeNode          branches()                       { return mBranches; }
+    void              change()                         { mChanged = true; }
+    void              clear()                          { init(); }
+    Json5Object       extra()                          { return mExtra; }
+    auto              filename()                       { return mFilename; }
+    auto              isChanged()                      { return mChanged; }
+    void              noChanges()                      { mChanged = false; }
+    TextSmith::Extra* extraBin(bool writeable = false) { return writeable ? mBinary.mutable_extra() : const_cast<TextSmith::Extra*>(&mBinary.extra()); }
+    qlonglong         root()                           { return mRoot; }
+    bool              saveAs(const QString& f)         { mFilename = f; return save(); }
+    void              setBranches(const TreeNode& b)   { mBranches = b; }
+    void              setExtra(Json5Object& obj)       { mExtra = obj; change(); }
+    void              setFilename(const QString& f)    { mFilename = f; change(); }
 
     void                  changeFont(const QFont& font);
     qlonglong             count(qlonglong id);
@@ -219,11 +220,11 @@ public:
     Map<QString, QImage>& images();
     void                  init();
     bool                  open();
-    bool                  save(bool compress = Json5Object::HumanReadable);
+    bool                  save(bool compress = Json5Object::Compress);
     bool                  save(QMap<QString, QImage>& images);
     void                  setHtml(qlonglong node, const QString& html);
     void                  setupScripting(fifth::vm* vm);
-    void                  toBinary(QDataStream& bin, QMap<QString, QImage>& images);
+    void                  toBinary();
     Json5Object           toObject();
 
     static Novel* ptr() { return sNovel; }
@@ -233,7 +234,7 @@ private:
     TreeNode             mBranches;
     bool                 mChanged { false };
     Json5Object          mExtra;
-    QString              mExtraBin;
+    TextSmith::Novel     mBinary;
     QString              mFilename;
     Map<qlonglong, Item> mItems;
     qlonglong            mRoot { 0 };

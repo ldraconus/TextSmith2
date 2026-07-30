@@ -53,7 +53,8 @@ endif()
 if (UNIX)
     include_directories(
         /home/chris/src/include
-        /home/chris/src/TextSmith2
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}
         /home/chris/src/libzip/lib
         /home/chris/src/libzip/build
     )
@@ -65,6 +66,7 @@ else()
             E:/QtSource/libzip/lib
             E:/QtSource/vcpkg/packages/hunspell_x64-windows/include
             ${CMAKE_SOURCE_DIR}
+            ${CMAKE_BINARY_DIR}
         )
     else()
         include_directories(
@@ -75,6 +77,7 @@ else()
             E:/QtSource/Spelling/parsers
             E:/QtSource/Spelling/tools
             ${CMAKE_SOURCE_DIR}
+            ${CMAKE_BINARY_DIR}
         )
     endif()
 endif()

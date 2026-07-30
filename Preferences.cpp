@@ -719,6 +719,50 @@ Json5Object Preferences::write() {
     return obj;
 }
 
+void Preferences::write(TextSmith::Prefs* prefs) {
+    for (const auto& a: mActingScripts) prefs->add_actingscrips(a.toStdString());
+    prefs->set_autosave(mAutoSave);
+    prefs->set_autosaveinterval(mAutoSaveInterval);
+    prefs->set_binary(mBinary);
+    prefs->set_bold(mBold.toStdString());
+    prefs->set_chaptertag(mChapterTag.toStdString());
+    prefs->set_covertag(mCoverTag.toStdString());
+    prefs->set_fontfamily(mFontFamily.toStdString());
+    prefs->set_fontsize(mFontSize);
+    prefs->set_footer(mFooter.toStdString());
+    prefs->set_header(mHeader.toStdString());
+    prefs->set_italic(mItalic.toStdString());
+    for (const auto v: mMainSplitter) prefs->add_mainsplitter(v);
+    prefs->set_marginbottom(mMargins[Bottom]);
+    prefs->set_marginleft(mMargins[Left]);
+    prefs->set_marginright(mMargins[Right]);
+    prefs->set_margintop(mMargins[Top]);
+    prefs->set_orientation(mOrientation);
+    for (const auto v: mOtherSplitter) prefs->add_othersplitter(v);
+    prefs->set_pagesize(mPageSize.toStdString());
+    prefs->set_position(mPosition);
+    auto* recent = prefs->mutable_recentnovels();
+    for (const auto& nvl: mRecentNovels) {
+        TextSmith::Recent* rcnt = recent->Add();
+        rcnt->set_title(nvl.sTitle.toStdString());
+        rcnt->set_path(nvl.sPath.toStdString());
+    }
+    prefs->set_scenetag(mSceneTag.toStdString());
+    prefs->set_separator(mSeparator.toStdString());
+    prefs->set_theme(mTheme);
+    prefs->set_toolbarvisible(mToolbarVisible);
+    prefs->set_typingsounds(mTypingSounds);
+    prefs->set_uifontfamily(mUiFontFamily.toStdString());
+    prefs->set_uifontsize(mUiFontSize);
+    prefs->set_underline(mUnderline.toStdString());
+    prefs->set_voice(mVoice);
+    prefs->add_window(mWindow.x());
+    prefs->add_window(mWindow.y());
+    prefs->add_window(mWindow.width());
+    prefs->add_window(mWindow.height());
+    for (const auto& var: std::as_const(mVars)) (*prefs->mutable_vars())[var.first.toStdString()] = var.second.toStdString();
+}
+
 static constexpr auto PointsPerInch = 72.0;
 
 List<qreal> Preferences::margins(Units unit) const {

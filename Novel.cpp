@@ -369,42 +369,40 @@ Json5Object Item::toObject() {
     return toObject(mDoc);
 }
 
-void Item::toBinary(QDataStream& doc, QTextDocument* document) {
-    qlonglong num =document->blockCount();
-    doc << num;
-    for (QTextBlock block = document->begin(); block != document->end(); block = block.next()) {
+void Item::toBinary(TextSmith::Item* bin) const {
+    auto* doc = bin->mutable_doc();
+    qlonglong num = mDoc->blockCount();
+    for (QTextBlock block = mDoc->begin(); block != mDoc->end(); block = block.next()) {
+        TextSmith::Block* blk = doc->add_blocks();
         auto format = block.blockFormat();
-        toTextBlockFormat(doc, format);
+        auto* blkFmt = blk->mutable_format();
+        toTextBlockFormat(blkFmt, format);
         auto charFormat = block.charFormat();
-        toTextCharFormat(doc, charFormat);
-        Json5Array fragments;
-        num = 0;
-        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) ++num;
-        doc << num;
+        auto* chrFmt = blk->mutable_charformat();
+        toTextCharFormat(chrFmt, charFormat);
         for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
             QTextFragment fragment = it.fragment();
-            Json5Object frag;
-
+            auto* frag = blk->add_fragments();
             if (fragment.charFormat().isImageFormat()) {
+                auto* img = frag->mutable_imageformat();
                 QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
-                frag[Novel::Image] = imgFmt.name();
-                frag[Novel::Width] = imgFmt.width();
-                frag[Novel::Height] = imgFmt.height();
+                img->set_name(imgFmt.name().toStdString());
+                img->set_width(imgFmt.width());
+                img->set_height(imgFmt.height());
             } else {
+                auto* txt = frag->mutable_textformat();
                 auto fragCharFormat = fragment.charFormat();
-                toTextCharFormat(frag, fragCharFormat);
-                frag[Novel::Text] = fragment.text();
+                auto* txtChrFmt = txt->mutable_charformat();
+                toTextCharFormat(txtChrFmt, fragCharFormat);
+                txt->set_text(fragment.text().toStdString());
             }
-
-            fragments.append(frag);
         }
     }
 
-    doc << mPosition << mID << mName;
-    Json5Array tags;
-    num = mTags.count();
-    doc << num;
-    for (auto i = 0; i < num; ++i) doc << mTags[i];
+    bin->set_position(mID);
+    bin->set_position(mPosition);
+    bin->set_name(mName.toStdString());
+    for (const auto& tag: mTags) bin->add_tags(tag.toStdString());
 }
 
 Json5Array Item::hasArr(Json5Object& obj, const QString& str, const Json5Array& def) {
@@ -647,7 +645,7 @@ void Item::toTextCharFormat(Json5Object& obj, QTextCharFormat& format) {
     if (format.fontUnderline())             obj[Novel::Underline] = true;
 }
 
-void Item::toTextBlockFormat(QDataStream& obj, QTextBlockFormat& format) {
+void Item::toTextBlockFormat(TextSmith::BlockFormat* obj, QTextBlockFormat& format) const {
     Qt::Alignment align = format.alignment();
     char alignment = 0;
     if (align & Qt::AlignLeft) alignment = 1;
@@ -655,15 +653,15 @@ void Item::toTextBlockFormat(QDataStream& obj, QTextBlockFormat& format) {
     if (align & Qt::AlignJustify) alignment = 4;
     if (align & Qt::AlignHCenter) alignment = 2;
     char indent = format.indent();
-    obj << alignment << indent;
+    obj->set_indent(indent);
+    obj->set_alignment(alignment);
 }
 
-void Item::toTextCharFormat(QDataStream& obj, QTextCharFormat& format) {
-    char fmt = 0;
-    if (format.fontWeight() >= QFont::Bold) fmt |= 0x01;
-    if (format.fontItalic())                fmt |= 0x02;
-    if (format.fontUnderline())             fmt |= 0x04;
-    obj << fmt;
+void Item::toTextCharFormat(TextSmith::TextCharFormat* obj, QTextCharFormat& format) const {
+    obj->Clear();
+    if (format.fontWeight() >= QFont::Bold) obj->set_bold(true);
+    if (format.fontItalic()) obj->set_italic(true);
+    if (format.fontUnderline()) obj->set_underline(true);
 }
 
 Novel* Novel::sNovel = nullptr;
@@ -803,11 +801,16 @@ bool Novel::open() {
 
 bool Novel::save(bool compress) {
     if (mFilename.isEmpty()) return false;
-    auto obj = toObject();
-    Json5Document doc;
-    doc.setTop(obj);
-    if (bool success = doc.write(mFilename, compress); success) noChanges();
-    else return false;
+    auto& prefs = Main::ref().prefs();
+    if (prefs.binary()) {
+
+    } else {
+        auto obj = toObject();
+        Json5Document doc;
+        doc.setTop(obj);
+        if (bool success = doc.write(mFilename, compress); success) noChanges();
+        else return false;
+    }
     return true;
 }
 
@@ -816,7 +819,7 @@ bool Novel::save(QMap<QString, QImage>& images) {
     if (bool success = file.open(QIODevice::WriteOnly); success) {
         QDataStream bin(&file);
         bin.setVersion(QDataStream::Qt_6_10);
-        toBinary(bin, images);
+        toBinary();
         file.close();
     } else return false;
     return true;
@@ -1004,17 +1007,16 @@ void Novel::setupScripting(fifth::vm* vm) {
     });
 }
 
-void Novel::toBinary(QDataStream& bin, QMap<QString, QImage>& images) {
-    bin.writeRawData("NVL\0", 4);
-    bin << BinarySaveVersion;
-    auto keys = images.keys();
-    qlonglong num = keys.size();
-    bin << num;
-    for (int i = 0; i < num; ++i) bin << keys[i] << images[keys[i]];
-    auto idKeys = mItems.keys();
-    bin << mExtraBin << mRoot << idKeys.size();
-    for (int i = 0; i < idKeys.size(); ++i) mItems[i].toBinary(bin, mItems[i].doc());
-    mBranches.toBinary(bin);
+void Novel::toBinary() {
+    mBinary.set_filename(mFilename.toStdString());
+    mBinary.set_root(mRoot);
+    for (const auto& node: std::as_const(mItems)) {
+        TextSmith::Item* bin = mBinary.add_items();
+        node.second.toBinary(bin);
+    }
+    TextSmith::Branches* branches = mBinary.mutable_branches();
+    auto* bin = branches->mutable_treenode();
+    mBranches.toBinary(bin->Add());
 }
 
 bool Novel::fromBinary(QDataStream& bin) {
@@ -1044,7 +1046,7 @@ bool Novel::fromBinary(QDataStream& bin) {
         Item::sImages[url] = img;
     }
     mItems.clear();
-    bin >> mExtraBin >> mRoot >> num;
+//    bin >> mExtraBin >> mRoot >> num;
     for (int i = 0; i < num; ++i) {
         Item item(bin);
         addItem(item);
@@ -1156,8 +1158,8 @@ Json5Object TreeNode::toObject() {
     return obj;
 }
 
-void TreeNode::toBinary(QDataStream& bin) {
+void TreeNode::toBinary(TextSmith::TreeNode* bin) {
+    bin->set_id(mId);
     qlonglong num = mBranches.size();
-    bin << mId << num;
-    for (int i = 0; i < num; ++i) mBranches[i].toBinary(bin);
+    for (int i = 0; i < num; ++i) mBranches[i].toBinary(bin->add_branches());
 }

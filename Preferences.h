@@ -13,6 +13,8 @@
 #include <Map.h>
 #include <StringList.h>
 
+#include "BinaryFormat.pb.h"
+
 class Preferences {
 public:
     Preferences();
@@ -53,6 +55,7 @@ public:
     void                  setLightTheme();
     void                  setSystemTheme();
     Json5Object           write();
+    void                  write(TextSmith::Prefs* prefs);
 
     QString& operator[](const QString& var) { return mVars[var]; }
     bool     contains(const QString& var)   { return mVars.contains(var); }

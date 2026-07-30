@@ -2,38 +2,46 @@ syntax = "proto3";
 
 package TextSmith;
 
+message Recent {
+    string title = 1;
+    string path = 2;
+}
+
 message Prefs {
-    bool autoSave = 1;
-    uint64 autoSaveInterval = 2;
-    bool binary = 3;
-    string bold = 4;
-    string chapterTag = 5;
-    string fontFamily = 6;
-    int32 fontSIze = 7;
-    string footer = 8;
-    string header = 9;
-    string italic = 10;
-    repeated uint64 mainSplitter = 11;
-    double marginBottom = 12;
-    double marginLeft = 13;
-    double marginRight = 14;
-    double marginTop = 15;
-    repeated uint64 otherSplitter = 16;
-    string pageSize = 17;
-    int64 position = 18;
-    repeated string recentNovels = 19;
-    string sceneTag = 20;
-    string separator = 21;
-    int32 theme = 22;
-    bool toolbarVisible = 23;
-    bool typingSounds = 24;
-    string uiFontFamily = 25;
-    int32 uiFontSize = 26;
-    string underline = 27;
-    bool useSeparator = 28;
-    int32 voice = 29;
-    repeated int32 window = 30;
-    map<string, string> vars = 31;
+    repeated string actingScrips = 1;
+    bool autoSave = 2;
+    uint64 autoSaveInterval = 3;
+    bool binary = 4;
+    string bold = 5;
+    string chapterTag = 6;
+    string coverTag = 7;
+    string fontFamily = 8;
+    int32 fontSIze = 9;
+    string footer = 10;
+    string header = 11;
+    string italic = 12;
+    repeated uint64 mainSplitter = 13;
+    double marginBottom = 14;
+    double marginLeft = 15;
+    double marginRight = 16;
+    double marginTop = 17;
+    repeated uint64 otherSplitter = 18;
+    int32 orientation = 19;
+    string pageSize = 20;
+    int64 position = 21;
+    repeated Recent recentNovels = 22;
+    string sceneTag = 23;
+    string separator = 24;
+    int32 theme = 25;
+    bool toolbarVisible = 26;
+    bool typingSounds = 27;
+    string uiFontFamily = 28;
+    int32 uiFontSize = 29;
+    string underline = 30;
+    bool useSeparator = 31;
+    int32 voice = 32;
+    repeated int32 window = 33;
+    map<string, string> vars = 34;
 }
 
 message Image {
@@ -61,6 +69,11 @@ message TextCharFormat {
     bool underline = 3;
 }
 
+message TextFormat {
+    TextCharFormat charFormat = 1;
+    string text = 2;
+}
+
 message TextImageFormat {
     string name = 1;
     int64 width = 2;
@@ -70,7 +83,7 @@ message TextImageFormat {
 message TextFragment {
     oneof is {
         TextImageFormat imageFormat = 1;
-        TextCharFormat charFormat = 2;
+        TextFormat textFormat = 2;
     }
 }
 
@@ -85,12 +98,11 @@ message TextDocument {
 }
 
 message Item {
-    int64 count = 1;
-    TextDocument doc = 2;
-    uint64 id = 3;
-    string name = 4;
-    int64 position = 5;
-    repeated string tags = 6;
+    TextDocument doc = 1;
+    uint64 id = 2;
+    string name = 3;
+    int64 position = 4;
+    repeated string tags = 5;
 }
 
 message TreeNode {
