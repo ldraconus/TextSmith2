@@ -5,6 +5,8 @@
 #include <QTextDocument>
 #include <QTextDocumentFragment>
 
+#include <functional>
+
 #include "5th.h"
 #include "List.h"
 #include "Map.h"
@@ -50,7 +52,7 @@ public:
 
     Item(bool noId = GiveID);
     Item(Json5Object& obj);
-    Item(QDataStream& obj);
+    Item(const TextSmith::Item& obj);
 
     Item& operator=(const Item& i) { if (this != &i) copy(i); return *this; }
     Item& operator=(Item&& i)      { move(std::move(i)); return *this; }
@@ -82,14 +84,14 @@ public:
     void             clearTag(const QString& tag);
     qlonglong        count();
     bool             fromDocArray(Json5Array& arr);
-    bool             fromDocArray(QDataStream& obj);
+    bool             fromDocArray(const TextSmith::Item& obj);
     bool             fromDocObject(Json5Object& obj);
-    bool             fromDocObject(QDataStream& obj);
+    bool             fromDocObject(const TextSmith::Item& obj);
     bool             fromObject(Json5Object& obj);
     QTextBlockFormat fromTextBlockFormatObject(Json5Object& obj);
-    QTextBlockFormat fromTextBlockFormatObject(QDataStream& obj);
+    QTextBlockFormat fromTextBlockFormatObject(const TextSmith::BlockFormat& fmt);
     QTextCharFormat  fromTextCharFormatObject(Json5Object& obj);
-    QTextCharFormat  fromTextCharFormatObject(QDataStream& obj);
+    QTextCharFormat  fromTextCharFormatObject(const TextSmith::TextCharFormat& txt);
     void             fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     bool             hasTag(const StringList& tags) const;
     void             loadInternalImages();
@@ -150,7 +152,7 @@ class Novel {
 public:
     Novel();
     Novel(Json5Object obj);
-    Novel(const QString& filename);
+    Novel(const QString& filename, std::function<void(const TextSmith::Extra&)>);
 
     static constexpr auto Alignment  = "Alignment";
     static constexpr auto BranchId   = "Id";
@@ -176,6 +178,7 @@ public:
     static constexpr auto Items      = "Items";
     static constexpr auto NakedDoc   = "Document";
     static constexpr auto Name       = "Name";
+    static constexpr auto NovelId    = "NOVEL";
     static constexpr auto Options    = "options";
     static constexpr auto Position   = "Position";
     static constexpr auto Prefs      = "Prefs";
@@ -219,9 +222,8 @@ public:
     Item&                 findItem(qlonglong id);
     Map<QString, QImage>& images();
     void                  init();
-    bool                  open();
+    bool                  open(std::function<void(const TextSmith::Extra&)> handleExtra);
     bool                  save(bool compress = Json5Object::Compress);
-    bool                  save(QMap<QString, QImage>& images);
     void                  setHtml(qlonglong node, const QString& html);
     void                  setupScripting(fifth::vm* vm);
     void                  toBinary();
@@ -239,7 +241,7 @@ private:
     Map<qlonglong, Item> mItems;
     qlonglong            mRoot { 0 };
 
-    bool fromBinary(QDataStream& bin);
+    bool fromBinary(QByteArray& bin, std::function<void(const TextSmith::Extra&)> handleExtra);
     bool fromObject(Json5Object& obj);
     bool fromV1Object(Json5Object& obj);
 

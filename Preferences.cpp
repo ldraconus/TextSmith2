@@ -188,6 +188,56 @@ QString Preferences::pidToSize(const QPageSize::PageSizeId pid) {
     else return QPageSize(pid).name();
 }
 
+bool Preferences::read(const TextSmith::Prefs& obj) {
+    mActingScripts.clear();
+    QString str;
+    for (const auto& script : obj.actingscrips()) mActingScripts.append(str.fromStdString(script));
+    mAutoSave = obj.autosave();
+    mAutoSaveInterval = obj.autosaveinterval();
+    mBinary = obj.binary();
+    mBold =             str.fromStdString(obj.bold());
+    mChapterTag =       str.fromStdString(obj.chaptertag());
+    mCoverTag =         str.fromStdString(obj.covertag());
+    mFontFamily =       str.fromStdString(obj.fontfamily());
+    mFontSize =         obj.fontsize();
+    mFooter =           str.fromStdString(obj.footer());
+    mHeader =           str.fromStdString(obj.header());
+    mItalic =           str.fromStdString(obj.italic());
+    mPosition =         obj.position();
+    mPageSize =         str.fromStdString(obj.pagesize());
+    mSceneTag =         str.fromStdString(obj.scenetag());
+    mSeparator =        str.fromStdString(obj.separator());
+    mTheme =            obj.theme();
+    mToolbarVisible =   obj.toolbarvisible();
+    mTypingSounds =     obj.typingsounds();
+    mUiFontFamily =     str.fromStdString(obj.uifontfamily());
+    mUiFontSize =       obj.uifontsize();
+    mUseSeparator =     obj.useseparator();
+    mUnderline =        str.fromStdString(obj.underline());
+    mVoice =            obj.voice();
+    mMainSplitter.clear();
+    for (const auto& i: obj.mainsplitter()) mMainSplitter.append(i);
+    mMargins.clear();
+    mMargins.append(    obj.marginbottom());
+    mMargins.append(    obj.marginleft());
+    mMargins.append(    obj.marginright());
+    mMargins.append(    obj.margintop());
+    mOrientation =      QPageLayout::Orientation(obj.orientation());
+    mOtherSplitter.clear();
+    for (const auto& i: obj.othersplitter()) mOtherSplitter.append(i);
+    mRecentNovels.clear();
+    for (const auto& recent: obj.recentnovels()) addNovel(str.fromStdString(recent.title()), str.fromStdString(recent.path()));
+    for (const auto& var: obj.vars()) mVars[str.fromStdString(var.first)] = str.fromStdString(var.second);
+    QRect geom;
+    geom.setX(obj.window()[0]);
+    geom.setY(obj.window()[1]);
+    geom.setWidth(obj.window()[2]);
+    geom.setHeight(obj.window()[3]);
+    mWindow = geom;
+    if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
+    return true;
+}
+
 bool Preferences::read(Json5Object& obj) {
     QFont def;
     Json5Array arr;

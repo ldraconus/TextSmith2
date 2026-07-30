@@ -49,6 +49,7 @@ public:
     QString               novelPath(const QString& title);
     QString               pidToSize(const QPageSize::PageSizeId pid);
     bool                  read(Json5Object& obj);
+    bool                  read(const TextSmith::Prefs& obj);
     void                  resetIcons(bool isDark);
     bool                  save();
     void                  setDarkTheme();
