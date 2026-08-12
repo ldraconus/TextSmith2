@@ -37,6 +37,7 @@ PreferencesDialog::~PreferencesDialog() {
     mPrefs->setAutoSave(mUi->autoSaveCheckBox->isChecked());
     delete mUi;
     delete mSpeech;
+    sPreferencesDialog = nullptr;
 }
 
 void PreferencesDialog::autoSaveChanged(Qt::CheckState) {

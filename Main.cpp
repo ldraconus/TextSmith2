@@ -921,12 +921,14 @@ void Main::loadFile(const QString& filename) {
     mPosition = 0;
     mState.clear();
     mNovel.setFilename(filename);
+    mPrefs.setBinary(false);
+    auto savedRecents = mPrefs.recentNovels();
     mNovel.open([this, &info, &filename](const TextSmith::Extra& extra) {
-        auto savedRecents = mPrefs.recentNovels();
         mPrefs.read(extra.prefs());
         mCurrentNode = extra.currentnode();
         mPosition = extra.position();
-        for (auto& state : extra.state())mState[state.first] = state.second;
+        for (auto& state : extra.state())
+            mState[state.first] = state.second;
         mImageStore.clear();
         auto& images = mNovel.images();
         for (const auto& img : images) {
@@ -935,22 +937,45 @@ void Main::loadFile(const QString& filename) {
             mUi->textEdit->addInternalImage(url, img.second, false);
         }
         QString str;
-        for (const auto& word: extra.words()) mSpelling.addWord(str.fromStdString(word));
-        mPrefs.setRecentNovels(savedRecents);
-        mPrefs.addNovel(info.baseName() + ".novel", filename);
-        setPosition(mPosition);
-        update(true);
-        doCursorPositionChanged();
-        auto item = mNovel.findItem(mCurrentNode);
-        auto count = item.count();
-        auto total = mNovel.countAll();
-        mWordCount.setSinceLastCounted(0);
-        mWordCount.setOpened(total);
-        mWordCount.setCurrentItem(count);
-        mWordCount.setTotal(total);
-        clearChanged();
-        ready();
+        for (const auto& word : extra.words())
+            mSpelling.addWord(str.fromStdString(word));
     });
+
+    if (!mPrefs.binary()) {
+        auto extra = mNovel.extra();
+        mPrefs = Preferences(extra[Novel::Prefs].toObject());
+        mCurrentNode = Item::hasNum(extra, Novel::Current, qlonglong(0));
+        mPosition = Item::hasNum(extra, Novel::Position, qlonglong(0));
+        auto states = Item::hasObj(extra, Novel::State, {});
+        for (auto& state: states)
+            mState[state.first.toInt()] = state.second.toBoolean();
+        mImageStore.clear();
+        auto& images = mNovel.images();
+        for (const auto& img : images) {
+            QString url = img.first;
+            mImageStore[url] = img.second;
+            mUi->textEdit->addInternalImage(url, img.second, false);
+        }
+        QString str;
+        auto words = Item::hasArr(extra, Novel::Dictionary, {});
+        for (int i = 0; i < words.size(); ++i)
+            mSpelling.addWord(Item::hasStr(words, i, ""));
+    }
+
+    mPrefs.setRecentNovels(savedRecents);
+    mPrefs.addNovel(info.baseName() + ".novel", filename);
+    setPosition(mPosition);
+    update(true);
+    doCursorPositionChanged();
+    auto item = mNovel.findItem(mCurrentNode);
+    auto count = item.count();
+    auto total = mNovel.countAll();
+    mWordCount.setSinceLastCounted(0);
+    mWordCount.setOpened(total);
+    mWordCount.setCurrentItem(count);
+    mWordCount.setTotal(total);
+    clearChanged();
+    ready();
 }
 
 void Main::doOutdent() {

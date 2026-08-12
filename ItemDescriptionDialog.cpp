@@ -29,6 +29,19 @@ ItemDescriptionDialog::ItemDescriptionDialog(Item* item, QWidget* parent)
     noDefault(mUi->buttonBox->button(QDialogButtonBox::Cancel));
 
     Main::ref().prefs().applyFontToTree(this, font);
+    if (Main::ref().prefs().isDarkTheme()) {
+        setStyleSheet("QLineEdit {\n"
+                      "    color: white;\n"
+                      "    background-color: black;\n"
+                      "    font: "  + QString::number(Main::ref().prefs().uiFontSize()) + "pt \"" + Main::ref().prefs().uiFontFamily() + "\";\n" +
+                      "}\n");
+    } else {
+        setStyleSheet("QLineEdit {\n"
+                      "    color: black;\n"
+                      "    background-color: white;\n"
+                      "    font: "  + QString::number(Main::ref().prefs().uiFontSize()) + "pt \"" + Main::ref().prefs().uiFontFamily() + "\";\n" +
+                      "}\n");
+    }
     updateGeometry();
     repaint();
 }
