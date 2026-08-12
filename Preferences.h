@@ -13,8 +13,6 @@
 #include <Map.h>
 #include <StringList.h>
 
-#include "BinaryFormat.pb.h"
-
 class Preferences {
 public:
     Preferences();
@@ -49,14 +47,12 @@ public:
     QString               novelPath(const QString& title);
     QString               pidToSize(const QPageSize::PageSizeId pid);
     bool                  read(Json5Object& obj);
-    bool                  read(const TextSmith::Prefs& obj);
     void                  resetIcons(bool isDark);
     bool                  save();
     void                  setDarkTheme();
     void                  setLightTheme();
     void                  setSystemTheme();
     Json5Object           write();
-    void                  write(TextSmith::Prefs* prefs);
 
     QString& operator[](const QString& var) { return mVars[var]; }
     bool     contains(const QString& var)   { return mVars.contains(var); }

@@ -62,7 +62,6 @@
 Q_DECLARE_METATYPE(QTextDocument*)
 
 #include "AboutDialog.h"
-#include "BinaryFormat.pb.h"
 #include "ExportDialog.h"
 #include "Exporter.h"
 #include "FullScreenDialog.h"
@@ -921,46 +920,26 @@ void Main::loadFile(const QString& filename) {
     mPosition = 0;
     mState.clear();
     mNovel.setFilename(filename);
-    mPrefs.setBinary(false);
     auto savedRecents = mPrefs.recentNovels();
-    mNovel.open([this, &info, &filename](const TextSmith::Extra& extra) {
-        mPrefs.read(extra.prefs());
-        mCurrentNode = extra.currentnode();
-        mPosition = extra.position();
-        for (auto& state : extra.state())
-            mState[state.first] = state.second;
-        mImageStore.clear();
-        auto& images = mNovel.images();
-        for (const auto& img : images) {
-            QString url = img.first;
-            mImageStore[url] = img.second;
-            mUi->textEdit->addInternalImage(url, img.second, false);
-        }
-        QString str;
-        for (const auto& word : extra.words())
-            mSpelling.addWord(str.fromStdString(word));
-    });
-
-    if (!mPrefs.binary()) {
-        auto extra = mNovel.extra();
-        mPrefs = Preferences(extra[Novel::Prefs].toObject());
-        mCurrentNode = Item::hasNum(extra, Novel::Current, qlonglong(0));
-        mPosition = Item::hasNum(extra, Novel::Position, qlonglong(0));
-        auto states = Item::hasObj(extra, Novel::State, {});
-        for (auto& state: states)
-            mState[state.first.toInt()] = state.second.toBoolean();
-        mImageStore.clear();
-        auto& images = mNovel.images();
-        for (const auto& img : images) {
-            QString url = img.first;
-            mImageStore[url] = img.second;
-            mUi->textEdit->addInternalImage(url, img.second, false);
-        }
-        QString str;
-        auto words = Item::hasArr(extra, Novel::Dictionary, {});
-        for (int i = 0; i < words.size(); ++i)
-            mSpelling.addWord(Item::hasStr(words, i, ""));
+    mNovel.open();
+    auto extra = mNovel.extra();
+    mPrefs = Preferences(extra[Novel::Prefs].toObject());
+    mCurrentNode = Item::hasNum(extra, Novel::Current, qlonglong(0));
+    mPosition = Item::hasNum(extra, Novel::Position, qlonglong(0));
+    auto states = Item::hasObj(extra, Novel::State, {});
+    for (auto& state: states)
+        mState[state.first.toInt()] = state.second.toBoolean();
+    mImageStore.clear();
+    auto& images = mNovel.images();
+    for (const auto& img: images) {
+        QString url = img.first;
+        mImageStore[url] = img.second;
+        mUi->textEdit->addInternalImage(url, img.second, false);
     }
+    QString str;
+    auto words = Item::hasArr(extra, Novel::Dictionary, {});
+    for (int i = 0; i < words.size(); ++i)
+        mSpelling.addWord(Item::hasStr(words, i, ""));
 
     mPrefs.setRecentNovels(savedRecents);
     mPrefs.addNovel(info.baseName() + ".novel", filename);
@@ -1968,95 +1947,50 @@ void Main::save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const Q
     mDocDir = info.absolutePath();
     mPrefs.addNovel(name, mNovel.filename());
 
-    if (mPrefs.binary()) {
-        TextSmith::Extra* extra = mNovel.extraBin(true);
-        extra->set_currentnode(mCurrentNode);
-        extra->set_position(pos);
-        TextSmith::Prefs* prefs = extra->mutable_prefs();
-        mPrefs.write(prefs);
-        for (const auto& idState : std::as_const(byId)) (*extra->mutable_state())[idState.first] = idState.second;
-        StringList dictionary = mSpelling.words();
-        for (const auto& word : std::as_const(dictionary))
-            extra->add_words(word.toStdString());
-        TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
-        mNovel.setBranches(tree);
-        auto& images = mUi->textEdit->internalImages();
-        auto keys = images.keys();
-        auto* imgs = extra->mutable_images();
-        for (const auto& key : std::as_const(keys)) {
-            TextSmith::Image* img = imgs->Add();
-            img->set_url(key.toString().toStdString());
-            QImage& theImg = images[key];
-            QByteArray bytes;
-            QBuffer buffer(&bytes);
-            buffer.open(QIODevice::WriteOnly);
-            theImg.save(&buffer, "PNG");
-            buffer.close();
-            uint32_t* data = (uint32_t*) bytes.data();
-            auto sz = bytes.size() / 4;
-            for (int i = 0; i < sz; ++i)
-                img->add_data(*(data++));
-            uint32_t end = 0;
-            uint8_t* last = (uint8_t*) data;
-            uint8_t* endData = (uint8_t*) data;
-            sz = bytes.size() - sz * 4;
-            for (int i = 0; i < sz; ++i)
-                *(endData++) = *(last++);
-            img->add_data(end);
-            if (!mNovel.save() && !noUi) {
-                mMsg.OK(
-                    "Unable to save the file.\n\nTry and save it under a different name\nor save it to a "
-                    "different directory.",
-                    [this]() { doNothing(); },
-                    "Something unexpected has happened");
-            } else if (!noUi) setTitle();
-        }
-    } else {
-        Json5Object extra;
-        extra[Novel::Current] = mCurrentNode;
-        extra[Novel::Position] = qlonglong(pos);
-        mPrefs.setWindowLocation(geom);
-        extra[Novel::Prefs] = mPrefs.write();
-        mState = byId;
-        Json5Array state;
-        for (const auto& idState: std::as_const(byId)) {
-            Json5Array item;
-            item.append(idState.first);
-            item.append(idState.second);
-            state.append(item);
-        }
-        extra["State"] = state;
-        StringList dictionary = mSpelling.words();
-        Json5Array words;
-        for (const auto& word: std::as_const(dictionary)) words.append(word);
-        extra[Novel::Dictionary] = words;
-        TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
-        mNovel.setBranches(tree);
-        auto& images = mUi->textEdit->internalImages();
-        Json5Array arr;
-        auto keys = images.keys();
-        for (const auto& key: std::as_const(keys)) {
-            Json5Object obj;
-            obj[Novel::Url] = key.toString();
-            QImage& img = images[key];
-            QByteArray bytes;
-            QBuffer buffer(&bytes);
-            buffer.open(QIODevice::WriteOnly);
-            img.save(&buffer, "PNG");
-            buffer.close();
-            obj[Novel::Data] = QString(bytes.toBase64());
-            arr.append(obj);
-        }
-        extra[Novel::Images] = arr;
-        mNovel.setExtra(extra);
-        if (!mNovel.save(saveNoCompression) && !noUi) {
-            mMsg.OK(
-                "Unable to save the file.\n\nTry and save it under a different name\nor save it to a "
-                "different directory.",
-                [this]() { doNothing(); },
-                "Something unexpected has happened");
-        } else if (!noUi) setTitle();
+    Json5Object extra;
+    extra[Novel::Current] = mCurrentNode;
+    extra[Novel::Position] = qlonglong(pos);
+    mPrefs.setWindowLocation(geom);
+    extra[Novel::Prefs] = mPrefs.write();
+    mState = byId;
+    Json5Array state;
+    for (const auto& idState: std::as_const(byId)) {
+        Json5Array item;
+        item.append(idState.first);
+        item.append(idState.second);
+        state.append(item);
     }
+    extra["State"] = state;
+    StringList dictionary = mSpelling.words();
+    Json5Array words;
+    for (const auto& word: std::as_const(dictionary)) words.append(word);
+    extra[Novel::Dictionary] = words;
+    TreeNode tree = saveTree(mUi->treeWidget->topLevelItem(0));
+    mNovel.setBranches(tree);
+    auto& images = mUi->textEdit->internalImages();
+    Json5Array arr;
+    auto keys = images.keys();
+    for (const auto& key: std::as_const(keys)) {
+        Json5Object obj;
+        obj[Novel::Url] = key.toString();
+        QImage& img = images[key];
+        QByteArray bytes;
+        QBuffer buffer(&bytes);
+        buffer.open(QIODevice::WriteOnly);
+        img.save(&buffer, "PNG");
+        buffer.close();
+        obj[Novel::Data] = QString(bytes.toBase64());
+        arr.append(obj);
+    }
+    extra[Novel::Images] = arr;
+    mNovel.setExtra(extra);
+    if (!mNovel.save(saveNoCompression) && !noUi) {
+        mMsg.OK(
+            "Unable to save the file.\n\nTry and save it under a different name\nor save it to a "
+            "different directory.",
+            [this]() { doNothing(); },
+            "Something unexpected has happened");
+    } else if (!noUi) setTitle();
 }
 
 TreeNode Main::saveTree(QTreeWidgetItem* node) {

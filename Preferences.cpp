@@ -188,56 +188,6 @@ QString Preferences::pidToSize(const QPageSize::PageSizeId pid) {
     else return QPageSize(pid).name();
 }
 
-bool Preferences::read(const TextSmith::Prefs& obj) {
-    mActingScripts.clear();
-    QString str;
-    for (const auto& script : obj.actingscrips()) mActingScripts.append(str.fromStdString(script));
-    mAutoSave = obj.autosave();
-    mAutoSaveInterval = obj.autosaveinterval();
-    mBinary = obj.binary();
-    mBold =             str.fromStdString(obj.bold());
-    mChapterTag =       str.fromStdString(obj.chaptertag());
-    mCoverTag =         str.fromStdString(obj.covertag());
-    mFontFamily =       str.fromStdString(obj.fontfamily());
-    mFontSize =         obj.fontsize();
-    mFooter =           str.fromStdString(obj.footer());
-    mHeader =           str.fromStdString(obj.header());
-    mItalic =           str.fromStdString(obj.italic());
-    mPosition =         obj.position();
-    mPageSize =         str.fromStdString(obj.pagesize());
-    mSceneTag =         str.fromStdString(obj.scenetag());
-    mSeparator =        str.fromStdString(obj.separator());
-    mTheme =            obj.theme();
-    mToolbarVisible =   obj.toolbarvisible();
-    mTypingSounds =     obj.typingsounds();
-    mUiFontFamily =     str.fromStdString(obj.uifontfamily());
-    mUiFontSize =       obj.uifontsize();
-    mUseSeparator =     obj.useseparator();
-    mUnderline =        str.fromStdString(obj.underline());
-    mVoice =            obj.voice();
-    mMainSplitter.clear();
-    for (const auto& i: obj.mainsplitter()) mMainSplitter.append(i);
-    mMargins.clear();
-    mMargins.append(    obj.marginbottom());
-    mMargins.append(    obj.marginleft());
-    mMargins.append(    obj.marginright());
-    mMargins.append(    obj.margintop());
-    mOrientation =      QPageLayout::Orientation(obj.orientation());
-    mOtherSplitter.clear();
-    for (const auto& i: obj.othersplitter()) mOtherSplitter.append(i);
-    mRecentNovels.clear();
-    for (const auto& recent: obj.recentnovels()) addNovel(str.fromStdString(recent.title()), str.fromStdString(recent.path()));
-    for (const auto& var: obj.vars()) mVars[str.fromStdString(var.first)] = str.fromStdString(var.second);
-    QRect geom;
-    geom.setX(obj.window()[0]);
-    geom.setY(obj.window()[1]);
-    geom.setWidth(obj.window()[2]);
-    geom.setHeight(obj.window()[3]);
-    mWindow = geom;
-    if (mWindow.height() < 1 || mWindow.width() < 1) mWindow.setRect(0, 0, -1, -1);
-    return true;
-}
-
 bool Preferences::read(Json5Object& obj) {
     QFont def;
     Json5Array arr;
@@ -773,50 +723,6 @@ Json5Object Preferences::write() {
     for (const auto& var: std::as_const(mVars)) vars[var.first] = var.second;
     obj[Variables] = vars;
     return obj;
-}
-
-void Preferences::write(TextSmith::Prefs* prefs) {
-    for (const auto& a: mActingScripts) prefs->add_actingscrips(a.toStdString());
-    prefs->set_autosave(mAutoSave);
-    prefs->set_autosaveinterval(mAutoSaveInterval);
-    prefs->set_binary(mBinary);
-    prefs->set_bold(mBold.toStdString());
-    prefs->set_chaptertag(mChapterTag.toStdString());
-    prefs->set_covertag(mCoverTag.toStdString());
-    prefs->set_fontfamily(mFontFamily.toStdString());
-    prefs->set_fontsize(mFontSize);
-    prefs->set_footer(mFooter.toStdString());
-    prefs->set_header(mHeader.toStdString());
-    prefs->set_italic(mItalic.toStdString());
-    for (const auto v: mMainSplitter) prefs->add_mainsplitter(v);
-    prefs->set_marginbottom(mMargins[Bottom]);
-    prefs->set_marginleft(mMargins[Left]);
-    prefs->set_marginright(mMargins[Right]);
-    prefs->set_margintop(mMargins[Top]);
-    prefs->set_orientation(mOrientation);
-    for (const auto v: mOtherSplitter) prefs->add_othersplitter(v);
-    prefs->set_pagesize(mPageSize.toStdString());
-    prefs->set_position(mPosition);
-    auto* recent = prefs->mutable_recentnovels();
-    for (const auto& nvl: mRecentNovels) {
-        TextSmith::Recent* rcnt = recent->Add();
-        rcnt->set_title(nvl.sTitle.toStdString());
-        rcnt->set_path(nvl.sPath.toStdString());
-    }
-    prefs->set_scenetag(mSceneTag.toStdString());
-    prefs->set_separator(mSeparator.toStdString());
-    prefs->set_theme(mTheme);
-    prefs->set_toolbarvisible(mToolbarVisible);
-    prefs->set_typingsounds(mTypingSounds);
-    prefs->set_uifontfamily(mUiFontFamily.toStdString());
-    prefs->set_uifontsize(mUiFontSize);
-    prefs->set_underline(mUnderline.toStdString());
-    prefs->set_voice(mVoice);
-    prefs->add_window(mWindow.x());
-    prefs->add_window(mWindow.y());
-    prefs->add_window(mWindow.width());
-    prefs->add_window(mWindow.height());
-    for (const auto& var: std::as_const(mVars)) (*prefs->mutable_vars())[var.first.toStdString()] = var.second.toStdString();
 }
 
 static constexpr auto PointsPerInch = 72.0;

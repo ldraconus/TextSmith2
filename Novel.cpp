@@ -27,11 +27,6 @@ Item::Item(Json5Object& obj)
     else fromObject(obj);
 }
 
-Item::Item(const TextSmith::Item& obj)
-    : mCount(0) {
-    fromDocObject(obj);
-}
-
 void Item::changeFont(const QFont& font) {
     mDoc->setHtml(changeFont(mDoc, font));
 }
@@ -177,44 +172,6 @@ bool Item::fromDocArray(Json5Array &arr) {
     return true;
 }
 
-bool Item::fromDocArray(const TextSmith::Item& obj) {
-    auto& doc = obj.doc();
-    QTextCursor cursor(mDoc);
-    bool first = true;
-    for (const auto& blk: doc.blocks()) {
-        QTextBlockFormat format = fromTextBlockFormatObject(blk.format());
-        QTextCharFormat charFormat = fromTextCharFormatObject(blk.charformat());
-        if (first) {
-            first = false;
-            cursor.setBlockFormat(format);
-            cursor.setBlockCharFormat(charFormat);
-        } else cursor.insertBlock(format, charFormat);
-        cursor.movePosition(QTextCursor::End);
-        for (const auto& frag: blk.fragments()) {
-            char fragmentType = frag.has_imageformat() ? 'I' : 'T';
-            if (fragmentType == 'I') {
-                const auto& img = frag.imageformat();
-                QString imageId;
-                imageId.fromStdString(img.name());
-                QTextImageFormat imgFmt;
-                imgFmt.setName(imageId);
-                qlonglong height = img.height();
-                qlonglong width = img.width();
-                if (height != -1) imgFmt.setHeight(height);
-                if (width != -1) imgFmt.setWidth(width);
-                cursor.insertImage(imgFmt);
-                if (imageId.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, imageId, sImages[imageId]);
-            } else {
-                const auto& txt = frag.textformat();
-                QString text;
-                text.fromStdString(txt.text());
-                charFormat = fromTextCharFormatObject(txt.charformat());
-                cursor.insertText(text, charFormat);
-            }
-        }
-    }
-    return true;
-}
 
 bool Item::fromDocObject(Json5Object &obj) {
     delete mDoc;
@@ -244,37 +201,6 @@ bool Item::fromDocObject(Json5Object &obj) {
     }
     Novel::ref().addItem(*this);
     return true;
-}
-
-bool Item::fromDocObject(const TextSmith::Item& obj) {
-    delete mDoc;
-    mDoc = new QTextDocument();
-    mDoc->setParent(nullptr);
-    Preferences* prefs = &Main::ref().prefs();
-    QFont font(prefs->fontFamily(), prefs->fontSize());
-    mDoc->setDefaultFont(font);
-
-    qlonglong id;
-    qlonglong nameLen;
-    char* data;
-    if (fromDocArray(obj)) {
-        mPosition = obj.position();
-        id = obj.id();
-        mName.fromStdString(obj.name());
-        setId(id);
-        if (mName.isEmpty()) mName = name();
-        mTags.clear();
-        for (const auto& t : obj.tags()) {
-            QString tag;
-            tag.fromStdString(t);
-            mTags.append(tag);
-        }
-        Novel::ref().addItem(*this);
-        return true;
-    }
-
-    delete mDoc;
-    return false;
 }
 
 void Item::fromV1Object(Json5Object& obj, Item& node, TreeNode& tree) {
@@ -365,41 +291,6 @@ Json5Object Item::toObject(QTextDocument* document) {
 
 Json5Object Item::toObject() {
     return toObject(mDoc);
-}
-
-void Item::toBinary(TextSmith::Item* bin) const {
-    auto* doc = bin->mutable_doc();
-    for (QTextBlock block = mDoc->begin(); block != mDoc->end(); block = block.next()) {
-        TextSmith::Block* blk = doc->add_blocks();
-        auto format = block.blockFormat();
-        auto* blkFmt = blk->mutable_format();
-        toTextBlockFormat(blkFmt, format);
-        auto charFormat = block.charFormat();
-        auto* chrFmt = blk->mutable_charformat();
-        toTextCharFormat(chrFmt, charFormat);
-        for (QTextBlock::iterator it = block.begin(); !it.atEnd(); ++it) {
-            QTextFragment fragment = it.fragment();
-            auto* frag = blk->add_fragments();
-            if (fragment.charFormat().isImageFormat()) {
-                auto* img = frag->mutable_imageformat();
-                QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
-                img->set_name(imgFmt.name().toStdString());
-                img->set_width(imgFmt.width());
-                img->set_height(imgFmt.height());
-            } else {
-                auto* txt = frag->mutable_textformat();
-                auto fragCharFormat = fragment.charFormat();
-                auto* txtChrFmt = txt->mutable_charformat();
-                toTextCharFormat(txtChrFmt, fragCharFormat);
-                txt->set_text(fragment.text().toStdString());
-            }
-        }
-    }
-
-    bin->set_position(mID);
-    bin->set_position(mPosition);
-    bin->set_name(mName.toStdString());
-    for (const auto& tag: mTags) bin->add_tags(tag.toStdString());
 }
 
 Json5Array Item::hasArr(Json5Object& obj, const QString& str, const Json5Array& def) {
@@ -545,29 +436,6 @@ QTextBlockFormat Item::fromTextBlockFormatObject(Json5Object &obj) {
     return format;
 }
 
-QTextBlockFormat Item::fromTextBlockFormatObject(const TextSmith::BlockFormat& fmt) {
-    QTextBlockFormat format;
-    Preferences* prefs = &Main::ref().prefs();
-    QFont font(prefs->fontFamily(), prefs->fontSize());
-    QFontMetrics metrics(font);
-    int lineHeight =  metrics.lineSpacing();
-    int paraIndent =  4 * metrics.averageCharWidth();
-    char alignment = '\0';
-    char indent = '\0';
-    alignment = fmt.alignment();
-    indent = fmt.indent();
-    Qt::Alignment align = Qt::AlignLeft;
-    if (alignment == 1) align = Qt::AlignLeft;
-    if (alignment == 3) align = Qt::AlignRight;
-    if (alignment == 4) align = Qt::AlignJustify;
-    if (alignment == 2) align = Qt::AlignHCenter;
-    format.setAlignment(align);
-    format.setBottomMargin(lineHeight);
-    format.setTextIndent(paraIndent);
-    format.setIndent(indent);
-    return format;
-}
-
 QTextCharFormat Item::fromTextCharFormatObject(Json5Object &obj) {
     QTextCharFormat format;
     Preferences* prefs = &Main::ref().prefs();
@@ -576,21 +444,6 @@ QTextCharFormat Item::fromTextCharFormatObject(Json5Object &obj) {
     bool bold =      hasBool(obj, Novel::Bold,      false);
     bool italic =    hasBool(obj, Novel::Italic,    false);
     bool underline = hasBool(obj, Novel::Underline, false);
-    if (bold) format.setFontWeight(QFont::Bold);
-    else format.setFontWeight(QFont::Normal);
-    format.setFontItalic(italic);
-    format.setFontUnderline(underline);
-    return format;
-}
-
-QTextCharFormat Item::fromTextCharFormatObject(const TextSmith::TextCharFormat& txt) {
-    QTextCharFormat format;
-    Preferences* prefs = &Main::ref().prefs();
-    format.setFontFamilies({ prefs->fontFamily() });
-    format.setFontPointSize(prefs->fontSize());
-    bool bold =      txt.bold();
-    bool italic =    txt.italic();
-    bool underline = txt.underline();
     if (bold) format.setFontWeight(QFont::Bold);
     else format.setFontWeight(QFont::Normal);
     format.setFontItalic(italic);
@@ -640,25 +493,6 @@ void Item::toTextCharFormat(Json5Object& obj, QTextCharFormat& format) {
     if (format.fontUnderline())             obj[Novel::Underline] = true;
 }
 
-void Item::toTextBlockFormat(TextSmith::BlockFormat* obj, QTextBlockFormat& format) const {
-    Qt::Alignment align = format.alignment();
-    char alignment = 0;
-    if (align & Qt::AlignLeft) alignment = 1;
-    if (align & Qt::AlignRight) alignment = 3;
-    if (align & Qt::AlignJustify) alignment = 4;
-    if (align & Qt::AlignHCenter) alignment = 2;
-    char indent = format.indent();
-    obj->set_indent(indent);
-    obj->set_alignment(alignment);
-}
-
-void Item::toTextCharFormat(TextSmith::TextCharFormat* obj, QTextCharFormat& format) const {
-    obj->Clear();
-    if (format.fontWeight() >= QFont::Bold) obj->set_bold(true);
-    if (format.fontItalic()) obj->set_italic(true);
-    if (format.fontUnderline()) obj->set_underline(true);
-}
-
 Novel* Novel::sNovel = nullptr;
 
 Novel::Novel():
@@ -672,20 +506,17 @@ Novel::Novel(Json5Object obj) {
     Novel::fromObject(obj);
 }
 
-Novel::Novel(const QString& filename, std::function<void(const TextSmith::Extra&)> extra) {
+Novel::Novel(const QString& filename) {
     sNovel = this;
     auto& prefs = Main::ref().prefs();
+    bool readOk { false };
+    Json5Document doc;
     if (fileIsBinary()) {
-        QFile file(filename);
-        (void) file.open(QIODevice::ReadOnly);
-        QByteArray data = file.readAll();
-        fromBinary(data, extra);
-        file.close();
-    } else {
-        Json5Document doc;
-        bool readOk = doc.read(filename);
-        if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
-    }
+        QString json5;
+        // look in the zip file and get a document
+        readOk = doc.read(json5);
+    } else readOk = doc.read(filename);
+    if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
 }
 
 Json5Object Novel::toObject() {
@@ -705,14 +536,15 @@ bool Novel::fileIsBinary() {
     QFile file(mFilename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
     int sz = QString(NovelId).length();
-    char id[sz + 1];
-    if (file.read(id, sz) != sz) {
+    QList<char> id;
+    id.resize(sz + 1);
+    if (file.read(id.data(), sz) != sz) {
         file.close();
         return false;
     }
     file.close();
-    id[sz] = '\0';
-    QString readId(id);
+    id.data()[sz] = '\0';
+    QString readId(id.data());
     return readId == NovelId;
 }
 
@@ -775,18 +607,18 @@ void Novel::init() {
     mBranches.clear();
 }
 
-bool Novel::open(std::function<void(const TextSmith::Extra&)> handleExtra) {
+bool Novel::open() {
     Json5Document doc;
     noChanges();
     if (fileIsBinary()) {
-        QFile file(mFilename);
-        mExtra.clear();
-        if (bool success = file.open(QIODevice::ReadOnly); success) {
-            QByteArray bin = file.readAll();
-            fromBinary(bin, handleExtra);
+        QString file;
+        // open and read zip file
+        if (bool success = doc.read(file, Json5Document::Data) && doc.top().isObject(); success) {
+            auto& obj = doc.top().toObject();
+            if (obj.contains(Document)) fromV1Object(obj);
+            else fromObject(obj);
         } else return false;
     } else {
-        mBinary.Clear();
         if (bool success = doc.read(mFilename) && doc.top().isObject(); success) {
             auto& obj = doc.top().toObject();
             if (obj.contains(Document)) fromV1Object(obj);
@@ -800,17 +632,9 @@ bool Novel::save(bool compress) {
     if (mFilename.isEmpty()) return false;
     auto& prefs = Main::ref().prefs();
     if (prefs.binary()) {
-        toBinary();
-        QByteArray bytes;
-        int len = QString(NovelId).length();
-        bytes.resize(mBinary.ByteSizeLong() + len);
-        bytes.append(NovelId, len);
-        if (!mBinary.SerializeToArray(&bytes.data()[len], bytes.size() - len)) return false;
-        QFile file(mFilename);
-        if (!file.open(QIODevice::WriteOnly)) return false;
-        file.write(bytes);
-        file.close();
-        noChanges();
+        auto obj = toObject();
+        // OPEN ZIP FILE IN TRUNCATE MODE
+        // put the obj in file.novel file
     } else {
         auto obj = toObject();
         Json5Document doc;
@@ -1003,39 +827,6 @@ void Novel::setupScripting(fifth::vm* vm) {
     });
 }
 
-void Novel::toBinary() {
-    mBinary.set_filename(mFilename.toStdString());
-    mBinary.set_root(mRoot);
-    for (const auto& node: std::as_const(mItems)) {
-        TextSmith::Item* bin = mBinary.add_items();
-        node.second.toBinary(bin);
-    }
-    TextSmith::Branches* branches = mBinary.mutable_branches();
-    auto* bin = branches->mutable_treenode();
-    mBranches.toBinary(bin->Add());
-}
-
-bool Novel::fromBinary(QByteArray& bin, std::function<void(const TextSmith::Extra&)> handleExtra) {
-    // first n are NovelId
-    QString sid(NovelId);
-    int sz = sid.length();
-    auto* data = bin.data();
-    if (strncmp(NovelId, data, sz)) return false;
-    data += sz;
-    int len = bin.size() - sz;
-    mBinary.ParseFromArray((void*) data, len);
-    mFilename.fromStdString(mBinary.filename());
-    mRoot = mBinary.root();
-    handleExtra(mBinary.extra());
-    auto items = mBinary.items();
-    for (const auto& itm: items) {
-        Item branch(itm);
-        addItem(branch);
-    }
-    countAll();
-    return true;
-}
-
 bool Novel::fromObject(Json5Object& obj) {
     mFilename = Item::hasStr(obj, Filename, "");
     mExtra =    Item::hasObj(obj, Extra, {});
@@ -1135,10 +926,4 @@ Json5Object TreeNode::toObject() {
     for (auto& branch: mBranches) arr.append(branch.toObject());
     obj[Novel::Branches] = arr;
     return obj;
-}
-
-void TreeNode::toBinary(TextSmith::TreeNode* bin) {
-    bin->set_id(mId);
-    qlonglong num = mBranches.size();
-    for (int i = 0; i < num; ++i) mBranches[i].toBinary(bin->add_branches());
 }

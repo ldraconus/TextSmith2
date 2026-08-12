@@ -5,14 +5,10 @@
 #include <QTextDocument>
 #include <QTextDocumentFragment>
 
-#include <functional>
-
 #include "5th.h"
 #include "List.h"
 #include "Map.h"
 #include "StringList.h"
-
-#include "BinaryFormat.pb.h"
 
 #include <Json5.h>
 
@@ -35,7 +31,6 @@ public:
     TreeNode&   find(TreeNode& branch, qlonglong i);
     void        fromV1Object(Json5Object& o);
     Json5Object toObject();
-    void        toBinary(TextSmith::TreeNode* bin);
 
 private:
     qlonglong      mId { 0 };
@@ -52,7 +47,6 @@ public:
 
     Item(bool noId = GiveID);
     Item(Json5Object& obj);
-    Item(const TextSmith::Item& obj);
 
     Item& operator=(const Item& i) { if (this != &i) copy(i); return *this; }
     Item& operator=(Item&& i)      { move(std::move(i)); return *this; }
@@ -84,14 +78,10 @@ public:
     void             clearTag(const QString& tag);
     qlonglong        count();
     bool             fromDocArray(Json5Array& arr);
-    bool             fromDocArray(const TextSmith::Item& obj);
     bool             fromDocObject(Json5Object& obj);
-    bool             fromDocObject(const TextSmith::Item& obj);
     bool             fromObject(Json5Object& obj);
     QTextBlockFormat fromTextBlockFormatObject(Json5Object& obj);
-    QTextBlockFormat fromTextBlockFormatObject(const TextSmith::BlockFormat& fmt);
     QTextCharFormat  fromTextCharFormatObject(Json5Object& obj);
-    QTextCharFormat  fromTextCharFormatObject(const TextSmith::TextCharFormat& txt);
     void             fromV1Object(Json5Object& obj, Item& node, TreeNode& tree);
     bool             hasTag(const StringList& tags) const;
     void             loadInternalImages();
@@ -99,12 +89,9 @@ public:
     QString          toPlainText();
     void             toTextBlockFormat(Json5Object& obj, QTextBlockFormat& formt);
     void             toTextCharFormat(Json5Object& obj,  QTextCharFormat& format);
-    void             toTextCharFormat(TextSmith::TextCharFormat* obj,  QTextCharFormat& format) const;
-    void             toTextBlockFormat(TextSmith::BlockFormat* obj, QTextBlockFormat& format) const;
 
     virtual Json5Object toObject(QTextDocument* doc);
     virtual Json5Object toObject();
-    virtual void        toBinary(TextSmith::Item* bin) const;
 
 
     static auto getNextID()                  { return sNextID; }
@@ -152,7 +139,7 @@ class Novel {
 public:
     Novel();
     Novel(Json5Object obj);
-    Novel(const QString& filename, std::function<void(const TextSmith::Extra&)>);
+    Novel(const QString& filename);
 
     static constexpr auto Alignment  = "Alignment";
     static constexpr auto BranchId   = "Id";
@@ -206,7 +193,6 @@ public:
     auto              filename()                       { return mFilename; }
     auto              isChanged()                      { return mChanged; }
     void              noChanges()                      { mChanged = false; }
-    TextSmith::Extra* extraBin(bool writeable = false) { return writeable ? mBinary.mutable_extra() : const_cast<TextSmith::Extra*>(&mBinary.extra()); }
     qlonglong         root()                           { return mRoot; }
     bool              saveAs(const QString& f)         { mFilename = f; return save(); }
     void              setBranches(const TreeNode& b)   { mBranches = b; }
@@ -222,7 +208,7 @@ public:
     Item&                 findItem(qlonglong id);
     Map<QString, QImage>& images();
     void                  init();
-    bool                  open(std::function<void(const TextSmith::Extra&)> handleExtra);
+    bool                  open();
     bool                  save(bool compress = Json5Object::Compress);
     void                  setHtml(qlonglong node, const QString& html);
     void                  setupScripting(fifth::vm* vm);
@@ -236,12 +222,10 @@ private:
     TreeNode             mBranches;
     bool                 mChanged { false };
     Json5Object          mExtra;
-    TextSmith::Novel     mBinary;
     QString              mFilename;
     Map<qlonglong, Item> mItems;
     qlonglong            mRoot { 0 };
 
-    bool fromBinary(QByteArray& bin, std::function<void(const TextSmith::Extra&)> handleExtra);
     bool fromObject(Json5Object& obj);
     bool fromV1Object(Json5Object& obj);
 

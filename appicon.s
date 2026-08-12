@@ -1,1 +1,0 @@
-	.file	"appicon.rc"
