@@ -14,18 +14,21 @@ Component.prototype.createOperations = function()
 
     if (systemInfo.kernelType === "linux") {
         component.addOperation("CreateDesktopEntry",
-            "@HomeDir@/.local/share/applications/TextSmith.desktop",
-            "[Desktop Entry]\n" +
-            "Type=Application\n" +
-            "Name=TextSmith\n" +
-            "Comment=A novel writing tool\n" +
-            "Exec=@TargetDir@/TextSmith\n" +
-            "Icon=@TargetDir@/TextSmithIcon.png\n" +
-            "Terminal=false\n" +
-            "Categories=Office;WordProcessor;Writing;\n" +
-            "StartupNotify=true\n" +
-            "StartupWMClass=TextSmith\n" +
+            "@HomeDir@/.local/share/applications/TextSmith2.desktop",
+            "#!/usr/bin/env xdg-open\n"
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=TextSmith2\n"
+            "GenericName=The distraction free, minimal novel writing application"
+            "Comment=Minimal-distraction novel writing app\n"
+            "Exec=@TargetDir@/TextSmith\n"
+            "Icon=@TargetDir@/TextSmithIcon.png\n"
+            "Terminal=false\n"
+            "Categories=Office;WordProcessor;TextSmith;Writing;\n"
+            "StartupNotify=true\n"
+            "StartupWMClass=TextSmith\n"
             "Keywords=novel;writing;author;book;\n"
+            "MimeType=applicaiton/x-novel;"
         );
     }
 }
