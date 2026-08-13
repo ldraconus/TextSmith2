@@ -12,8 +12,8 @@
 qsizetype            Item::sNextID = 0;
 Map<QString, QImage> Item::sImages;
 
-static constexpr qlonglong BinarySaveVersion = 1;
-static constexpr qlonglong InitialVersion = BinarySaveVersion;
+static constexpr auto jsonFile = "{";
+static constexpr auto name     = "novel.josn5";
 
 Item::Item(bool noId)
     : mCount(0)
@@ -519,6 +519,25 @@ Novel::Novel(const QString& filename) {
     if (readOk && doc.top().isObject()) Novel(doc.top().toObject());
 }
 
+bool Novel::addEntry(Zip& zip, const QString& name, const QByteArray& value, bool compressed) {
+    if (zip.invalid()) return false;
+
+    mData.append(value);
+    Zip::Source src = zip.buffer(mData.last(), Zip::Keep);   // Keep|false = do NOT free the buffer when done
+
+    if (src.invalid()) return false;
+
+    // Add to the zip under the given internal path
+    mData.append(name.toStdString().c_str());
+    int64_t idx = zip.fileAdd(mData.last(), src, Zip::Overwrite | Zip::Utf8Encoding);
+
+    if (idx < 0) return false;
+
+    if (!compressed && zip.setFileCompression(idx, Zip::Store, 0)) return false;
+
+    return true;
+}
+
 Json5Object Novel::toObject() {
     Json5Object obj;
     obj[Filename] = mFilename;
@@ -535,7 +554,7 @@ bool Novel::fileIsBinary() {
     QString jsonStr;
     QFile file(mFilename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
-    int sz = QString(NovelId).length();
+    int sz = QString(jsonFile).length();
     QList<char> id;
     id.resize(sz + 1);
     if (file.read(id.data(), sz) != sz) {
@@ -545,7 +564,7 @@ bool Novel::fileIsBinary() {
     file.close();
     id.data()[sz] = '\0';
     QString readId(id.data());
-    return readId == NovelId;
+    return readId != jsonFile;
 }
 
 void Novel::changeFont(const QFont& font) {
@@ -612,7 +631,21 @@ bool Novel::open() {
     noChanges();
     if (fileIsBinary()) {
         QString file;
-        // open and read zip file
+        {
+            QByteArray data;
+            int err = 0;
+            Zip zip(mFilename.toStdString().c_str(), Zip::ReadOnly, &err);
+            if (zip.invalid()) return false;
+            auto idx = zip.fileIndex(name, Zip::CaseInsensitive);
+            if (idx < 0) return false;
+            Zip::Stat stat = zip.statFileIndex(name, Zip::Unchanged);
+            if (stat.invalid()) return false;
+            data.resize(stat.size());
+            Zip::File in = zip.fileOpenIndex(idx, Zip::Unchanged);
+            if (in.invalid()) return false;
+            in.read(data, stat.size());
+            file = QString(data);
+        }
         if (bool success = doc.read(file, Json5Document::Data) && doc.top().isObject(); success) {
             auto& obj = doc.top().toObject();
             if (obj.contains(Document)) fromV1Object(obj);
@@ -631,12 +664,18 @@ bool Novel::open() {
 bool Novel::save(bool compress) {
     if (mFilename.isEmpty()) return false;
     auto& prefs = Main::ref().prefs();
+    auto obj = toObject();
     if (prefs.binary()) {
-        auto obj = toObject();
-        // OPEN ZIP FILE IN TRUNCATE MODE
-        // put the obj in file.novel file
+        auto json = obj.toJson5();
+        QByteArray data = json.toUtf8();
+        {
+            int err = 0;
+            Zip zip(mFilename, Zip::Create | Zip::Truncate, &err);
+            if (zip.invalid()) return false;
+            if (addEntry(zip, name, data)) noChanges();
+            else return false;
+        }
     } else {
-        auto obj = toObject();
         Json5Document doc;
         doc.setTop(obj);
         if (bool success = doc.write(mFilename, compress); success) noChanges();

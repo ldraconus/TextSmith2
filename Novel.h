@@ -9,6 +9,7 @@
 #include "List.h"
 #include "Map.h"
 #include "StringList.h"
+#include "ZipCpp.h"
 
 #include <Json5.h>
 
@@ -199,6 +200,7 @@ public:
     void              setExtra(Json5Object& obj)       { mExtra = obj; change(); }
     void              setFilename(const QString& f)    { mFilename = f; change(); }
 
+    bool                  addEntry(Zip& zip, const QString& name, const QByteArray& data, bool compressed = true);
     void                  changeFont(const QFont& font);
     qlonglong             count(qlonglong id);
     qlonglong             countAll();
@@ -221,6 +223,7 @@ public:
 private:
     TreeNode             mBranches;
     bool                 mChanged { false };
+    QList<QByteArray>    mData;
     Json5Object          mExtra;
     QString              mFilename;
     Map<qlonglong, Item> mItems;
