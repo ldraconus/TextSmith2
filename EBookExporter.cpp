@@ -18,18 +18,15 @@ const QString operator<<(const QString& a, const char* b)    { return a + b; }
 const QString operator<<(const char* a, const QString& b)    { return a + b; }
 
 EBookExporter::~EBookExporter() {
-    if (mZip) zip_close(mZip);
-    mZip = nullptr;
 }
 
 bool EBookExporter::convert() {
-    if (mZip) return true;
+    if (mZip.invalid()) return true;
 
     mHasCover = false;
     int error = 0;
-    QByteArray path = mFilename.toUtf8();
-    mZip = zip_open(path.constData(), ZIP_CREATE | ZIP_TRUNCATE, &error);
-    if (!mZip) {
+    mZip = Zip(mFilename, Zip::Create | Zip::Truncate, &error);
+    if (mZip.invalid()) {
         qWarning() << "Failed to open EPUB for writing:" << mFilename << "error:" << error;
         return false;
     }
@@ -118,60 +115,45 @@ bool EBookExporter::convert() {
         addEntry(QString("OEBPS/chap%1.xhtml").arg(i, len, 10, QChar('0')), fixImages(jpgs, html));
         ++i;
     }
-    zip_close(mZip);
-    mZip = nullptr;
     mData.clear();
     return true;
 }
 
 bool EBookExporter::addEntry(const QString& name, const QString& value, bool compressed) {
-    if (!mZip) return false;
+    if (mZip.invalid()) return false;
 
 //qDebug().noquote().nospace() << name + ":\n" + value + "\n";
     auto& bytes = newData(value.toUtf8());
-    zip_source_t* src = zip_source_buffer(mZip, bytes.constData(), mData.last().size(), 0);   // 0 = do NOT free the buffer when done
+    Zip::Source src = mZip.buffer(bytes, Zip::Keep);   // 0 = do NOT free the buffer when done
 
-    if (!src) return false;
+    if (src.invalid()) return false;
 
     // Add to the zip under the given internal path
-    auto& path = newData(name.toUtf8());
-    zip_int64_t idx = zip_file_add(mZip, path.constData(), src, ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
+    zip_int64_t idx = mZip.fileAdd(name, src, Zip::Overwrite | Zip::Utf8Encoding);
 
-    if (idx < 0) {
-        zip_source_free(src);
-        return false;
-    }
+    if (idx < 0) return false;
 
-    if (!compressed && zip_set_file_compression(mZip, idx, ZIP_CM_STORE, 0)) {
-        zip_source_free(src);
-        return false;
-    }
+    if (!compressed && mZip.setFileCompression(idx, Zip::Store, 0)) return false;
 
     return true;
 }
 
 bool EBookExporter::addEntry(const QString& name, const QByteArray& value, bool compressed) {
-    if (!mZip) return false;
+    if (mZip.invalid()) return false;
 
 //qDebug().noquote().nospace() << name + ":\n[BINARY]\n";
     mData.append(value);
-    zip_source_t* src = zip_source_buffer(mZip, mData.last().constData(), mData.last().size(), 0);   // 0 = do NOT free the buffer when done
+    Zip::Source src = mZip.buffer(mData.last(), Zip::Keep);   // 0 = do NOT free the buffer when done
 
-    if (!src) return false;
+    if (src.invalid()) return false;
 
     // Add to the zip under the given internal path
     mData.append(name.toUtf8());
-    zip_int64_t idx = zip_file_add(mZip, mData.last().constData(), src, ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
+    zip_int64_t idx = mZip.fileAdd(name, src, Zip::Overwrite | Zip::Utf8Encoding);
 
-    if (idx < 0) {
-        zip_source_free(src);
-        return false;
-    }
+    if (idx < 0) return false;
 
-    if (!compressed && zip_set_file_compression(mZip, idx, ZIP_CM_STORE, 0)) {
-        zip_source_free(src);
-        return false;
-    }
+    if (!compressed && mZip.setFileCompression(idx, Zip::Store, 0)) return false;
 
     return true;
 

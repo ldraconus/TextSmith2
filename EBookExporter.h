@@ -8,7 +8,7 @@
 
 #include "Map.h"
 
-struct zip;
+#include "ZipCpp.h"
 
 class EBookExporter: public Exporter<EBookExporter> {
 private:
@@ -40,7 +40,7 @@ private:
     QString                 mPublisher;
     QString                 mTitle;
     QString                 mYear;
-    zip*                    mZip { nullptr };
+    Zip                     mZip;
 
     bool        addEntry(const QString& name, const QString& value, bool compressed = true);
     bool        addEntry(const QString& name, const QByteArray& value, bool compressed = true);

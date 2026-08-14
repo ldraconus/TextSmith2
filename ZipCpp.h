@@ -4,6 +4,12 @@
 #include <QList>
 #include <QString>
 
+#ifdef unix
+#define STRERROR() strerror_r(sys, buffer, 1024)
+#else
+#define STRERROR() strerror_s(buffer, 1024, sys)
+#endif
+
 class Zip {
 public:
     class Error {
@@ -16,15 +22,15 @@ public:
         Error(int code, int sys = 0, const char* msg = nullptr) {
             zip_error_init(&mErr);
             static char buffer[1024];
-            if (sys != 0 && msg == nullptr) { strerror_s(buffer, 1024, sys); mErr.str = buffer; }
+            if (sys != 0 && msg == nullptr) { STRERROR(); mErr.str = buffer; }
             else mErr.str = const_cast<char*>(msg);
             mErr.sys_err = sys;
             mErr.zip_err = code;
         }
-        int          code()        { return mErr.zip_err; }
+        int          code()    { return mErr.zip_err; }
         QString      message() { return mErr.str ? mErr.str : zip_error_strerror(&mErr); }
-        int          sys_err()        { return mErr.sys_err; }
-        zip_error_t& error()          { return mErr; }
+        int          sys_err() { return mErr.sys_err; }
+        zip_error_t& error()   { return mErr; }
 
     private:
         zip_error_t mErr;
@@ -127,6 +133,7 @@ public:
         zip_stat_t mStat;
     };
 
+    Zip() { }
     Zip(const QString& name, const uint64_t mode = ReadOnly, int* err = nullptr) {
         mZip = zip_open(name.toStdString().c_str(), mode, err);
         if (mZip) mInvalid = false;
