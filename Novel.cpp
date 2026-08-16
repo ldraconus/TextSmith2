@@ -9,8 +9,8 @@
 
 #include "Main.h"
 
-qsizetype            Item::sNextID = 0;
-Map<QString, QImage> Item::sImages;
+qsizetype         Item::sNextID = 0;
+Map<QUrl, QImage> Item::sImages;
 
 static constexpr auto jsonFile = "{";
 static constexpr auto name     = "novel.josn5";
@@ -150,16 +150,29 @@ bool Item::fromDocArray(Json5Array &arr) {
             for (auto& fragment: fragments) {
                 if (fragment.isObject()) {
                     obj = fragment.toObject();
-                    if (obj.contains("Image")) {
-                        QString imageId = hasStr(obj, Novel::Image, "");
+                    if (obj.contains(Novel::Image)) {
+                        if (!obj[Novel::Image].isObject()) continue;
+                        Json5Object& imgObj = obj[Novel::Image].toObject();
+                        QString url = hasStr(imgObj, Novel::Url, { });
+                        if (url.isEmpty()) continue;
                         QTextImageFormat imgFmt;
-                        imgFmt.setName(imageId);
+                        imgFmt.setName(url);
+                        // get the QImage from the obj, store it in the sImage
+                        QString str = Item::hasStr(imgObj, Novel::Data, {});
+                        if (str.isEmpty()) continue;
+                        QByteArray data = QByteArray::fromBase64(str.toUtf8());
+                        if (data.isEmpty()) continue;
+                        QImage img;
+                        img.loadFromData(data);
+                        if (img.isNull()) continue;
+                        Item::Images()[url] = img;
+                        // save the str in img --> str map to reduce artifacting
                         auto height = hasNum(obj, Novel::Height, qlonglong(-1));
-                        auto width = hasNum(obj, Novel::Width, qlonglong(-1));
+                        auto width  = hasNum(obj, Novel::Width,  qlonglong(-1));
                         if (height != -1) imgFmt.setHeight(height);
-                        if (width != -1) imgFmt.setWidth(width);
+                        if (width  != -1) imgFmt.setWidth(width);
                         cursor.insertImage(imgFmt);
-                        if (imageId.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, imageId, sImages[imageId]);
+                        if (url.startsWith("internal:")) mDoc->addResource(QTextDocument::ImageResource, url, sImages[QUrl(url)]);
                     } else {
                         QString text = hasStr(obj, Novel::Text, "");
                         charFormat = fromTextCharFormatObject(obj);
@@ -249,6 +262,7 @@ void Item::loadInternalImages() {
 
 Json5Object Item::toObject(QTextDocument* document) {
     Json5Object obj;
+    QMap<QUrl, QImage> imgs;
 
     Json5Array doc;
     for (QTextBlock block = document->begin(); block != document->end(); block = block.next()) {
@@ -264,7 +278,18 @@ Json5Object Item::toObject(QTextDocument* document) {
 
             if (fragment.charFormat().isImageFormat()) {
                 QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
-                frag[Novel::Image] = imgFmt.name();
+                Json5Object imgObj;
+                imgObj[Novel::Url] = imgFmt.name();
+                QImage img = sImages[QUrl(imgFmt.name())];
+                // only do this for new images, save will be saving an img --> str for us, gen and save it to remove artifacting
+                QByteArray data;
+                QBuffer buffer(&data);
+                buffer.open(QIODevice::WriteOnly);
+                img.save(&buffer, "JPG", 95);
+                buffer.close();
+                // save the string in img --> str map so we don't do the same work again.
+                imgObj[Novel::Data] = QString::fromUtf8(data.toBase64());
+                frag[Novel::Image] = imgObj;
                 frag[Novel::Width] = imgFmt.width();
                 frag[Novel::Height] = imgFmt.height();
             } else {
@@ -278,6 +303,8 @@ Json5Object Item::toObject(QTextDocument* document) {
         blk[Novel::Fragments] = fragments;
         doc.append(blk);
     }
+
+
 
     obj[Novel::NakedDoc] = doc;
     obj[Novel::Position] = mPosition;
@@ -359,6 +386,13 @@ double Item::hasNum(Json5Array& arr, const qsizetype idx, const double def) {
 
 Json5Object Item::hasObj(Json5Object& obj, const QString& str, const Json5Object& def) {
     if (valid(obj, str, Json5::Object)) return obj[str].toObject();
+    return def;
+}
+
+Json5Object Item::hasObj(Json5Object& obj, const StringList& strs, const Json5Object& def) {
+    for (const auto& str: strs) {
+        if (valid(obj, str, Json5::Object)) return obj[str].toObject();
+    }
     return def;
 }
 
@@ -609,8 +643,8 @@ Item& Novel::findItem(qlonglong id) {
     return nil;
 }
 
-Map<QString, QImage>& Novel::images() {
-    return Item::sImages;
+Map<QUrl, QImage>& Novel::images() {
+    return Item::Images();
 }
 
 void Novel::init() {
@@ -872,8 +906,9 @@ bool Novel::fromObject(Json5Object& obj) {
     // ok, since we made images per document, not per file now since document central now,
     // need to grab the images and put them some place safe until each image is loaded
     // in the appropriate document.
+    // Do not do this!!!!!
+    Item::Images().clear();
     auto images = Item::hasArr(mExtra, Images, {});
-    Item::sImages.clear();
     for (auto& obj: images) {
         if (!obj.isObject()) continue;
         Json5Object image = obj.toObject();
@@ -886,7 +921,7 @@ bool Novel::fromObject(Json5Object& obj) {
         QImage img;
         img.loadFromData(data);
         if (img.isNull()) continue;
-        Item::sImages[url] = img;
+        Item::Images()[url] = img;
     }
 
     mItems.clear();
@@ -906,7 +941,7 @@ bool Novel::fromObject(Json5Object& obj) {
         mBranches = tree;
     }
     countAll();
-    Item::sImages.clear();
+    Item::Images().clear();
     return true;
 }
 

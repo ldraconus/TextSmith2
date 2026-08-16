@@ -50,7 +50,8 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
     if (source->hasImage()) {
         QImage img = qvariant_cast<QImage>(source->imageData());
         if (!img.isNull()) {
-            insertInternalImage(img);
+            QUrl url = insertInternalImage(img);
+            emit imagePasted(url, img);
             return;
         }
     }
@@ -317,8 +318,8 @@ void TextEdit::insertLocalImage(const QString& localFilePath) {
     insertInternalImage(img);
 }
 
-void TextEdit::insertInternalImage(const QImage& image) {
-    if (image.isNull()) return;
+QUrl TextEdit::insertInternalImage(const QImage& image) {
+    if (image.isNull()) return {};
 
     mInserting = true;
     const bool prevAcceptDrops = acceptDrops();
@@ -361,6 +362,8 @@ void TextEdit::insertInternalImage(const QImage& image) {
     mInserting = false;
 
     scheduleResize();
+
+    return url;
 }
 
 void TextEdit::insertExternalUrlImage(const QUrl& url, bool createBlock) {

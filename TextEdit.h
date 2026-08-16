@@ -39,6 +39,9 @@ public:
     void          setWrapMargin();
     QJsonDocument toJson(const QTextCursor& selection) const;
 
+signals:
+    void imagePasted(QUrl& str, QImage& img);
+
 protected:
     QMimeData* createMimeDataFromSelection() const override;
     void       dragEnterEvent(QDragEnterEvent* event) override;
@@ -65,7 +68,7 @@ private:
     QTextBlockFormat fromTextBlockFormatObject(QJsonObject &obj);
     QTextCharFormat  fromTextCharFormatObject(QJsonObject &obj);
     void             insertExternalUrlImage(const QUrl& url, bool createBock = true);
-    void             insertInternalImage(const QImage& image);
+    QUrl             insertInternalImage(const QImage& image);
     void             insertLocalImage(const QString& localFilePath);
     QUrl             makeInternalUrl();
     void             scheduleResize();

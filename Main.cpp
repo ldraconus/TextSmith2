@@ -927,20 +927,17 @@ void Main::loadFile(const QString& filename) {
     mCurrentNode = Item::hasNum(extra, Novel::Current, qlonglong(0));
     mPosition = Item::hasNum(extra, Novel::Position, qlonglong(0));
     auto states = Item::hasObj(extra, Novel::State, {});
-    for (auto& state: states)
-        mState[state.first.toInt()] = state.second.toBoolean();
+    for (auto& state: states) mState[state.first.toInt()] = state.second.toBoolean();
     mImageStore.clear();
     auto& images = mNovel.images();
     for (const auto& img: images) {
-        QString url = img.first;
+        QString url = img.first.toString();
         mImageStore[url] = img.second;
         mUi->textEdit->addInternalImage(url, img.second, false);
     }
     QString str;
     auto words = Item::hasArr(extra, Novel::Dictionary, {});
-    for (int i = 0; i < words.size(); ++i)
-        mSpelling.addWord(Item::hasStr(words, i, ""));
-
+    for (int i = 0; i < words.size(); ++i) mSpelling.addWord(Item::hasStr(words, i, ""));
     mPrefs.setRecentNovels(savedRecents);
     mPrefs.addNovel(info.baseName() + ".novel", filename);
     setPosition(mPosition);
