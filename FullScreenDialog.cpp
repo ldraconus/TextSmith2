@@ -32,13 +32,6 @@ FullScreenDialog::~FullScreenDialog() {
     delete mUi;
 }
 
-void FullScreenDialog::imageFix() {
-    Main::ref().removeEmptyFirstBlock(mUi->textEdit);
-    mUi->textEdit->document()->setTextWidth(mUi->textEdit->viewport()->width());
-    mUi->textEdit->document()->documentLayout()->update();
-    mUi->textEdit->update();
-}
-
 List<int> FullScreenDialog::other() {
     List<int> arr;
     QList<int> otr = mUi->splitter->sizes();
@@ -198,26 +191,6 @@ void FullScreenDialog::keyPressEvent(QKeyEvent* evt) {
         QDialog::keyPressEvent(evt);
         return;
     }
-}
-
-void FullScreenDialog::applyNovelFormatting() {
-    TextEdit* editor = mUi->textEdit;
-    QFontMetrics fm(editor->font());
-    int em = fm.horizontalAdvance('M');
-    int lineHeight = fm.height();
-
-    QTextBlockFormat fmt;
-
-    fmt.setTextIndent(4 * em);
-
-    fmt.setBottomMargin(1 * lineHeight);
-
-    QTextCursor cursor = editor->textCursor();
-    cursor.select(QTextCursor::Document);
-    cursor.setBlockFormat(fmt);
-
-    cursor.clearSelection();
-    editor->setTextCursor(cursor);
 }
 
 void FullScreenDialog::setDark() {

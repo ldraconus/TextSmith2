@@ -157,7 +157,6 @@ bool Item::fromDocArray(Json5Array &arr) {
                         if (url.isEmpty()) continue;
                         QTextImageFormat imgFmt;
                         imgFmt.setName(url);
-                        // get the QImage from the obj, store it in the sImage
                         QString str = Item::hasStr(imgObj, Novel::Data, {});
                         if (str.isEmpty()) continue;
                         QByteArray data = QByteArray::fromBase64(str.toUtf8());
@@ -166,7 +165,7 @@ bool Item::fromDocArray(Json5Array &arr) {
                         img.loadFromData(data);
                         if (img.isNull()) continue;
                         Item::Images()[url] = img;
-                        // save the str in img --> str map to reduce artifacting
+                        sImage64[url] = str;
                         auto height = hasNum(obj, Novel::Height, qlonglong(-1));
                         auto width  = hasNum(obj, Novel::Width,  qlonglong(-1));
                         if (height != -1) imgFmt.setHeight(height);
@@ -280,15 +279,17 @@ Json5Object Item::toObject(QTextDocument* document) {
                 QTextImageFormat imgFmt = fragment.charFormat().toImageFormat();
                 Json5Object imgObj;
                 imgObj[Novel::Url] = imgFmt.name();
-                QImage img = sImages[QUrl(imgFmt.name())];
-                // only do this for new images, save will be saving an img --> str for us, gen and save it to remove artifacting
-                QByteArray data;
-                QBuffer buffer(&data);
-                buffer.open(QIODevice::WriteOnly);
-                img.save(&buffer, "JPG", 95);
-                buffer.close();
-                // save the string in img --> str map so we don't do the same work again.
-                imgObj[Novel::Data] = QString::fromUtf8(data.toBase64());
+                QUrl url(imgFmt.name());
+                if (sImage64[url].isEmpty()) {
+                    QImage img = sImages[url];
+                    QByteArray data;
+                    QBuffer buffer(&data);
+                    buffer.open(QIODevice::WriteOnly);
+                    img.save(&buffer, "JPG", 95);
+                    buffer.close();
+                    sImage64[url] = QString::fromUtf8(data.toBase64());
+                }
+                imgObj[Novel::Data] = sImage64[url];
                 frag[Novel::Image] = imgObj;
                 frag[Novel::Width] = imgFmt.width();
                 frag[Novel::Height] = imgFmt.height();

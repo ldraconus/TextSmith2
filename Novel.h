@@ -133,8 +133,9 @@ private:
     qlonglong            mPosition { 0 };
     StringList           mTags;
 
-    static qsizetype         sNextID;
-    static Map<QUrl, QImage> sImages;
+    static qsizetype          sNextID;
+    static Map<QUrl, QImage>  sImages;
+    static Map<QUrl, QString> sImage64;
 };
 
 class Novel {

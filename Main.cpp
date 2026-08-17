@@ -928,11 +928,9 @@ void Main::loadFile(const QString& filename) {
     mPosition = Item::hasNum(extra, Novel::Position, qlonglong(0));
     auto states = Item::hasObj(extra, Novel::State, {});
     for (auto& state: states) mState[state.first.toInt()] = state.second.toBoolean();
-    mImageStore.clear();
     auto& images = mNovel.images();
     for (const auto& img: images) {
         QString url = img.first.toString();
-        mImageStore[url] = img.second;
         mUi->textEdit->addInternalImage(url, img.second, false);
     }
     QString str;
@@ -1908,14 +1906,6 @@ bool Main::receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData) {
     return true;
 }
 
-void Main::registerImages(const QString& html, QTextDocument* doc) {
-    for (const auto& entry: mImageStore) {
-        if (html.contains("<img src=\"" + entry.first)) {
-            doc->addResource(QTextDocument::ImageResource, entry.first, entry.second);
-        }
-    }
-}
-
 void Main::removeEmptyFirstBlock(TextEdit* text) {
     QTextCursor c(text->document());
     c.movePosition(QTextCursor::Start);
@@ -2084,7 +2074,6 @@ void Main::update(bool unchanged) { // new, open
     QTreeWidget* tree = mUi->treeWidget;
     tree->clear();
     buildTree(mNovel.branches(), nullptr, mState);
-    mImageStore.clear();
     updateDocument();
     updateFromPrefs();
 

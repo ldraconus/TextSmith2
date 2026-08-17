@@ -98,7 +98,6 @@ private:
     Map<QString, QIcon>           mIcons;
     qlonglong                     mId;
     List<qlonglong>               mIds;
-    Map<QString, QImage>          mImageStore;
     QString                       mLocalDir;
     Message                       mMsg;
     Novel                         mNovel;
@@ -239,7 +238,6 @@ private:
     bool           parentIsRoot();
     void           pasteTreeItem();
     bool           receiveTreeMimeData(QDropEvent* de, const QMimeData* mimeData);
-    void           registerImages(const QString& html, QTextDocument* doc);
     void           replaceText(QTextCursor cursor, const QString& text);
     void           save(Novel& novel, Map<qlonglong, bool>& byId, qlonglong pos, const QRect& geom, bool noUi = false);
     QString        saveFileWithOption(QWidget *parent, const QString& prompt, const QString& dir, bool &optionChecked);
