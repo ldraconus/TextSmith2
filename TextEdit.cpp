@@ -51,7 +51,7 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
         QImage img = qvariant_cast<QImage>(source->imageData());
         if (!img.isNull()) {
             QUrl url = insertInternalImage(img);
-            emit imagePasted(url, img);
+            emit imageAdded(url, img);
             return;
         }
     }
@@ -115,12 +115,14 @@ void TextEdit::insertFromMimeData(const QMimeData *source) {
             if (!local.isEmpty()) {
                 img = QImage(local);
                 if (img.isNull()) continue;
-                insertInternalImage(img);
+                QUrl url = insertInternalImage(img);
+                emit imageAdded(url, img);
                 return;
             } else {
                 img = QImage(url.path());
                 if (img.isNull()) continue;
-                insertInternalImage(img);
+                QUrl url = insertInternalImage(img);
+                emit imageAdded(url, img);
                 return;
             }
         }
@@ -527,9 +529,10 @@ void TextEdit::fromJson(const QJsonDocument& doc) {
         pic.loadFromData(data);
         if (pic.isNull()) continue;
         if (!mOriginals.contains(in)) {
-            const QUrl url = makeInternalUrl();
+            QUrl url = makeInternalUrl();
             in2Internal[in] = url;
             addInternalImage(url, pic, true);
+            emit imageAdded(url, pic);
         } else in2Internal[in] = in;
     }
 

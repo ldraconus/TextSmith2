@@ -40,7 +40,7 @@ public:
     QJsonDocument toJson(const QTextCursor& selection) const;
 
 signals:
-    void imagePasted(QUrl& str, QImage& img);
+    void imageAdded(QUrl str, QImage img);
 
 protected:
     QMimeData* createMimeDataFromSelection() const override;

@@ -2578,6 +2578,10 @@ void Main::setupConnections() {
                 connect(thread, &QThread::finished, thread, &QObject::deleteLater);
                 thread->start();
             });
+
+    connect(mUi->textEdit, &TextEdit::imageAdded, this, [this](QUrl url, QImage img) {
+
+    });
 }
 
 void Main::setupScripting() {

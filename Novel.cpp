@@ -9,8 +9,9 @@
 
 #include "Main.h"
 
-qsizetype         Item::sNextID = 0;
-Map<QUrl, QImage> Item::sImages;
+qsizetype          Item::sNextID = 0;
+Map<QUrl, QImage>  Item::sImages;
+Map<QUrl, QString> Item::sImage64;
 
 static constexpr auto jsonFile = "{";
 static constexpr auto name     = "novel.josn5";
