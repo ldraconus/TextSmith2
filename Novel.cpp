@@ -14,7 +14,7 @@ Map<QUrl, QImage>  Item::sImages;
 Map<QUrl, QString> Item::sImage64;
 
 static constexpr auto jsonFile = "{";
-static constexpr auto name     = "novel.josn5";
+static constexpr auto name     = "novel.json5";
 
 Item::Item(bool noId)
     : mCount(0)
@@ -60,17 +60,16 @@ QString Item::changeFont(QTextDocument* doc, const QFont& font) {
         cursor.mergeBlockFormat(toIndent);
     }
 
+    QTextCharFormat fmt;
+    fmt.setFontFamilies({ font.family() });
+    fmt.setFontPointSize(font.pointSize());
     for (const auto& range: ranges) {
         cursor.setPosition(range.pos);
         cursor.setPosition(range.pos + range.len, QTextCursor::KeepAnchor);
-
-        QTextCharFormat fmt;
-        fmt.setFontFamilies({ font.family() });
-        fmt.setFontPointSize(font.pointSize());
         cursor.mergeCharFormat(fmt);
     }
 
-    return doc->toHtml();
+    return "";
 }
 
 QString Item::setupDocument(const QFont& font, QTextDocument* doc) {
@@ -85,8 +84,7 @@ QString Item::setupDocument(const QFont& font, QTextDocument* doc) {
     QTextCursor cursor(doc);
     cursor.select(QTextCursor::Document);
     cursor.mergeBlockFormat(format);
-    QString html = doc->toHtml();
-    return html;
+    return "";
 }
 
 Json5Object Item::fromDocumentFrgment(QTextDocumentFragment* fragment) {
